@@ -4,6 +4,8 @@ VNC.js is a LinkedIn intern hackday 2011 2011 project, read the blog post about 
 
 You need a VNC server to make this work, like: x11vnc on Ubuntu.
 
+You can change host in index.html ,e.x. localhost:1024, 192.168.8.100:5900
+
 Disclaimer
 ----------
 This project was developed over 24 sleep deprived hours, the code is messy and undocumented.

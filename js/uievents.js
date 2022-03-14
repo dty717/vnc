@@ -85,18 +85,16 @@ function readKey(e, i)
    return (rst & (0xFF << (i*8))) >> (i*8);
 }
 
-function parseMouseEvent(evt)
+function parseMouseEvent(evt,buttonMask)
 {
-   var button = evt.which;
-   var buttonMask = button == 1 ? 1 : 2
    var arr = [];
 
    arr[0] = 5;
    arr[1] = buttonMask;
-   arr[2] = (evt.x & 0xFF00) >> 8;
-   arr[3] = evt.x & 0xFF;
-   arr[4] = (evt.y & 0xFF00) >> 8;
-   arr[5] = evt.y & 0xFF;
+   arr[2] = (evt.offsetX & 0xFF00) >> 8;
+   arr[3] = evt.offsetX & 0xFF;
+   arr[4] = (evt.offsetY & 0xFF00) >> 8;
+   arr[5] = evt.offsetY & 0xFF;
 
    if (evt.preventDefault)
        evt.preventDefault();

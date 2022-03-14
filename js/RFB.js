@@ -10,8 +10,9 @@ var RFBClient = function(tcp_client, rfb_canvas) {
 	
 	/* second stage of hand shake: security negotiation */
 		this._security_type_received = false;
-	
-	/* because we're implementing RFB 3.3, this can only be one of the above.*/ 
+		this._security_result_received = false;
+		
+	/* because we're implementing RFB 3.8, this can only be one of the above.*/ 
 		this.VNC_AUTH_INVALID = 0;
 		this.VNC_AUTH_NONE = 1;
 		this.VNC_AUTH_VNCAUTHENTICATION = 2;
@@ -76,7 +77,7 @@ var RFBClient = function(tcp_client, rfb_canvas) {
 };
 
 RFBClient.prototype.log = function(msg){
-	console.log("RFBClient: " + msg);
+	// console.log("RFBClient: " + msg);
 };
 
 RFBClient.prototype.alert = function(msg){
@@ -85,14 +86,20 @@ RFBClient.prototype.alert = function(msg){
 
 RFBClient.prototype.setEncodings = function(){
 	// tell the server we support both RAW and CopyRect encoding formats.
-	var request = [0,0,0,0,0,0,0,0];
+	var request = [0x02, 0x00, 0x00, 0x0b, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00, 0x00, 0x05, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 0x00, 0xff, 0xff, 0xff, 0xe6, 0xff, 0xff, 0xff, 0x21, 0xff, 0xff, 0xff, 0x20, 0xff, 0xff, 0xff, 0x18, 0xff, 0xff, 0xff, 0x11];
 	request[0] = this.VNC_SET_ENCODINGS;
-	request[3] = 1;
-	request[7] = this.RFB_ENCODING_COPYRECT;
+	request[11] = this.RFB_ENCODING_COPYRECT;
 	
 	var encodedRequest = Base64.encodeIntArr(request);
 	this.log("Encoding request: " + encodedRequest);
 	this._tcpClient.send(encodedRequest,'base64');
+}
+
+RFBClient.prototype.setPixelFormat = function () {
+	var request = [0x00, 0x00, 0x00, 0x00, 0x20, 0x18, 0x00, 0x01, 0x00, 0xff, 0x00, 0xff, 0x00, 0xff, 0x10, 0x08, 0x00, 0x00, 0x00, 0x00]
+	var encodedRequest = Base64.encodeIntArr(request);
+	this.log("Encoding request: " + encodedRequest);
+	this._tcpClient.send(encodedRequest, 'base64');
 }
 
 RFBClient.prototype.frameBufferUpdateRequest = function(x, y, width, height, incremental){
@@ -149,19 +156,19 @@ RFBClient.prototype.handleServerInit = function(data){
 		this.log("Server Init, True Color Flag: " + this._true_color_flag + ", Red Max: " + this._red_max + ", Green Max: " + this._green_max + ", Blue Max: " + this._blue_max);
 		this.log("Server Init, Red Shift: " + this._red_shift + ", Green Shift: " + this._green_shift + ", Blue Shift: " + this._blue_shift);
 		
-		//this.setEncodings(); /* tell the server we support CopyRect and Raw */
-			
+		// this.setEncodings(); /* tell the server we support CopyRect and Raw */
+		// this.setPixelFormat();
 		this._vnc_server_init_received = true; // We're fucking ready to roll!
 		this._handshake_complete = true;
 
-		this.frameBufferUpdateRequest(0,0,width,height);
+		// this.frameBufferUpdateRequest(0,0,width,height);
 		
 		var that = this;
 		var frameBufferUpdate = function(){
 			that.frameBufferUpdateRequest(0,0,width,height,1);
 		}
 		
-		setInterval(frameBufferUpdate,250); /* incremental update requests */
+		setInterval(frameBufferUpdate,1000); /* incremental update requests */
 		
 		
 		this.emit(this.VNC_SERVER_INIT_COMPLETE);
@@ -186,7 +193,11 @@ RFBClient.prototype.dataReceived = function(data){
 	if(!this._server_version_received){
 		this.handleServerVersion(decodedData);
 		return;
-	} else if(!this._security_type_received) {
+	}else if(!this._security_type_received){
+		this.handleSecurityType(decodedData);
+		return;
+	}
+	else if(!this._security_result_received) {
 		this.handleAuthentication(decodedData);
 		return;
 	} else if (this._vnc_challenge_result_sent && !this._authentication_complete){
@@ -215,7 +226,7 @@ var FrameBufferProcessor = function(_rfbClient) {
 	this.current_width = 0;
 	this.current_height = 0;
 	this.current_copyrect = false;
-	
+	this.encodingType = this.rfbClient.RFB_ENCODING_RAW;
 	this.dataArrived = function(dataIntArr){
 		this.global_buffer = this.global_buffer.concat(dataIntArr); /* we're already running, just tack this on */
 
@@ -224,13 +235,14 @@ var FrameBufferProcessor = function(_rfbClient) {
 			this.header_received = true;
 			this.number_rects_remaining = (	this.global_buffer[2] << 8) | 	this.global_buffer[3];
 			this.global_buffer = this.global_buffer.slice(4, this.global_buffer.length);
-			console.log("Expecting " + this.number_rects_remaining + " rectangles");
+			// console.log("Expecting " + this.number_rects_remaining + " rectangles");
         }
 
         this.process();
 	};
 	
 	this.process = function() {
+		// console.log(this.global_buffer.length)
 		if(!this.current_rect_header_received){
             if (this.global_buffer.length < 12) {
                 return;
@@ -245,20 +257,25 @@ var FrameBufferProcessor = function(_rfbClient) {
 							   (this.global_buffer[9] << 16) |
 							   (this.global_buffer[10] << 8)  |
 							   (this.global_buffer[11]));
-							
+			// console.log(x_pos,y_pos,width,height);
+			
 			this.current_rect_x = x_pos;
 			this.current_rect_y = y_pos;
 			this.current_width = width;
 			this.current_height = height;
 			var blah = this.global_buffer.splice(0, 12);
-			console.log("Current Rect: x:" + x_pos + ", y:" + y_pos + ", width: " + width + ", height: " + height);
+			this.encodingType = encodingType;
+			// console.log("Current Rect: x:" + x_pos + ", y:" + y_pos + ", width: " + width + ", height: " + height);
 			if(encodingType === this.rfbClient.RFB_ENCODING_COPYRECT){
 				console.log("COPYRECT RECEIVED!!");
 				this.current_copyrect = true;
 				this.current_rect_bytes_left = 4;
-			} else {
+			} else if(encodingType === this.rfbClient.RFB_ENCODING_RAW){
 			 this.current_rect_header_received = true;
-			 this.current_rect_bytes_left = width * height * 4; /* shouldn't be hard coded, but whatever */
+			 this.current_rect_bytes_left = width * height * (this.rfbClient._bits_per_pixel)/8; /* shouldn't be hard coded, but whatever */
+			}else{
+				this.current_rect_header_received = true;
+				this.current_rect_bytes_left = width * height * 4; /* shouldn't be hard coded, but whatever */
 			}
 			if(this.global_buffer.length > 0)
 			 this.process();
@@ -267,19 +284,35 @@ var FrameBufferProcessor = function(_rfbClient) {
 				// we have enough data to render our rect.
 				var rect = this.global_buffer.splice(0, this.current_rect_bytes_left);
 				if(!this.current_copyrect){
-					this.rfbClient.emit(this.rfbClient.VNC_FRAME_BUFFER_UPDATE, {x: this.current_rect_x, y: this.current_rect_y, w: this.current_width, h: this.current_height, data: rect});
+					this.rfbClient.emit(this.rfbClient.VNC_FRAME_BUFFER_UPDATE, {
+						x: this.current_rect_x, y: this.current_rect_y, w: this.current_width, h: this.current_height, data: rect,
+						encodingType: this.encodingType,
+						configInit: {
+							_red_max: this.rfbClient._red_max,
+							_green_max: this.rfbClient._green_max,
+							_blue_max: this.rfbClient._blue_max,
+							_red_shift: this.rfbClient._red_shift,
+							_green_shift: this.rfbClient._green_shift,
+							_blue_shift: this.rfbClient._blue_shift,
+							_big_endian_flag: this.rfbClient._big_endian_flag,
+							_true_color_flag: this.rfbClient._true_color_flag
+						}
+					});
 				} else {
 				  var src_x_pos = (rect[0] << 8) | rect[1];
 				  var src_y_pos = (rect[2] << 8) | rect[3];
 				  console.log("Copy recting src_x:" + src_x_pos + ", src_y:" + src_y_pos + ", to_x:" + this.current_rect_x + ", to_y:" + this.current_rect_y + ", width: " + this.current_width + ", height: " + this.current_height);
-				  this.rfbClient.emit(this.rfbClient.VNC_FRAME_BUFFER_COPYRECT, {x: this.current_rect_x, y: this.current_rect_y, w: this.current_width, h: this.current_height , src_x: src_x_pos, src_y: src_y_pos});
+					this.rfbClient.emit(this.rfbClient.VNC_FRAME_BUFFER_COPYRECT, {
+						x: this.current_rect_x, y: this.current_rect_y, w: this.current_width, h: this.current_height, src_x: src_x_pos, src_y: src_y_pos
+						
+					});
 				}
 				this.current_rect_bytes_left = 0;
 				this.current_rect_header_received = false;
 				this.current_copyrect = false;
 				
 				if(--this.number_rects_remaining <= 0){
-				 console.log("All rects processed!!!");
+				//  console.log("All rects processed!!!");
 				 this.header_received = false;
 				 this.number_rects_remaining = 0;
 				 if(this.global_buffer.length > 0)
@@ -308,10 +341,34 @@ RFBClient.prototype.authenticationResponse = function(data){
 	}
 };
 
-RFBClient.prototype.handleAuthentication = function(data){
-	var sec_type = data.charCodeAt(3);
+
+
+RFBClient.prototype.handleSecurityType = function(data){
+	var sec_type = data.charCodeAt(1);
 	this._security_type = sec_type;
 	this._security_type_received = true;
+	
+	if(this._security_type === this.VNC_AUTH_INVALID){
+		var error_reason = data.substr(4);
+		this.log("VNC Authentication could not be negotiated, the reason the server gave: " + error_reason);
+		this._tcpClient.disconnect(); // end the connection
+		return;
+	} else if(this._security_type === this.VNC_AUTH_NONE) {
+		this.log("No Authentication is required...Authentication Complete");
+		 this._authentication_complete = true;
+         this.clientInit();
+		 return;
+	} else if(this._security_type === this.VNC_AUTH_VNCAUTHENTICATION){
+		this.log("Authentication type is VNC Authentication");
+		var resArr = [this.VNC_AUTH_VNCAUTHENTICATION];
+		var encodedResp = Base64.encodeIntArr(resArr,1);
+		this.log("Challenge encoded: " + encodedResp);
+		this._tcpClient.send(encodedResp,'base64');
+		return;
+	}
+};
+RFBClient.prototype.handleAuthentication = function(data){
+	this._security_result_received = true;
 	
 	if(this._security_type === this.VNC_AUTH_INVALID){
 		var error_reason = data.substr(4);
@@ -345,9 +402,9 @@ RFBClient.prototype.handleAuthentication = function(data){
 		var correctChallengehi_int   =  [];
 		for(i = 0; i < 16; i++){
 			if(i < 8) {
-			 correctChallengelo_int[i] = data.charCodeAt(i+4);
+			 correctChallengelo_int[i] = data.charCodeAt(i);
 			} else {
-			 correctChallengehi_int[i-8] = data.charCodeAt(i+4);
+			 correctChallengehi_int[i-8] = data.charCodeAt(i);
 			}
 		}
 		
@@ -385,8 +442,8 @@ RFBClient.prototype.handleServerVersion = function(data){
 		this._server_rfb_version_minor = parseInt(data.substr(8,3));
 		this._server_version_received = true;
 		this.log("Server Version RFB: " + this._server_rfb_version_string);
-	 	this.log("Sending Client Version RFB 3.3"); // send our version to the server...
-		this._tcpClient.send("RFB 003.003\n"); // we will implement a simple version of RFB (v3.3)
+	 	this.log("Sending Client Version RFB 3.8"); // send our version to the server...
+		this._tcpClient.send("RFB 003.008\n"); // we will implement a simple version of RFB (v3.8)
 		this._client_version_sent = true;
 	}
 };

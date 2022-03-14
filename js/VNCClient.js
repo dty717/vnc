@@ -14,7 +14,7 @@ VNCClient.prototype.serverInitComplete = function(rfb_client) {
 };
 
 VNCClient.prototype.frameBufferUpdate = function(rfb_client, update) {
-	this._rfb_canvas.drawRect(update.x, update.y, update.w, update.h, update.data);
+	this._rfb_canvas.drawRect(update.x, update.y, update.w, update.h, update.data, update.encodingType, update.configInit);
 };
 
 VNCClient.prototype.frameBufferCopyrect = function(rfb_client, update){

@@ -4,8 +4,7 @@
 // Written By Brian Geffon (briangeffon {@} gmail {dot} com)
 //
 //
-var sys = require("sys"),  
-    http = require("http"),
+var http = require("http"),
     url = require("url"),  
     path = require("path"),
   	util = require('util'),

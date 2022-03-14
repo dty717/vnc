@@ -1,0 +1,24 @@
+{
+  "name": "vnc",
+  "version": "1.0.0",
+  "description": "VNC.js\r ======\r VNC.js is a LinkedIn intern hackday 2011 2011 project, read the blog post about VNC.js: http://engineering.linkedin.com/javascript/vncjs-how-build-javascript-vnc-client-24-hour-hackday",
+  "main": "server.js",
+  "dependencies": {
+    "socket.io": "^0.9.14"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bgaff/vnc.js.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bgaff/vnc.js/issues"
+  },
+  "homepage": "https://github.com/bgaff/vnc.js#readme"
+}

@@ -17,11 +17,11 @@
 
 
  $(document).ready(function() {
-	var host = "localhost";
+	var host = "192.168.8.100";
 	var port = 5900;
 
     var canvas = document.getElementById("vnc-canvas");
-    var vnc = new VNCClient(canvas);
+	vnc = new VNCClient(canvas);
     vnc.connect(host, port);
 
     var parseKeyAndSend = function(evt) {
@@ -31,7 +31,9 @@
     };
 
     var parseMouseAndSend = function(evt) {
-       var data = parseMouseEvent(evt);
+       var data = parseMouseEvent(evt,1);
+       vnc.send(data);
+	   data = parseMouseEvent(evt,0);
        vnc.send(data);
        return false;
     };
@@ -40,7 +42,7 @@
 	 $(document).keyup   (parseKeyAndSend);
 	//      $(document).keypress(parseKeyAndSend);
 
-	// $(document).click(parseMouseAndSend);
+	$(canvas).click(parseMouseAndSend);
  });
 
 </script>
