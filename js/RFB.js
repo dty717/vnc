@@ -344,27 +344,30 @@ RFBClient.prototype.authenticationResponse = function(data){
 
 
 RFBClient.prototype.handleSecurityType = function(data){
-	var sec_type = data.charCodeAt(1);
-	this._security_type = sec_type;
-	this._security_type_received = true;
-	
-	if(this._security_type === this.VNC_AUTH_INVALID){
-		var error_reason = data.substr(4);
-		this.log("VNC Authentication could not be negotiated, the reason the server gave: " + error_reason);
-		this._tcpClient.disconnect(); // end the connection
-		return;
-	} else if(this._security_type === this.VNC_AUTH_NONE) {
-		this.log("No Authentication is required...Authentication Complete");
-		 this._authentication_complete = true;
-         this.clientInit();
-		 return;
-	} else if(this._security_type === this.VNC_AUTH_VNCAUTHENTICATION){
-		this.log("Authentication type is VNC Authentication");
-		var resArr = [this.VNC_AUTH_VNCAUTHENTICATION];
-		var encodedResp = Base64.encodeIntArr(resArr,1);
-		this.log("Challenge encoded: " + encodedResp);
-		this._tcpClient.send(encodedResp,'base64');
-		return;
+	var securityTypesNumber = data.charCodeAt(0);
+	for (let index = 0; index < securityTypesNumber; index++) {
+
+		var sec_type = data.charCodeAt(index + 1);
+		this._security_type = sec_type;
+		this._security_type_received = true;
+		if (this._security_type === this.VNC_AUTH_INVALID) {
+			var error_reason = data.substr(4);
+			this.log("VNC Authentication could not be negotiated, the reason the server gave: " + error_reason);
+			this._tcpClient.disconnect(); // end the connection
+			return;
+		} else if (this._security_type === this.VNC_AUTH_NONE) {
+			this.log("No Authentication is required...Authentication Complete");
+			this._authentication_complete = true;
+			this.clientInit();
+			return;
+		} else if (this._security_type === this.VNC_AUTH_VNCAUTHENTICATION) {
+			this.log("Authentication type is VNC Authentication");
+			var resArr = [this.VNC_AUTH_VNCAUTHENTICATION];
+			var encodedResp = Base64.encodeIntArr(resArr, 1);
+			this.log("Challenge encoded: " + encodedResp);
+			this._tcpClient.send(encodedResp, 'base64');
+			return;
+		}
 	}
 };
 RFBClient.prototype.handleAuthentication = function(data){
