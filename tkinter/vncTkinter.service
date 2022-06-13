@@ -1,0 +1,14 @@
+[Unit]
+Description=VNC for Thinker
+
+[Service]
+Environment=DISPLAY=:0
+Environment=XAUTHORITY=/home/dty717/.Xauthority
+ExecStart=/usr/bin/python3 /home/dty717/Desktop/github/vnc/tkinter/mainApp.py
+Restart=always
+RestartSec=20s
+KillMode=process
+TimeoutSec=infinity
+
+[Install]
+WantedBy=graphical.target
