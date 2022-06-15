@@ -6,7 +6,13 @@ from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
 from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
+from page.systemLogBoard import SystemLogBoard
+
 import threading
+
+from PIL import Image
+from config.config import *
+
 
 # Create the main window
 root = Tk()
@@ -21,7 +27,6 @@ styleConfig = ttk.Style()
 # 'ne' as in compass direction
 styleConfig.configure('TNotebook', tabposition='wn',background="blue")
 styleConfig.configure('TNotebook.Tab',background="white", font=("Helvetica", 16))
-
 
 images = (
     PhotoImage("img_close", data='''
@@ -69,23 +74,27 @@ styleConfig.layout("TNotebook.Tab", [
     })
 ])
 
+redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
+greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
 
 tabNoteBook = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10)
 tabNoteBook.pack()
 
 mainBoard = MainBoard(tabNoteBook,width=50, height=50, bg="red")
 historyBoard = HistoryBoard(tabNoteBook, width=50, height=50, bg="yellow")
-controllingBoard = ControllingBoard(tabNoteBook, width=50, height=50, bg="green")
+controllingBoard = ControllingBoard(tabNoteBook,{"greenSignal":greenSignal,"redSignal":redSignal}, width=50, height=50, bg="green")
 timeSelectingBoard = TimeSelectingBoard(tabNoteBook, width=50, height=50, bg="blue")
 settingBoard = SettingBoard(tabNoteBook, width=50, height=50, bg="black")
+systemLogBoard = SystemLogBoard(tabNoteBook, width=50, height=50, bg="white")
 
 # button = Button(tabNoteBook, text="ABC")
 
 tabNoteBook.add(mainBoard, text="主显示面")
 tabNoteBook.add(historyBoard, text="历史数据")
-tabNoteBook.add(controllingBoard, text="设备控制")
+tabNoteBook.add(controllingBoard, text="设备调试")
 tabNoteBook.add(timeSelectingBoard, text="整点做样")
 tabNoteBook.add(settingBoard, text="参数设置")
+tabNoteBook.add(systemLogBoard, text="运行日志")
 
 # menuPanel = PanedWindow(bd=0, relief="raised", bg="red")
 # menuPanel.resizable(False, False)

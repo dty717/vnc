@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from components.table import TreeTable
 
-class HistoryBoard(Frame):
+class SystemLogBoard(Frame):
     def __init__(self, master,**kargs):
         super().__init__(master,kargs)
         treeTable = TreeTable(self)

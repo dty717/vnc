@@ -1,9 +1,39 @@
 from tkinter import *
 from tkinter import ttk
+from components.groupLabelButton import GroupLabelButton
+from components.labelButton import LabelTextButton
+from PIL import Image
+from config.config import *
 
 class SettingBoard(Frame):
     def __init__(self, master,**kargs):
         super().__init__(master,kargs)
+        # 
+        #groupLabelButton1
+        #  
+        groupLabelButton1 = GroupLabelButton(self)
+        groupLabelButton1.pack()
+        labelTextButton10 = LabelTextButton(groupLabelButton1)
+        labelTextButton10.pack()
+        labelTextButton11 = LabelTextButton(groupLabelButton1)
+        labelTextButton11.pack()
+        labelTextButton12 = LabelTextButton(groupLabelButton1)
+        labelTextButton12.pack()
+        labelTextButton13 = LabelTextButton(groupLabelButton1)
+        labelTextButton13.pack()
+        # 
+        #groupLabelButton2
+        #  
+        groupLabelButton2 = GroupLabelButton(self)
+        groupLabelButton2.pack(side="left", fill="x")
+        labelTextButton20 = LabelTextButton(groupLabelButton2)
+        labelTextButton20.pack()
+        labelTextButton21 = LabelTextButton(groupLabelButton2)
+        labelTextButton21.pack()
+        labelTextButton22 = LabelTextButton(groupLabelButton2)
+        labelTextButton22.pack()
+        labelTextButton23 = LabelTextButton(groupLabelButton2)
+        labelTextButton23.pack()
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()

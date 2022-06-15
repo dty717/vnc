@@ -1,9 +1,42 @@
 from tkinter import *
 from tkinter import ttk
+from datetime import datetime
+from components.table import SimpleTable
+
+mainText = None
+
+# date(2002, 12, 4).strftime("")
+
+
+def test():
+    updateMainDate(2022,12,12,1,1,32,121.2112,0)
+
+def stateString(state):
+    if state == 0:
+        return "正常"
+    return ""
+
+def updateMainDate(year, month, day, hour, minitue, second, value, state):
+    global mainText
+    mainText.set("做样时间:"+datetime(year, month, day, hour, minitue, second).strftime("%Y-%m-%d %H:%M:%S")+"\n" +
+                 "做样数据:"+str(value)+"mg/L\n" +
+                 "报警状态:"+stateString(state))
+
 
 class MainBoard(Frame):
-    def __init__(self, master,**kargs):
-        super().__init__(master,kargs)
+    def __init__(self, master, **kargs):
+        global mainText
+        super().__init__(master, kargs)
+        mainText = StringVar()
+        mainText.set("""做样时间:
+做样数据:
+报警状态:""")
+        mainLabel = Label(self, textvariable=mainText, fg="black", bg="white")
+        mainLabel.pack(side="top", fill="x")
+        mainTable = SimpleTable(self, header=['', '基值', '峰值', 'A值', 'C值'], data=[['标一', 'v1','v2', 'v3','v4'],['标二', 'v1','v2', 'v3','v4'],['标三', 'v1','v2', 'v3','v4'],['水样', 's1','s2', 's3','s4']])
+        mainTable.pack(side="bottom", fill="x")
+        button = Button(self, text="Button", command=test)
+        button.pack()
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()
