@@ -1,18 +1,20 @@
 from tkinter import *
 from tkinter import ttk
+from PIL import Image
+import time
+import threading
+import serial
+
 from config.labelString import *
+from config.config import *
+from tool.crc import crc16,checkBuffer
+from service.device import *
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
 from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
-
-import threading
-
-from PIL import Image
-from config.config import *
-
 
 # Create the main window
 root = Tk()
@@ -87,8 +89,6 @@ timeSelectingBoard = TimeSelectingBoard(tabNoteBook, width=50, height=50, bg="bl
 settingBoard = SettingBoard(tabNoteBook, width=50, height=50, bg="black")
 systemLogBoard = SystemLogBoard(tabNoteBook, width=50, height=50, bg="white")
 
-# button = Button(tabNoteBook, text="ABC")
-
 tabNoteBook.add(mainBoard, text="主显示面")
 tabNoteBook.add(historyBoard, text="历史数据")
 tabNoteBook.add(controllingBoard, text="设备调试")
@@ -96,58 +96,39 @@ tabNoteBook.add(timeSelectingBoard, text="整点做样")
 tabNoteBook.add(settingBoard, text="参数设置")
 tabNoteBook.add(systemLogBoard, text="运行日志")
 
-# menuPanel = PanedWindow(bd=0, relief="raised", bg="red")
-# menuPanel.resizable(False, False)
-# menuPanel.pack(fill="both", expand=1)
-# left_label = Label(menuPanel, text="Left")
-# menuPanel.add(left_label)
+serName = '/dev/ttyUSB0'
+ser = serial.Serial(serName,timeout=0.2) 
 
-# mainPanel = PanedWindow(menuPanel, orient=VERTICAL,bd=0, relief="raised", bg="red")
-# # mainPanel.resizable(False, False)
-# menuPanel.add(mainPanel)
-# main_label = Label(mainPanel,text = "mainPanel")
-# mainPanel.add(main_label)
+bufControlling= [0x01,0x03,0x00,0x00,0x00,0x2e]
+crcCheck = crc16(bufControlling,0,len(bufControlling))
+bufControlling.append(crcCheck>>8)
+bufControlling.append(crcCheck&0xff)
 
+bufQuery= [0x01,0x03,0x00,0x81,0x00,0x1f]
+crcCheck = crc16(bufQuery,0,len(bufQuery))
+bufQuery.append(crcCheck>>8)
+bufQuery.append(crcCheck&0xff)
 
-# frame1 = Frame(master=root, width=100, height=100, bg="red")
-# frame1.pack()
+requestDeviceEvent = threading.Event()
+deviceController = DeviceController()
+deviceInfo = DeviceInfo()
 
-# frame2 = Frame(master=root, width=50, height=50, bg="yellow")
-# frame2.pack()
+def RequestDevice():
+  global deviceController,deviceInfo
+  while not requestDeviceEvent.wait(2):
+    ser.write(bufQuery)
+    queryRecv = ser.read(1000)
+    if checkBuffer(queryRecv,bufQuery):
+        deviceInfo.init = True
+        getBytesInfo(queryRecv,deviceInfo)
+    ser.write(bufControlling)
+    controllingRecv = ser.read(1000)
+    if checkBuffer(controllingRecv,bufControlling):
+        deviceController.init = True
+        getBytesControllingInfo(controllingRecv,deviceController)
 
-# frame3 = Frame(master=root, width=25, height=25, bg="blue")
-# frame3.pack()
-
-# testIndex = 0
-
-
-# def hello():
-#     global testIndex
-#     print(testIndex)
-#     if testIndex % 6 == 0:
-#         frame1.pack_forget()
-#     elif testIndex % 6 == 1:
-#         frame2.pack_forget()
-#     elif testIndex % 6 == 2:
-#         frame3.pack_forget()
-#     elif testIndex % 6 == 3:
-#         frame1.pack()
-#     elif testIndex % 6 == 4:
-#         frame2.pack()
-#     elif testIndex % 6 == 5:
-#         frame3.pack()
-#     testIndex += 1
-
-
-# PING_ON = threading.Event()
-
-# def ping():
-#   while not PING_ON.wait(1):
-#     print("my thread %s" % str(threading.current_thread().ident))
-#     hello()
-
-# t = threading.Thread(target=ping)
-# t.start()
+requestDeviceThread = threading.Thread(target=RequestDevice)
+requestDeviceThread.start()
 
 # Run forever!
 root.mainloop()
