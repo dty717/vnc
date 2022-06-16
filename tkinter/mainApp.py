@@ -3,12 +3,11 @@ from tkinter import ttk
 from PIL import Image
 import time
 import threading
-import serial
 
 from config.labelString import *
 from config.config import *
 from tool.crc import crc16,checkBuffer
-from service.device import *
+from service.device import sendReq,DeviceController,DeviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
@@ -96,9 +95,6 @@ tabNoteBook.add(timeSelectingBoard, text="整点做样")
 tabNoteBook.add(settingBoard, text="参数设置")
 tabNoteBook.add(systemLogBoard, text="运行日志")
 
-serName = '/dev/ttyUSB0'
-ser = serial.Serial(serName,timeout=0.2) 
-
 bufControlling= [0x01,0x03,0x00,0x00,0x00,0x2e]
 crcCheck = crc16(bufControlling,0,len(bufControlling))
 bufControlling.append(crcCheck>>8)
@@ -109,23 +105,25 @@ crcCheck = crc16(bufQuery,0,len(bufQuery))
 bufQuery.append(crcCheck>>8)
 bufQuery.append(crcCheck&0xff)
 
-requestDeviceEvent = threading.Event()
 deviceController = DeviceController()
 deviceInfo = DeviceInfo()
 
 def RequestDevice():
   global deviceController,deviceInfo
-  while not requestDeviceEvent.wait(2):
-    ser.write(bufQuery)
-    queryRecv = ser.read(1000)
-    if checkBuffer(queryRecv,bufQuery):
-        deviceInfo.init = True
-        getBytesInfo(queryRecv,deviceInfo)
-    ser.write(bufControlling)
-    controllingRecv = ser.read(1000)
-    if checkBuffer(controllingRecv,bufControlling):
-        deviceController.init = True
-        getBytesControllingInfo(controllingRecv,deviceController)
+  while not requestDeviceEvent.wait(1):
+    sendReq(bufQuery, lambda queryRecv : getBytesInfo(queryRecv,deviceInfo), 0, 0)
+    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController), 0, 0)
+    # print(deviceInfo.measureMinute)
+    # ser.write(bufQuery)
+    # queryRecv = ser.read(1000)
+    # if checkBuffer(queryRecv,bufQuery):
+    #     deviceInfo.init = True
+    #     getBytesInfo(queryRecv,deviceInfo)
+    # ser.write(bufControlling)
+    # controllingRecv = ser.read(1000)
+    # if checkBuffer(controllingRecv,bufControlling):
+    #     deviceController.init = True
+    #     getBytesControllingInfo(controllingRecv,deviceController)
 
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()

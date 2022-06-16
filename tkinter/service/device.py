@@ -1,4 +1,166 @@
 from enum import Enum
+import serial
+import time
+import threading
+from tkinter import messagebox
+from tool.crc import checkLen,checkCrc
+
+serName = '/dev/ttyUSB0'
+ser = serial.Serial(serName,timeout=0.2) 
+serialQueues = []
+sendBusy = False
+isSending = False
+lastTime = time.time()
+isBlocking = False
+requestDeviceEvent = threading.Event()
+class Logger:
+    def log(*args,**kargs):
+        print(args,kargs)
+
+class RequestData:
+    def __init__(self, sendBuf,callBack, repeatTimes ,needMesBox):
+        self.sendBuf = sendBuf
+        self.repeatTimes = repeatTimes
+        self.callBack = callBack
+        self.needMesBox = needMesBox
+
+def compare(arr1, arr2):
+    if len(arr1) == len(arr2):
+        for i in range(len(arr1)):
+            if arr1[i] != arr2[i]:
+                return False
+        return True
+    else:
+        return False    
+
+def sendReq(sendReqBuf, callBack, repeatTimes, needMesBox):
+    global sendBusy,lastTime,isSending,serialQueues
+    if (not isSending) and (len(serialQueues) == 0):
+        serialQueues.append(RequestData(sendReqBuf, callBack,repeatTimes,needMesBox))
+        send(sendReqBuf, callBack, repeatTimes, needMesBox)
+    else:
+        queuesCount = len(serialQueues)
+        for i in range(queuesCount):
+            if compare(serialQueues[i].sendBuf,sendReqBuf):
+                return
+        serialQueues.append(RequestData(sendReqBuf,callBack, repeatTimes,needMesBox));
+        if len(serialQueues) > 5:
+            serialQueues.clear()
+            isSending = False
+
+def send(sendReqBuf, callBack, repeatTimes, needMesBox):
+    global sendBusy,lastTime,isSending,serialQueues
+    if sendReqBuf[1] != 0x03:
+        sendBusy = True
+    lastTime = time.time()
+    if not request(sendReqBuf,callBack, needMesBox):
+        if repeatTimes > 0:
+            send(s, callBack, repeatTimes - 1, needMesBox)
+            return
+        else:
+            serialQueues.remove(serialQueues[0])
+    else:
+        serialQueues.remove(serialQueues[0])
+    isSending = False
+    if len(serialQueues)>0:
+        requestData = queues[0]
+        send(requestData.sendBuf, requestData.callBack, requestData.repeatTimes,requestData.needMesBox)
+
+def request(sendReqBuf,callBack ,needMesBox):
+    global isSending,isBlocking,lastTime
+    isSending = True
+    if not ser.is_open:
+        if isBlocking:
+            return True
+        else:
+            isBlocking = True
+        if needMesBox:
+            messagebox.showerror("通讯异常", _serialPort.PortName + "端口被占用或者未开启")
+        try:
+            ser.open()
+        except:
+            pass
+        isBlocking = False
+        return
+    _now = time.time()
+    try:
+        if _now - lastTime<1:
+            requestDeviceEvent.wait(lastTime+1-_now)
+        lastTime = time.time()
+        ser.flush()
+        ser.write(sendReqBuf)
+    except:
+        isSending = False
+        return False
+    recBytes = None
+    try:
+        recBytes = ser.read(1024)
+    except:
+        return False
+    isSending = False
+    return checkRecv(sendReqBuf,recBytes,callBack, needMesBox)
+
+def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
+    if sendReqBuf[1] ==0x03:
+        if len(recBytes)==0:
+            Logger.log("通讯异常", "设备问询无回复", "", 1200)
+            return False
+        if sendReqBuf[0]!=recBytes[0]:
+            Logger.log("通讯异常", "设备问询回复地址错误", "", 1200)
+            return False
+        if not checkCrc(recBytes):
+            Logger.log("通讯异常", "设备问询回复校验错误", "", 1200)
+            return False
+        if not checkLen(recBytes,(sendReqBuf[4]<<8)|sendReqBuf[5]):
+            Logger.log("通讯异常", "设备问询回复长度错误", "", 1200)
+            return False
+        try:
+            callBack(recBytes)
+        except Exception as e:
+            Logger.log("通讯异常", "设备问询解析异常", str(e).split('\n')[0].strip(), 1200)
+        return True
+    if len(recBytes)==0:
+        if needMesBox:
+            messagebox.showerror("通讯异常", "设备未反应")
+        Logger.log("通讯异常", "设备设置无回复", req[0] + " " + req[1] + " " + req[2] + " " + req[3] + " "+ req[4] + " " + req[5] + " ", 1200)
+        return False
+    if sendReqBuf[0]!=recBytes[0]:
+        if needMesBox:
+            messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
+        Logger.log("通讯异常", "设备设置回复地址错误", "", 1200)
+        return False
+    if not checkCrc(recBytes):
+        if needMesBox:
+            messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
+        Logger.log("通讯异常", "设备设置回复校验错误", "", 1200)
+        return False
+    equal = True
+    if sendReqBuf[1] == 0x06 or sendReqBuf[1] == 0x05:
+        if len(recBytes) != 8:
+            if (needMesBox):
+                messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
+            Logger.log("通讯异常", "设备设置回复长度错误", "", 1200);
+            return False    
+        for i in range(8):
+            if recBytes[i] != sendReqBuf[i]:
+                equal = False
+                break
+        if equal:
+            if needMesBox:
+                messagebox.showinfo("设置", "设置成功")
+            if callBack != None:
+                callBack(recBytes)
+            if (sendReqBuf[1] == 6 or (sendReqBuf[1] == 5 and (sendReqBuf[3] <= 0x58 and sendReqBuf[3] >= 0x35))):
+                Info.InfoHandle.saveSetting()
+        else:
+            if needMesBox:
+                messagebox.showerror("通讯异常", "设备未反应")
+            Logger.log("通讯异常", "设备设置回复错误", "", 1200)
+    elif req[1] == 0x10:
+        if callBack != None:
+            callBack(recBytes)
+    return equal
+
 class DeviceAddr(Enum):
     # DeviceController Addr
     modelSelectAddr = 0x00
@@ -244,7 +406,6 @@ def getBytesControllingInfo(buffer,deviceController):
         # print(deviceController)
     pass
 
-
 shiftAddr2 = 3 - 2 * DeviceAddr.concentration1ValueAddr.value
 def getBytesInfo(buffer,deviceInfo):
     if not deviceInfo.init:
@@ -342,9 +503,7 @@ def getBytesInfo(buffer,deviceInfo):
         _warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if _warningInfo != deviceInfo.warningInfo:
             deviceInfo.warningInfo = _warningInfo
-        print(deviceInfo)
+        # print(deviceInfo)
     pass
 
 
-
-    
