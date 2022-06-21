@@ -4,6 +4,7 @@ import time
 import threading
 from tkinter import messagebox
 from tool.crc import checkLen,checkCrc
+from service.logger import Logger
 
 serName = '/dev/ttyUSB0'
 ser = serial.Serial(serName,timeout=0.2) 
@@ -13,9 +14,7 @@ isSending = False
 lastTime = time.time()
 isBlocking = False
 requestDeviceEvent = threading.Event()
-class Logger:
-    def log(*args,**kargs):
-        print(args,kargs)
+
 
 class RequestData:
     def __init__(self, sendBuf,callBack, repeatTimes ,needMesBox):

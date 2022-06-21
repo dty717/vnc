@@ -7,6 +7,7 @@ import threading
 from config.labelString import *
 from config.config import *
 from tool.crc import crc16,checkBuffer
+from service.logger import Logger
 from service.device import sendReq,DeviceController,DeviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -15,6 +16,7 @@ from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
 
+Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
 root = Tk()
 screenWidth = root.winfo_screenwidth()

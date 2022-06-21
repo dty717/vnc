@@ -9,3 +9,8 @@ You can change host in index.html ,e.x. localhost:1024, 192.168.8.100:5900
 Disclaimer
 ----------
 This project was developed over 24 sleep deprived hours, the code is messy and undocumented.
+
+
+enable x11vnc
+https://github.com/acrobotic/Ai_Demos_pcDuino/issues/1
+https://www.randomdevstuff.com/install-x11vnc-on-raspberrypi/
