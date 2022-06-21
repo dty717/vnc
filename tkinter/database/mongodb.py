@@ -19,6 +19,10 @@ def dbLogging(currentTime,systemType,info,otherInfo):
         "otherInfo": otherInfo
     })
 
+def dbGetLogging(logQuery ={},page = 0 , nPerPage = 30):
+    deviceLog = dbDeviceLog.find(logQuery)
+    return deviceLog.skip(page * nPerPage).limit(nPerPage)
+
 # Issue the serverStatus command and print the results
 # serverStatusResult=db.command("serverStatus")
 # pprint(serverStatusResult)

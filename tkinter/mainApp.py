@@ -30,6 +30,9 @@ styleConfig = ttk.Style()
 # 'ne' as in compass direction
 styleConfig.configure('TNotebook', tabposition='wn',background="blue")
 styleConfig.configure('TNotebook.Tab',background="white", font=("Helvetica", 16))
+styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
+styleConfig.map('Treeview',background = [('selected','red')])
+
 
 images = (
     PhotoImage("img_close", data='''
@@ -96,6 +99,17 @@ tabNoteBook.add(controllingBoard, text="设备调试")
 tabNoteBook.add(timeSelectingBoard, text="整点做样")
 tabNoteBook.add(settingBoard, text="参数设置")
 tabNoteBook.add(systemLogBoard, text="运行日志")
+
+def changeNotebookTab(event):
+    currentNoteBook = tabNoteBook.select()
+    if currentNoteBook == ".!notebook.!systemlogboard":
+        # print("systemLogBoard fresh")
+        systemLogBoard.refreshPage()
+    elif  currentNoteBook == ".!notebook.!historyboard":
+        print("historyBoard fresh")
+
+tabNoteBook.bind("<<NotebookTabChanged>>", changeNotebookTab)
+
 
 bufControlling= [0x01,0x03,0x00,0x00,0x00,0x2e]
 crcCheck = crc16(bufControlling,0,len(bufControlling))
