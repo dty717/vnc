@@ -12,5 +12,11 @@ This project was developed over 24 sleep deprived hours, the code is messy and u
 
 
 enable x11vnc
+
 https://github.com/acrobotic/Ai_Demos_pcDuino/issues/1
+
 https://www.randomdevstuff.com/install-x11vnc-on-raspberrypi/
+
+
+add imagetk
+apt-get install python3-pil.imagetk # Note that python3-pil installed as a dependency

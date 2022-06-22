@@ -9,7 +9,10 @@ dbClient = MongoClient("mongodb://admin:SUPERSECRETPASSWORD@localhost:27017/")
 dbSmartFloating = dbClient.SmartFloating
 
 dbDeviceLog = dbSmartFloating.DeviceLog
-
+dbDeviceHistory = dbSmartFloating.SmartFloatingHistories
+dbConcentration1History = dbSmartFloating.Concentration1Histories
+dbConcentration2History = dbSmartFloating.Concentration2Histories
+dbConcentration3History = dbSmartFloating.Concentration3Histories
 
 def dbLogging(currentTime,systemType,info,otherInfo):
     dbDeviceLog.insert_one({
@@ -22,6 +25,60 @@ def dbLogging(currentTime,systemType,info,otherInfo):
 def dbGetLogging(logQuery ={},page = 0 , nPerPage = 30):
     deviceLog = dbDeviceLog.find(logQuery)
     return deviceLog.skip(page * nPerPage).limit(nPerPage)
+
+def dbSaveHistory(currentTime,value,maxValue,AValue,CValue):
+    dbDeviceHistory.insert_one({
+        "time": currentTime,
+        "value": value,
+        "maxValue": maxValue,
+        "AValue": AValue,
+        "CValue": CValue
+    })
+
+def dbGetHistory(logQuery ={},page = 0 , nPerPage = 30):
+    deviceHistory = dbDeviceHistory.find(logQuery)
+    return deviceHistory.skip(page * nPerPage).limit(nPerPage)
+
+
+def dbSaveConcentration1History(currentTime,value,maxValue,AValue,CValue):
+    dbConcentration1History.insert_one({
+        "time": currentTime,
+        "value": value,
+        "maxValue": maxValue,
+        "AValue": AValue,
+        "CValue": CValue
+    })
+
+def dbGetConcentration1History(logQuery ={},page = 0 , nPerPage = 30):
+    concentration1History = dbConcentration1History.find(logQuery)
+    return concentration1History.skip(page * nPerPage).limit(nPerPage)
+
+def dbSaveConcentration2History(currentTime,value,maxValue,AValue,CValue):
+    dbConcentration2History.insert_one({
+        "time": currentTime,
+        "value": value,
+        "maxValue": maxValue,
+        "AValue": AValue,
+        "CValue": CValue
+    })
+
+def dbGetConcentration2History(logQuery ={},page = 0 , nPerPage = 30):
+    concentration2History = dbConcentration2History.find(logQuery)
+    return concentration2History.skip(page * nPerPage).limit(nPerPage)
+
+def dbSaveConcentration3History(currentTime,value,maxValue,AValue,CValue):
+    dbConcentration3History.insert_one({
+        "time": currentTime,
+        "value": value,
+        "maxValue": maxValue,
+        "AValue": AValue,
+        "CValue": CValue
+    })
+
+def dbGetConcentration3History(logQuery ={},page = 0 , nPerPage = 30):
+    concentration3History = dbConcentration3History.find(logQuery)
+    return concentration3History.skip(page * nPerPage).limit(nPerPage)
+
 
 # Issue the serverStatus command and print the results
 # serverStatusResult=db.command("serverStatus")

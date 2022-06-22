@@ -1,20 +1,20 @@
 from tkinter import *
 from tkinter import ttk
 from PIL import Image
-from config.config import *
+from config.config import sysPath
 
 class SwitchLabelButton(Frame):
-    def __init__(self, parent ,imgDicts):
+    def __init__(self, parent ,imgDicts, text = "" , textYES = "YES" ,textNO = "NO",clickYES = lambda : 0,clickNO = lambda : 0, ):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="red")
-        label = Label(self, text="Hello World", fg="black", bg="white")
+        label = Label(self, text=text, fg="black", bg="white")
         label.pack(side="left", fill="x")
         imageLabel = Label(self,image=imgDicts["redSignal"])
         imageLabel.pack(side="left", fill="x")
-        button_yes = Button(self, text="YES")
+        button_yes = Button(self, text=textYES , command = clickYES)
         button_yes.pack(side="left", fill="x")
-        button_no = Button(self, text="NO")
+        button_no = Button(self, text=textNO, command = clickNO)
         button_no.pack(side="left", fill="x")
         # img = PhotoImage(master = parent, file = f"{sysPath}/assets/1.png")
         # label2 = Label(self, image=img)

@@ -5,16 +5,18 @@ import time
 import threading
 
 from config.labelString import *
-from config.config import *
+from config.config import sysPath
 from tool.crc import crc16,checkBuffer
 from service.logger import Logger
-from service.device import sendReq,DeviceController,DeviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent
+from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
 from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
+from page.cameraBoard import CameraBoard
+from page.locationBoard import LocationBoard
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
@@ -28,11 +30,10 @@ root.title(titleLabel)
 root.configure(background="#1fa1af")
 styleConfig = ttk.Style()
 # 'ne' as in compass direction
-styleConfig.configure('TNotebook', tabposition='wn',background="blue")
-styleConfig.configure('TNotebook.Tab',background="white", font=("Helvetica", 16))
+styleConfig.configure('MainMenu', tabposition='wn',background="blue")
+styleConfig.configure('MainMenu.Tab',background="white", font=("Helvetica", 16))
 styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
 styleConfig.map('Treeview',background = [('selected','red')])
-
 
 images = (
     PhotoImage("img_close", data='''
@@ -54,23 +55,23 @@ styleConfig.element_create("close", "image", "img_close",
                            ("active", "pressed", "!disabled", "img_closepressed"),
                            ("active", "!disabled", "img_closeactive"), width = 130, padding = 30,sticky='')
 
-styleConfig.layout("TNotebook", [
-                   ("TNotebook.client", {"sticky": "nswe"})])
-styleConfig.layout("TNotebook.Tab", [
-    ("TNotebook.tab", {
+styleConfig.layout("MainMenu", [
+                   ("MainMenu.client", {"sticky": "nswe"})])
+styleConfig.layout("MainMenu.Tab", [
+    ("MainMenu.tab", {
         "sticky": "nswe",
         "children": [
-            ("TNotebook.padding", {
+            ("MainMenu.padding", {
                 "side": "top",
                         "sticky": "nswe",
                         "children": [
-                            ("TNotebook.focus", {
+                            ("MainMenu.focus", {
                                 "side": "top",
                                 "sticky": "nswe",
                                 "children": [
-                                    ("TNotebook.label", {
+                                    ("MainMenu.label", {
                                      "side": "left", "sticky": ''}),
-                                    ("TNotebook.close", {
+                                    ("MainMenu.close", {
                                      "side": "left", "sticky": ''}),
                                 ]
                             })
@@ -83,33 +84,43 @@ styleConfig.layout("TNotebook.Tab", [
 redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
 greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
 
-tabNoteBook = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10)
-tabNoteBook.pack()
+mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10,style = "MainMenu")
+mainMenu.pack()
 
-mainBoard = MainBoard(tabNoteBook,width=50, height=50, bg="red")
-historyBoard = HistoryBoard(tabNoteBook, width=50, height=50, bg="yellow")
-controllingBoard = ControllingBoard(tabNoteBook,{"greenSignal":greenSignal,"redSignal":redSignal}, width=50, height=50, bg="green")
-timeSelectingBoard = TimeSelectingBoard(tabNoteBook, width=50, height=50, bg="blue")
-settingBoard = SettingBoard(tabNoteBook, width=50, height=50, bg="black")
-systemLogBoard = SystemLogBoard(tabNoteBook, width=50, height=50, bg="white")
+mainBoard = MainBoard(mainMenu,width=50, height=50, bg="red")
+historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="yellow")
+controllingBoard = ControllingBoard(mainMenu,{"greenSignal":greenSignal,"redSignal":redSignal}, width=50, height=50, bg="green")
+timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="blue")
+settingBoard = SettingBoard(mainMenu, width=50, height=50, bg="black")
+systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg="white")
+cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg="white")
+locationBoard = LocationBoard(mainMenu, width=50, height=50, bg="white")
 
-tabNoteBook.add(mainBoard, text="主显示面")
-tabNoteBook.add(historyBoard, text="历史数据")
-tabNoteBook.add(controllingBoard, text="设备调试")
-tabNoteBook.add(timeSelectingBoard, text="整点做样")
-tabNoteBook.add(settingBoard, text="参数设置")
-tabNoteBook.add(systemLogBoard, text="运行日志")
+mainMenu.add(mainBoard, text="主显示面")
+mainMenu.add(historyBoard, text="历史数据")
+mainMenu.add(controllingBoard, text="设备调试")
+mainMenu.add(timeSelectingBoard, text="整点做样")
+mainMenu.add(settingBoard, text="参数设置")
+mainMenu.add(systemLogBoard, text="运行日志")
+mainMenu.add(cameraBoard, text="视频监控")
+mainMenu.add(locationBoard, text="位置监测")
 
-def changeNotebookTab(event):
-    currentNoteBook = tabNoteBook.select()
-    if currentNoteBook == ".!notebook.!systemlogboard":
-        # print("systemLogBoard fresh")
+lastMenu = ".!notebook.!mainboard"
+
+def changeMenuTab(event):
+    global lastMenu
+    currentMenu = mainMenu.select()
+    if lastMenu == ".!notebook.!cameraboard" and currentMenu != ".!notebook.!cameraboard":
+        cameraBoard.pauseLoop()
+    lastMenu = currentMenu
+    if currentMenu == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
-    elif  currentNoteBook == ".!notebook.!historyboard":
-        print("historyBoard fresh")
+    elif  currentMenu == ".!notebook.!historyboard":
+        historyBoard.refreshPage()
+    elif  currentMenu == ".!notebook.!cameraboard":
+        cameraBoard.continueLoop()
 
-tabNoteBook.bind("<<NotebookTabChanged>>", changeNotebookTab)
-
+mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
 
 bufControlling= [0x01,0x03,0x00,0x00,0x00,0x2e]
 crcCheck = crc16(bufControlling,0,len(bufControlling))
@@ -121,14 +132,12 @@ crcCheck = crc16(bufQuery,0,len(bufQuery))
 bufQuery.append(crcCheck>>8)
 bufQuery.append(crcCheck&0xff)
 
-deviceController = DeviceController()
-deviceInfo = DeviceInfo()
 
 def RequestDevice():
   global deviceController,deviceInfo
-  while not requestDeviceEvent.wait(1):
-    sendReq(bufQuery, lambda queryRecv : getBytesInfo(queryRecv,deviceInfo), 0, 0)
-    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController), 0, 0)
+  while not requestDeviceEvent.wait(140):
+    sendReq(bufQuery, lambda queryRecv : getBytesInfo(queryRecv,deviceInfo), repeatTimes = 0 , needMesBox = False)
+    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController), repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)

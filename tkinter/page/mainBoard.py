@@ -1,7 +1,9 @@
 from tkinter import *
+from tkinter import messagebox
 from tkinter import ttk
 from datetime import datetime
 from components.table import SimpleTable
+from service.device import write_single_register,DeviceAddr,deviceInfo,deviceController
 
 mainText = None
 
@@ -9,6 +11,7 @@ mainText = None
 
 
 def test():
+    messagebox.showinfo("设置", str(deviceController))
     updateMainDate(2022,12,12,1,1,32,121.2112,0)
 
 def stateString(state):
