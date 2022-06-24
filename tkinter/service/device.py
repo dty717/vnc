@@ -6,12 +6,10 @@ import os
 from tkinter import messagebox
 from enum import Enum
 
-from config.config import sysPath
+from config.config import sysPath,serName,__unitIdentifier
 from tool.crc import checkLen,checkCrc,crc16
 from service.logger import Logger
 
-serName = '/dev/ttyUSB0'
-__unitIdentifier = 0x01
 ser = serial.Serial(serName,timeout=0.2) 
 serialQueues = []
 sendBusy = False
@@ -160,7 +158,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
             if needMesBox:
                 messagebox.showerror("通讯异常", "设备未反应")
             Logger.log("通讯异常", "设备设置回复错误", "", 1200)
-    elif req[1] == 0x10:
+    elif sendReqBuf[1] == 0x10:
         if callBack != None:
             callBack(recBytes)
     return equal
@@ -193,14 +191,33 @@ def write_single_register(starting_address, value, callBack, repeatTimes, needMe
     data.append(crcCheck&0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
+
+def write_multiple_registers(starting_address, values, callBack, repeatTimes, needMesBox):
+    function_code = 16
+    starting_address_lsb = (starting_address & 0xFF)
+    starting_address_msb = ((starting_address & 0xFF00) >> 8)
+    # valueLSB = (value & 0xFF)
+    # valueMSB = ((value & 0xFF00) >> 8)
+    quantityLSB = len(values) & 0xFF
+    quantityMSB = (len(values) & 0xFF00) >> 8
+    data = [__unitIdentifier, function_code, starting_address_msb, starting_address_lsb, quantityMSB, quantityLSB]
+    data.append(len(values) * 2)
+    for value in values:
+        data.append((value & 0xFF00) >> 8)
+        data.append(value & 0xFF)
+    crcCheck = crc16(data,0,len(data))
+    data.append(crcCheck>>8)
+    data.append(crcCheck&0xff)
+    sendReq(data, callBack, repeatTimes, needMesBox)
+
 class DeviceAddr(Enum):
     # DeviceController Addr
     modelSelectAddr = 0x00
     operationSelectAddr = 0x01
     selectingHoursAddr = 0x02
-    daySelectAddr = 0x1a
-    hourSelectAddr = 0x1b
-    minuteSelectAddr = 0x1c
+    calibrateDayAddr = 0x1a
+    calibrateHourAddr = 0x1b
+    calibrateMinuteAddr = 0x1c
     immediateCalibrateAddr = 0x1d
     concentration1SettingValueAddr = 0x1e
     concentration2SettingValueAddr = 0x20
@@ -245,20 +262,20 @@ class DeviceController:
     modelSelect = 0
     operationSelect = 0
     selectingHours = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    daySelect = 0
-    hourSelect = 0
-    minuteSelect = 0
+    calibrateDay = 0
+    calibrateHour = 0
+    calibrateMinute = 0
     immediateCalibrate = 0
     concentration1SettingValue = 0
     concentration2SettingValue = 0
     concentration3SettingValue = 0
     samplePump = 0
-    concentration1Add = 0
-    concentration2Add = 0
-    concentration3Add = 0
-    chemical1Add = 0
-    chemical2Add = 0
-    chemical3Add = 0
+    concentration1Pump = 0
+    concentration2Pump = 0
+    concentration3Pump = 0
+    chemical1Pump = 0
+    chemical2Pump = 0
+    chemical3Pump = 0
     reactionTubeClean = 0
     suctionClean = 0
     measurementInterval = 0
@@ -268,26 +285,26 @@ class DeviceController:
 modelSelect = {}
 operationSelect = {}
 selectingHours = {}
-daySelect = {}
-hourSelect = {}
-minuteSelect = {}
+calibrateDay = {}
+calibrateHour = {}
+calibrateMinute = {}
 immediateCalibrate = {}
 concentration1SettingValue = {}
 concentration2SettingValue = {}
 concentration3SettingValue = {}
 samplePump = {}
-concentration1Add = {}
-concentration2Add = {}
-concentration3Add = {}
-chemical1Add = {}
-chemical2Add = {}
-chemical3Add = {}
+concentration1Pump = {}
+concentration2Pump = {}
+concentration3Pump = {}
+chemical1Pump = {}
+chemical2Pump = {}
+chemical3Pump = {}
 reactionTubeClean = {}
 suctionClean = {}
-measurementInterval = {}""".format(self.init,self.modelSelect,self.operationSelect,self.selectingHours,self.daySelect,self.hourSelect,self.minuteSelect,
+measurementInterval = {}""".format(self.init,self.modelSelect,self.operationSelect,self.selectingHours,self.calibrateDay,self.calibrateHour,self.calibrateMinute,
             self.immediateCalibrate,self.concentration1SettingValue,self.concentration2SettingValue,
-            self.concentration3SettingValue,self.samplePump,self.concentration1Add,self.concentration2Add,
-            self.concentration3Add,self.chemical1Add,self.chemical2Add,self.chemical3Add,self.reactionTubeClean,
+            self.concentration3SettingValue,self.samplePump,self.concentration1Pump,self.concentration2Pump,
+            self.concentration3Pump,self.chemical1Pump,self.chemical2Pump,self.chemical3Pump,self.reactionTubeClean,
             self.suctionClean,self.measurementInterval)
 
 class DeviceInfo:
@@ -355,20 +372,20 @@ def getBytesControllingInfo(buffer,deviceController):
         deviceController.operationSelect = (buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value + 1]
         for i in range(24):
             deviceController.selectingHours[i] = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)] <<8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
-        deviceController.daySelect = (buffer[shiftAddr + 2 * DeviceAddr.daySelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.daySelectAddr.value + 1]
-        deviceController.hourSelect = (buffer[shiftAddr + 2 * DeviceAddr.hourSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.hourSelectAddr.value + 1]
-        deviceController.minuteSelect = (buffer[shiftAddr + 2 * DeviceAddr.minuteSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.minuteSelectAddr.value + 1]
+        deviceController.calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
+        deviceController.calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
+        deviceController.calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
         deviceController.immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
         deviceController.concentration1SettingValue = (buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value + 1]
         deviceController.concentration2SettingValue = (buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value + 1]
         deviceController.concentration3SettingValue = (buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value + 1]
         deviceController.samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
-        deviceController.concentration1Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
-        deviceController.concentration2Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
-        deviceController.concentration3Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
-        deviceController.chemical1Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
-        deviceController.chemical2Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
-        deviceController.chemical3Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
+        deviceController.concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
+        deviceController.concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
+        deviceController.concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
+        deviceController.chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
+        deviceController.chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
+        deviceController.chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
         deviceController.reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
         deviceController.suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
         deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
@@ -383,15 +400,15 @@ def getBytesControllingInfo(buffer,deviceController):
             _selectingHours = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)] <<8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
             if _selectingHours != deviceController.selectingHours[i]:
                 deviceController.selectingHours[i] = _selectingHours
-        _daySelect = (buffer[shiftAddr + 2 * DeviceAddr.daySelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.daySelectAddr.value + 1]
-        if _daySelect != deviceController.daySelect:
-            deviceController.daySelect = _daySelect
-        _hourSelect = (buffer[shiftAddr + 2 * DeviceAddr.hourSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.hourSelectAddr.value + 1]
-        if _hourSelect != deviceController.hourSelect:
-            deviceController.hourSelect = _hourSelect
-        _minuteSelect = (buffer[shiftAddr + 2 * DeviceAddr.minuteSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.minuteSelectAddr.value + 1]
-        if _minuteSelect != deviceController.minuteSelect:
-            deviceController.minuteSelect = _minuteSelect
+        _calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
+        if _calibrateDay != deviceController.calibrateDay:
+            deviceController.calibrateDay = _calibrateDay
+        _calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
+        if _calibrateHour != deviceController.calibrateHour:
+            deviceController.calibrateHour = _calibrateHour
+        _calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
+        if _calibrateMinute != deviceController.calibrateMinute:
+            deviceController.calibrateMinute = _calibrateMinute
         _immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
         if _immediateCalibrate != deviceController.immediateCalibrate:
             deviceController.immediateCalibrate = _immediateCalibrate
@@ -407,24 +424,24 @@ def getBytesControllingInfo(buffer,deviceController):
         _samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
         if _samplePump != deviceController.samplePump:
             deviceController.samplePump = _samplePump
-        _concentration1Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
-        if _concentration1Add != deviceController.concentration1Add:
-            deviceController.concentration1Add = _concentration1Add
-        _concentration2Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
-        if _concentration2Add != deviceController.concentration2Add:
-            deviceController.concentration2Add = _concentration2Add
-        _concentration3Add = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
-        if _concentration3Add != deviceController.concentration3Add:
-            deviceController.concentration3Add = _concentration3Add
-        _chemical1Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
-        if _chemical1Add != deviceController.chemical1Add:
-            deviceController.chemical1Add = _chemical1Add
-        _chemical2Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
-        if _chemical2Add != deviceController.chemical2Add:
-            deviceController.chemical2Add = _chemical2Add
-        _chemical3Add = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
-        if _chemical3Add != deviceController.chemical3Add:
-            deviceController.chemical3Add = _chemical3Add
+        _concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
+        if _concentration1Pump != deviceController.concentration1Pump:
+            deviceController.concentration1Pump = _concentration1Pump
+        _concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
+        if _concentration2Pump != deviceController.concentration2Pump:
+            deviceController.concentration2Pump = _concentration2Pump
+        _concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
+        if _concentration3Pump != deviceController.concentration3Pump:
+            deviceController.concentration3Pump = _concentration3Pump
+        _chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
+        if _chemical1Pump != deviceController.chemical1Pump:
+            deviceController.chemical1Pump = _chemical1Pump
+        _chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
+        if _chemical2Pump != deviceController.chemical2Pump:
+            deviceController.chemical2Pump = _chemical2Pump
+        _chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
+        if _chemical3Pump != deviceController.chemical3Pump:
+            deviceController.chemical3Pump = _chemical3Pump
         _reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
         if _reactionTubeClean != deviceController.reactionTubeClean:
             deviceController.reactionTubeClean = _reactionTubeClean
@@ -536,10 +553,7 @@ def getBytesInfo(buffer,deviceInfo):
             deviceInfo.warningInfo = _warningInfo
         # print(deviceInfo)
     pass
-    
-# f_deviceInfo = open(f"{sysPath}/deviceInfo.json", "w")
-# f_deviceInfo.write(jsonpickle.encode(deviceInfo))
-# f_deviceInfo.close()
+
 
 if os.path.exists(f"{sysPath}/deviceController.json"):
     f_deviceController = open(f"{sysPath}/deviceController.json", "r")
@@ -553,3 +567,7 @@ if os.path.exists(f"{sysPath}/deviceInfo.json"):
     deviceInfo.init = False
 else:
     deviceInfo = DeviceInfo()
+
+
+# deviceController = DeviceController()
+# deviceInfo = DeviceInfo()

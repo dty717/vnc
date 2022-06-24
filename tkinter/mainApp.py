@@ -83,15 +83,15 @@ styleConfig.layout("MainMenu.Tab", [
 
 redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
 greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
-
+imgDicts = {"greenSignal":greenSignal,"redSignal":redSignal}
 mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10,style = "MainMenu")
 mainMenu.pack()
 
 mainBoard = MainBoard(mainMenu,width=50, height=50, bg="red")
 historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="yellow")
-controllingBoard = ControllingBoard(mainMenu,{"greenSignal":greenSignal,"redSignal":redSignal}, width=50, height=50, bg="green")
+controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg="green")
 timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="blue")
-settingBoard = SettingBoard(mainMenu, width=50, height=50, bg="black")
+settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg="black")
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg="white")
 cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg="white")
 locationBoard = LocationBoard(mainMenu, width=50, height=50, bg="white")

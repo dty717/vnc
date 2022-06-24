@@ -11,6 +11,10 @@ Disclaimer
 This project was developed over 24 sleep deprived hours, the code is messy and undocumented.
 
 
+matchbox keyboard
+
+sudo nano /usr/share/matchbox-keyboard/keyboard.xml
+
 enable x11vnc
 
 https://github.com/acrobotic/Ai_Demos_pcDuino/issues/1

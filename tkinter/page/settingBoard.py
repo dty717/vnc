@@ -1,39 +1,70 @@
 from tkinter import *
 from tkinter import ttk
 from components.groupLabelButton import GroupLabelButton
-from components.labelButton import LabelTextButton
+from components.labelButton import LabelTextButton,SwitchLabelButton
 from PIL import Image
+
 from config.config import *
+from service.device import write_single_register,DeviceAddr,deviceInfo,deviceController
 
 class SettingBoard(Frame):
-    def __init__(self, master,**kargs):
+    def __init__(self, master,imgDicts,**kargs):
         super().__init__(master,kargs)
         # 
-        #groupLabelButton1
+        #calibrateTimeGroup
         #  
-        groupLabelButton1 = GroupLabelButton(self)
-        groupLabelButton1.pack()
-        labelTextButton10 = LabelTextButton(groupLabelButton1)
-        labelTextButton10.pack()
-        labelTextButton11 = LabelTextButton(groupLabelButton1)
-        labelTextButton11.pack()
-        labelTextButton12 = LabelTextButton(groupLabelButton1)
-        labelTextButton12.pack()
-        labelTextButton13 = LabelTextButton(groupLabelButton1)
-        labelTextButton13.pack()
+        calibrateTimeGroup = GroupLabelButton(self,title = "标定时间")
+        calibrateTimeGroup.pack()
+        calibrateDayLabelText = LabelTextButton(calibrateTimeGroup,text="标定日",
+            command = lambda content:write_single_register(DeviceAddr.calibrateDayAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'calibrateDay',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        calibrateDayLabelText.pack()
+        calibrateHourLabelText = LabelTextButton(calibrateTimeGroup,text="标定时",
+            command = lambda content:write_single_register(DeviceAddr.calibrateHourAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'calibrateHour',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        calibrateHourLabelText.pack()
+        calibrateMinuteLabelText = LabelTextButton(calibrateTimeGroup,text="标定分",
+            command = lambda content:write_single_register(DeviceAddr.calibrateMinuteAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'calibrateMinute',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        calibrateMinuteLabelText.pack()
+        switchImmediateCalibrate = SwitchLabelButton(calibrateTimeGroup,imgDicts,text = "立即标定" , 
+            textYES = "开始" , clickYES = lambda :write_single_register(DeviceAddr.immediateCalibrateAddr.value,1, lambda rec:setattr(deviceController,'immediateCalibrate',1) or switchImmediateCalibrate.open(), repeatTimes = 0 , needMesBox = True),
+            textNO = "取消" , clickNO = lambda :write_single_register(DeviceAddr.immediateCalibrateAddr.value,0, lambda rec:setattr(deviceController,'immediateCalibrate',0)or switchImmediateCalibrate.close(), repeatTimes = 0 , needMesBox = True),
+        )
+        switchImmediateCalibrate.pack()
         # 
-        #groupLabelButton2
-        #  
-        groupLabelButton2 = GroupLabelButton(self)
-        groupLabelButton2.pack(side="left", fill="x")
-        labelTextButton20 = LabelTextButton(groupLabelButton2)
-        labelTextButton20.pack()
-        labelTextButton21 = LabelTextButton(groupLabelButton2)
-        labelTextButton21.pack()
-        labelTextButton22 = LabelTextButton(groupLabelButton2)
-        labelTextButton22.pack()
-        labelTextButton23 = LabelTextButton(groupLabelButton2)
-        labelTextButton23.pack()
+        #concentrationSettingValueGroup
+        # 
+        concentrationSettingValueGroup = GroupLabelButton(self,title = "标定浓度")
+        concentrationSettingValueGroup.pack(pady = 20)
+        concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标一浓度",
+            command = lambda content:write_single_register(DeviceAddr.concentration1SettingValueAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'concentration1SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        concentration1SettingValueLabelText.pack()
+        concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标二浓度",
+            command = lambda content:write_single_register(DeviceAddr.concentration2SettingValueAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'concentration2SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        concentration2SettingValueLabelText.pack()
+        concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标三浓度",
+            command = lambda content:write_single_register(DeviceAddr.concentration3SettingValueAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'concentration3SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        concentration3SettingValueLabelText.pack()
+        # 
+        #sampleTimeGroup
+        # 
+        sampleTimeGroup = GroupLabelButton(self,title = "做样时间")
+        sampleTimeGroup.pack(pady = 20)
+        measurementIntervalLabelText = LabelTextButton(sampleTimeGroup,text="间隔时间",
+            command = lambda content:write_single_register(DeviceAddr.measurementIntervalAddr.value,int(float(content)), 
+                                            lambda rec:setattr(deviceController,'measurementInterval',int(float(content))), repeatTimes = 0 , needMesBox = True)
+        )
+        measurementIntervalLabelText.pack()
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()
