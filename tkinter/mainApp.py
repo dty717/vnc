@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 from PIL import Image
 import time
 import threading
@@ -87,7 +88,12 @@ imgDicts = {"greenSignal":greenSignal,"redSignal":redSignal}
 mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10,style = "MainMenu")
 mainMenu.pack()
 
-mainBoard = MainBoard(mainMenu,width=50, height=50, bg="red")
+mainBoard = MainBoard(mainMenu,header=['', '基值', '峰值', 'A值', 'C值'], data=[
+    ['标一', deviceInfo.concentration1Value,deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue,deviceInfo.concentration1CValue],
+    ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
+    ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
+    ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]],
+    width=50, height=50, bg="red")
 historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="yellow")
 controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg="green")
 timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="blue")
@@ -116,7 +122,8 @@ def changeMenuTab(event):
     if currentMenu == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
     elif  currentMenu == ".!notebook.!historyboard":
-        historyBoard.refreshPage()
+        # historyBoard.refreshPage()
+        pass
     elif  currentMenu == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 

@@ -39,6 +39,8 @@ def dbGetHistory(logQuery ={},page = 0 , nPerPage = 30):
     deviceHistory = dbDeviceHistory.find(logQuery)
     return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
+def dbGetLastHistory():
+    return dbDeviceHistory.find({}).sort('time', -1).limit(1)
 
 def dbSaveConcentration1History(currentTime,value,maxValue,AValue,CValue):
     dbConcentration1History.insert_one({

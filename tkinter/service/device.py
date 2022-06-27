@@ -179,6 +179,22 @@ def saveSetting():
     f_deviceInfo.close()
     return
 
+def write_single_coil(starting_address, value, callBack, repeatTimes, needMesBox):
+    function_code = 6
+    starting_address_lsb = (starting_address & 0xFF)
+    starting_address_msb = ((starting_address & 0xFF00) >> 8)
+    if value:
+        valueLSB = 0
+        valueMSB = (0xFF00 >> 8)
+    else:
+        valueLSB = 0
+        valueMSB = (0 >> 8)
+    data = [__unitIdentifier, function_code, starting_address_msb, starting_address_lsb, valueMSB, valueLSB]
+    crcCheck = crc16(data,0,len(data))
+    data.append(crcCheck>>8)
+    data.append(crcCheck&0xff)
+    sendReq(data, callBack, repeatTimes, needMesBox)
+
 def write_single_register(starting_address, value, callBack, repeatTimes, needMesBox):
     function_code = 6
     starting_address_lsb = (starting_address & 0xFF)
