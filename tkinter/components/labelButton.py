@@ -40,6 +40,6 @@ class LabelTextButton(Frame):
         # img = PhotoImage(master = parent, file = f"{sysPath}/assets/1.png")
         # label2 = Label(self, image=img)
         # label2.pack()
-    def set(self, row, column, value):
-        widget = self._widgets[row][column]
-        widget.configure(text=value)
+    def setText(self, value):
+        self.text.delete(0, END)
+        self.text.insert(0,value)

@@ -274,27 +274,28 @@ class DeviceAddr(Enum):
     warningInfoAddr = 0x9f
 
 class DeviceController:
-    init = False
-    modelSelect = 0
-    operationSelect = 0
-    selectingHours = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
-    calibrateDay = 0
-    calibrateHour = 0
-    calibrateMinute = 0
-    immediateCalibrate = 0
-    concentration1SettingValue = 0
-    concentration2SettingValue = 0
-    concentration3SettingValue = 0
-    samplePump = 0
-    concentration1Pump = 0
-    concentration2Pump = 0
-    concentration3Pump = 0
-    chemical1Pump = 0
-    chemical2Pump = 0
-    chemical3Pump = 0
-    reactionTubeClean = 0
-    suctionClean = 0
-    measurementInterval = 0
+    def __init__(self):
+        self.init = False
+        self.modelSelect = 0
+        self.operationSelect = 0
+        self.selectingHours = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.calibrateDay = 0
+        self.calibrateHour = 0
+        self.calibrateMinute = 0
+        self.immediateCalibrate = 0
+        self.concentration1SettingValue = 0
+        self.concentration2SettingValue = 0
+        self.concentration3SettingValue = 0
+        self.samplePump = 0
+        self.concentration1Pump = 0
+        self.concentration2Pump = 0
+        self.concentration3Pump = 0
+        self.chemical1Pump = 0
+        self.chemical2Pump = 0
+        self.chemical3Pump = 0
+        self.reactionTubeClean = 0
+        self.suctionClean = 0
+        self.measurementInterval = 0
     # 
     def __str__(self):
         return """init = {}
@@ -324,30 +325,31 @@ measurementInterval = {}""".format(self.init,self.modelSelect,self.operationSele
             self.suctionClean,self.measurementInterval)
 
 class DeviceInfo:
-    init = False
-    concentration1Value = 0
-    concentration1MaxValue = 0
-    concentration1AValue = 0
-    concentration1CValue = 0
-    concentration2Value = 0
-    concentration2MaxValue = 0
-    concentration2AValue = 0
-    concentration2CValue = 0
-    concentration3Value = 0
-    concentration3MaxValue = 0
-    concentration3AValue = 0
-    concentration3CValue = 0    
-    sampleValue = 0
-    sampleMaxValue = 0
-    sampleAValue = 0
-    sampleCValue = 0
-    measureYear = 0
-    measureMonth = 0
-    measureDay = 0
-    measureHour = 0
-    measureMinute = 0
-    measureSecond = 0
-    warningInfo = 0
+    def __init__(self):
+        self.init = False
+        self.concentration1Value = 0
+        self.concentration1MaxValue = 0
+        self.concentration1AValue = 0
+        self.concentration1CValue = 0
+        self.concentration2Value = 0
+        self.concentration2MaxValue = 0
+        self.concentration2AValue = 0
+        self.concentration2CValue = 0
+        self.concentration3Value = 0
+        self.concentration3MaxValue = 0
+        self.concentration3AValue = 0
+        self.concentration3CValue = 0    
+        self.sampleValue = 0
+        self.sampleMaxValue = 0
+        self.sampleAValue = 0
+        self.sampleCValue = 0
+        self.measureYear = 0
+        self.measureMonth = 0
+        self.measureDay = 0
+        self.measureHour = 0
+        self.measureMinute = 0
+        self.measureSecond = 0
+        self.warningInfo = 0
     #
     def __str__(self):
         return """init = {}

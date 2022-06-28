@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
+import jsonpickle
 from PIL import Image
 import time
 import threading
@@ -9,7 +10,7 @@ from config.labelString import *
 from config.config import sysPath
 from tool.crc import crc16,checkBuffer
 from service.logger import Logger
-from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent
+from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,saveSetting
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
@@ -142,7 +143,7 @@ bufQuery.append(crcCheck&0xff)
 
 def RequestDevice():
   global deviceController,deviceInfo
-  while not requestDeviceEvent.wait(140):
+  while not requestDeviceEvent.wait(5):
     sendReq(bufQuery, lambda queryRecv : getBytesInfo(queryRecv,deviceInfo), repeatTimes = 0 , needMesBox = False)
     sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController), repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
@@ -160,5 +161,11 @@ def RequestDevice():
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
 
+def on_closing():
+    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+        saveSetting()
+        root.destroy()
+
+root.protocol("WM_DELETE_WINDOW", on_closing)
 # Run forever!
 root.mainloop()

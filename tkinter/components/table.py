@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 
 class SimpleTable(Frame):
-    def __init__(self, parent, header=[], data=[[]]):
+    def __init__(self, parent, header=[], data=[[]] ,width=10, height = 3):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="black")
@@ -12,7 +12,7 @@ class SimpleTable(Frame):
         current_row = []
         for column in range(columns):
             label = Label(self, text=header[column],
-                          borderwidth=0, width=10)
+                          borderwidth=0, width=width , height = height)
             label.grid(row=0, column=column, sticky="nsew", padx=1, pady=1)
             current_row.append(label)
         self._widgets.append(current_row)
@@ -20,7 +20,7 @@ class SimpleTable(Frame):
             current_row = []
             for column in range(columns):
                 label = Label(self, text=data[row][column],
-                              borderwidth=0, width=10)
+                              borderwidth=0, width=width,height = height)
                 label.grid(row=row+1, column=column,
                            sticky="nsew", padx=1, pady=1)
                 current_row.append(label)

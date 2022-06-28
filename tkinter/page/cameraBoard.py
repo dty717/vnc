@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 import threading
+from config.config import srcIndex
 from PIL import Image,ImageTk
 import cv2
 
@@ -9,7 +10,7 @@ class CameraBoard(Frame):
     cameraRunning = False
     def __init__(self, master,**kargs):
         super().__init__(master,kargs)
-        self.stream = cv2.VideoCapture(0)
+        self.stream = cv2.VideoCapture(srcIndex)
         self.stopEvent = threading.Event()
         self.thread = threading.Thread(target=self.videoLoop, args=())
         self.thread.start()

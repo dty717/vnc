@@ -19,21 +19,28 @@ class SettingBoard(Frame):
             command = lambda content:write_single_register(DeviceAddr.calibrateDayAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'calibrateDay',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        calibrateDayLabelText.setText(deviceController.calibrateDay)
         calibrateDayLabelText.pack()
         calibrateHourLabelText = LabelTextButton(calibrateTimeGroup,text="标定时",
             command = lambda content:write_single_register(DeviceAddr.calibrateHourAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'calibrateHour',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        calibrateHourLabelText.setText(deviceController.calibrateHour)
         calibrateHourLabelText.pack()
         calibrateMinuteLabelText = LabelTextButton(calibrateTimeGroup,text="标定分",
             command = lambda content:write_single_register(DeviceAddr.calibrateMinuteAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'calibrateMinute',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
         calibrateMinuteLabelText.pack()
         switchImmediateCalibrate = SwitchLabelButton(calibrateTimeGroup,imgDicts,text = "立即标定" , 
             textYES = "开始" , clickYES = lambda :write_single_register(DeviceAddr.immediateCalibrateAddr.value,1, lambda rec:setattr(deviceController,'immediateCalibrate',1) or switchImmediateCalibrate.open(), repeatTimes = 0 , needMesBox = True),
             textNO = "取消" , clickNO = lambda :write_single_register(DeviceAddr.immediateCalibrateAddr.value,0, lambda rec:setattr(deviceController,'immediateCalibrate',0)or switchImmediateCalibrate.close(), repeatTimes = 0 , needMesBox = True),
         )
+        if deviceController.immediateCalibrate == 1:
+            switchImmediateCalibrate.open()
+        else:
+            switchImmediateCalibrate.close()
         switchImmediateCalibrate.pack()
         # 
         #concentrationSettingValueGroup
@@ -44,16 +51,19 @@ class SettingBoard(Frame):
             command = lambda content:write_single_register(DeviceAddr.concentration1SettingValueAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'concentration1SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        concentration1SettingValueLabelText.setText(deviceController.concentration1SettingValue)
         concentration1SettingValueLabelText.pack()
         concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标二浓度",
             command = lambda content:write_single_register(DeviceAddr.concentration2SettingValueAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'concentration2SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        concentration2SettingValueLabelText.setText(deviceController.concentration2SettingValue)
         concentration2SettingValueLabelText.pack()
         concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标三浓度",
             command = lambda content:write_single_register(DeviceAddr.concentration3SettingValueAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'concentration3SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        concentration3SettingValueLabelText.setText(deviceController.concentration3SettingValue)
         concentration3SettingValueLabelText.pack()
         # 
         #sampleTimeGroup
@@ -64,6 +74,7 @@ class SettingBoard(Frame):
             command = lambda content:write_single_register(DeviceAddr.measurementIntervalAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'measurementInterval',int(float(content))), repeatTimes = 0 , needMesBox = True)
         )
+        measurementIntervalLabelText.setText(deviceController.measurementInterval)
         measurementIntervalLabelText.pack()
         # self.pack()
         # self.entrythingy = Entry()
