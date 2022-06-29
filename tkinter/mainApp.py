@@ -32,9 +32,9 @@ root.title(titleLabel)
 root.configure(background="#1fa1af")
 styleConfig = ttk.Style()
 # 'ne' as in compass direction
-styleConfig.configure('MainMenu', tabposition='wn',background="blue")
+styleConfig.configure('MainMenu', tabposition='wn',background="#1fa1af")
 styleConfig.configure('MainMenu.Tab',background="white", font=("Helvetica", 16))
-styleConfig.configure('HistoryBoard', background="red")
+styleConfig.configure('HistoryBoard', background="#1fa1af")
 styleConfig.configure('HistoryBoard.Tab',background="white", font=("Helvetica", 14))
 styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
 styleConfig.map('Treeview',background = [('selected','red')])
@@ -63,7 +63,6 @@ styleConfig.layout("MainMenu", [
                    ("MainMenu.client", {"sticky": "nswe"})])
 styleConfig.layout("HistoryBoard", [
                    ("HistoryBoard.client", {"sticky": "nswe"})])                   
-                   
 styleConfig.layout("MainMenu.Tab", [
     ("MainMenu.tab", {
         "sticky": "nswe",
@@ -101,14 +100,14 @@ mainBoard = MainBoard(mainMenu,header=['', '基值', '峰值', 'A值', 'C值'], 
     ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
     ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
     ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]],
-    width=50, height=50, bg="red")
-historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="yellow")
-controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg="green")
-timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="blue")
-settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg="black")
-systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg="white")
-cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg="white")
-locationBoard = LocationBoard(mainMenu, width=50, height=50, bg="white")
+    width=50, height=50, bg="#1fa1af")
+historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="#1fa1af")
+controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg="#1fa1af")
+timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="#1fa1af")
+settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg="#1fa1af")
+systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg="#1fa1af")
+cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg="#1fa1af")
+locationBoard = LocationBoard(mainMenu, width=50, height=50, bg="#1fa1af")
 
 mainMenu.add(mainBoard, text="主显示面")
 mainMenu.add(historyBoard, text="历史数据")

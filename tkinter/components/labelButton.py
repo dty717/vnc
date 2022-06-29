@@ -7,10 +7,10 @@ class SwitchLabelButton(Frame):
     def __init__(self, parent ,imgDicts, text = "" , textYES = "YES" ,textNO = "NO",clickYES = lambda : 0,clickNO = lambda : 0, ):
         # use black background so it "peeks through" to
         # form grid lines
-        Frame.__init__(self, parent, background="red")
-        label = Label(self, text=text, fg="black", bg="white",width = 12 , font=("Helvetica", 12))
+        Frame.__init__(self, parent, background="#1fa1af")
+        label = Label(self, text=text, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
-        self.imageLabel = Label(self,image=imgDicts["redSignal"])
+        self.imageLabel = Label(self,image=imgDicts["redSignal"],bg = "#1fa1af")
         self.imageLabel.pack(side="left", fill="x")
         button_yes = Button(self, text=textYES , command = clickYES,font=("Helvetica", 12))
         button_yes.pack(side="left", fill="x",padx = 30)
@@ -30,8 +30,8 @@ class LabelTextButton(Frame):
     def __init__(self, parent,text = "",command = lambda content:None):
         # use black background so it "peeks through" to
         # form grid lines
-        Frame.__init__(self, parent, background="red")
-        label = Label(self, text=text, fg="black", bg="white",width = 12 , font=("Helvetica", 12))
+        Frame.__init__(self, parent, background="#1fa1af")
+        label = Label(self, text=text, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.text = Entry(self, width=15)
         self.text .pack(side="left", fill="x")

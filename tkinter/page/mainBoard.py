@@ -43,11 +43,11 @@ class MainBoard(Frame):
             self.mainHistoryText.set("""做样时间:
     做样数据:
     报警状态:""")
-        headerFrame = Frame(self, bg="green")
-        mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="black", bg="white", font=(None, 16),justify = "left")
+        headerFrame = Frame(self, bg="#1fa1af")
+        mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg="#1fa1af", font=(None, 16),justify = "left")
         mainHistory.pack(side=LEFT, padx = 100 , pady = 60)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
-        stopButton = Button(headerFrame, text="停止", fg="white", bg="red", font=(None, 25),command = self.stop)
+        stopButton = Button(headerFrame, text="停止", fg="white", bg="red", font=(None, 25),command = self.stop,activebackground="darkred",activeforeground = "white")
         stopButton.pack(side=LEFT)
         headerFrame.pack(side=TOP, fill=X)
         mainTable = SimpleTable(self, header=header, data=data)
@@ -57,7 +57,7 @@ class MainBoard(Frame):
         #
         modelSelectGroup = GroupLabelButton(self,title = "模式选择", padx = 10)
         # Line1
-        modelSelectGroupLine1 = Frame(modelSelectGroup, bg="red")
+        modelSelectGroupLine1 = Frame(modelSelectGroup, bg="#1fa1af")
         self.selectAutoButton = Button(modelSelectGroupLine1, text="自动做样",command = self.selectAuto , font=(None, 12))
         self.selectAutoButton.pack(side="left",padx = 10,pady = 10)
         self.selectIntervalButton = Button(modelSelectGroupLine1, text="间隔做样",command = self.selectInterval, font=(None, 12))
@@ -66,7 +66,7 @@ class MainBoard(Frame):
         self.selectHourButton.pack(side="left",padx = 10,pady = 10)
         modelSelectGroupLine1.pack(fill = X)
         # Line2
-        modelSelectGroupLine2 = Frame(modelSelectGroup, bg="red")
+        modelSelectGroupLine2 = Frame(modelSelectGroup, bg="#1fa1af")
         self.selectCalibrateButton = Button(modelSelectGroupLine2, text="标定模式",command = self.selectCalibrate, font=(None, 12))
         self.selectCalibrateButton.pack(side="left",padx = 10,pady = 10)
         self.selectOperateButton = Button(modelSelectGroupLine2, text="手动做样",command = self.selectOperate, font=(None, 12))
@@ -78,14 +78,14 @@ class MainBoard(Frame):
         #
         operationSelectGroup = GroupLabelButton(self,title = "手动做样", padx = 10)
         # Line1
-        operationSelectGroupLine1 = Frame(operationSelectGroup, bg="red")
+        operationSelectGroupLine1 = Frame(operationSelectGroup, bg="#1fa1af")
         self.operateSampleButton = Button(operationSelectGroupLine1, text="水样",command = self.operateSample, font=(None, 12))
         self.operateSampleButton.pack(side="left",padx = 10,pady = 10)
         self.operateConcentration1Button = Button(operationSelectGroupLine1, text="标一",command = self.operateConcentration1, font=(None, 12))
         self.operateConcentration1Button.pack(side="left",padx = 10,pady = 10)
         operationSelectGroupLine1.pack(fill = X)
         # Line2
-        operationSelectGroupLine2 = Frame(operationSelectGroup, bg="red")
+        operationSelectGroupLine2 = Frame(operationSelectGroup, bg="#1fa1af")
         self.operateConcentration2Button = Button(operationSelectGroupLine2, text="标二",command = self.operateConcentration2, font=(None, 12))
         self.operateConcentration2Button.pack(side="left",padx = 10,pady = 10)
         self.operateConcentration3Button = Button(operationSelectGroupLine2, text="标三",command = self.operateConcentration3, font=(None, 12))
