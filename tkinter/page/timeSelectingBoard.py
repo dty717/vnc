@@ -8,11 +8,11 @@ class TimeSelectingBoard(Frame):
         super().__init__(master,kargs)
         global deviceController
         buttonFrame = Frame(self, bg="red")
-        buttonFrame.pack(side="top",anchor=E)
+        buttonFrame.pack(side="top",anchor=E ,pady = 20)
         button_select = Button(buttonFrame, text="全选",command = self.selectAll)
         button_select.pack(side="left")
         button_reset = Button(buttonFrame, text="重置",command = self.resetAll)
-        button_reset.pack(side="left")
+        button_reset.pack(side="left",padx = 10)
         # 
         # 24h
         #

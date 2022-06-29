@@ -32,7 +32,7 @@ class SystemLogBoard(Frame):
         tableFrame = Frame(self)
         tableScrollBar = Scrollbar(tableFrame)
         tableScrollBar.pack(side = RIGHT,fill = Y)
-        self.treeTable = TreeTable(tableFrame,tableDatas, yscrollcommand = tableScrollBar.set)
+        self.treeTable = TreeTable(tableFrame,tableDatas, yscrollcommand = tableScrollBar.set,height = 20)
         self.treeTable.pack()
         tableScrollBar.config(command = self.treeTable.yview)
         tableFrame.pack()

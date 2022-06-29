@@ -8,13 +8,13 @@ class SwitchLabelButton(Frame):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="red")
-        label = Label(self, text=text, fg="black", bg="white",width = 10)
+        label = Label(self, text=text, fg="black", bg="white",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.imageLabel = Label(self,image=imgDicts["redSignal"])
         self.imageLabel.pack(side="left", fill="x")
-        button_yes = Button(self, text=textYES , command = clickYES)
-        button_yes.pack(side="left", fill="x")
-        button_no = Button(self, text=textNO, command = clickNO)
+        button_yes = Button(self, text=textYES , command = clickYES,font=("Helvetica", 12))
+        button_yes.pack(side="left", fill="x",padx = 30)
+        button_no = Button(self, text=textNO, command = clickNO, font=("Helvetica", 12))
         button_no.pack(side="left", fill="x")
         self.imgDicts = imgDicts
         # img = PhotoImage(master = parent, file = f"{sysPath}/assets/1.png")
@@ -31,12 +31,12 @@ class LabelTextButton(Frame):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="red")
-        label = Label(self, text=text, fg="black", bg="white")
+        label = Label(self, text=text, fg="black", bg="white",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.text = Entry(self, width=15)
         self.text .pack(side="left", fill="x")
-        button_set = Button(self, text="设置",command = lambda :command(self.text.get()))
-        button_set.pack(side="left", fill="x")
+        button_set = Button(self, text="设置",command = lambda :command(self.text.get()),font=("Helvetica", 12))
+        button_set.pack(side="left", fill="x",padx =15)
         # img = PhotoImage(master = parent, file = f"{sysPath}/assets/1.png")
         # label2 = Label(self, image=img)
         # label2.pack()

@@ -7,7 +7,7 @@ from database.mongodb import dbGetHistory,dbGetConcentration1History,dbGetConcen
 class HistoryBoard(Frame):
     def __init__(self, master,**kargs):
         super().__init__(master,kargs)
-        historyTabs = ttk.Notebook(self, padding = 10)
+        historyTabs = ttk.Notebook(self, padding = 10 ,style = "HistoryBoard")
         historyTabs.pack(fill = BOTH)
         ##
         ## sampleHistory
@@ -37,7 +37,7 @@ class HistoryBoard(Frame):
         historyTab = Frame(self)
         historyTableScrollBar = Scrollbar(historyTab)
         historyTableScrollBar.pack(side = RIGHT,fill = Y)
-        self.historyTreeTable = TreeTable(historyTab,historyTableDatas, yscrollcommand = historyTableScrollBar.set)
+        self.historyTreeTable = TreeTable(historyTab,historyTableDatas, yscrollcommand = historyTableScrollBar.set,height = 20)
         self.historyTreeTable.pack()
         historyTableScrollBar.config(command = self.historyTreeTable.yview)
         historyTab.pack()
@@ -69,7 +69,8 @@ class HistoryBoard(Frame):
         concentration1HistoryTab = Frame(self)
         concentration1HistoryTableScrollBar = Scrollbar(concentration1HistoryTab)
         concentration1HistoryTableScrollBar.pack(side = RIGHT,fill = Y)
-        self.concentration1HistoryTreeTable = TreeTable(concentration1HistoryTab,concentration1HistoryTableDatas, yscrollcommand = concentration1HistoryTableScrollBar.set)
+        self.concentration1HistoryTreeTable = TreeTable(concentration1HistoryTab,concentration1HistoryTableDatas, 
+            yscrollcommand = concentration1HistoryTableScrollBar.set,height = 20)
         self.concentration1HistoryTreeTable.pack()
         concentration1HistoryTableScrollBar.config(command = self.concentration1HistoryTreeTable.yview)
         concentration1HistoryTab.pack()
@@ -101,7 +102,8 @@ class HistoryBoard(Frame):
         concentration2HistoryTab = Frame(self)
         concentration2HistoryTableScrollBar = Scrollbar(concentration2HistoryTab)
         concentration2HistoryTableScrollBar.pack(side = RIGHT,fill = Y)
-        self.concentration2HistoryTreeTable = TreeTable(concentration2HistoryTab,concentration2HistoryTableDatas, yscrollcommand = concentration2HistoryTableScrollBar.set)
+        self.concentration2HistoryTreeTable = TreeTable(concentration2HistoryTab,concentration2HistoryTableDatas, 
+            yscrollcommand = concentration2HistoryTableScrollBar.set,height = 20)
         self.concentration2HistoryTreeTable.pack()
         concentration2HistoryTableScrollBar.config(command = self.concentration2HistoryTreeTable.yview)
         concentration2HistoryTab.pack()
@@ -133,7 +135,8 @@ class HistoryBoard(Frame):
         concentration3HistoryTab = Frame(self)
         concentration3HistoryTableScrollBar = Scrollbar(concentration3HistoryTab)
         concentration3HistoryTableScrollBar.pack(side = RIGHT,fill = Y)
-        self.concentration3HistoryTreeTable = TreeTable(concentration3HistoryTab,concentration3HistoryTableDatas, yscrollcommand = concentration3HistoryTableScrollBar.set)
+        self.concentration3HistoryTreeTable = TreeTable(concentration3HistoryTab,concentration3HistoryTableDatas, 
+            yscrollcommand = concentration3HistoryTableScrollBar.set,height = 20)
         self.concentration3HistoryTreeTable.pack()
         concentration3HistoryTableScrollBar.config(command = self.concentration3HistoryTreeTable.yview)
         concentration3HistoryTab.pack()

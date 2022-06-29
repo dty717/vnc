@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 import jsonpickle
-from PIL import Image
+from PIL import Image, ImageTk
 import time
 import threading
 
@@ -34,6 +34,8 @@ styleConfig = ttk.Style()
 # 'ne' as in compass direction
 styleConfig.configure('MainMenu', tabposition='wn',background="blue")
 styleConfig.configure('MainMenu.Tab',background="white", font=("Helvetica", 16))
+styleConfig.configure('HistoryBoard', background="red")
+styleConfig.configure('HistoryBoard.Tab',background="white", font=("Helvetica", 14))
 styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
 styleConfig.map('Treeview',background = [('selected','red')])
 
@@ -59,6 +61,9 @@ styleConfig.element_create("close", "image", "img_close",
 
 styleConfig.layout("MainMenu", [
                    ("MainMenu.client", {"sticky": "nswe"})])
+styleConfig.layout("HistoryBoard", [
+                   ("HistoryBoard.client", {"sticky": "nswe"})])                   
+                   
 styleConfig.layout("MainMenu.Tab", [
     ("MainMenu.tab", {
         "sticky": "nswe",
@@ -83,8 +88,10 @@ styleConfig.layout("MainMenu.Tab", [
     })
 ])
 
-redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
-greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
+redSignal = ImageTk.PhotoImage(Image.open(f"{sysPath}/assets/redSignal.png").resize((30, 30)))
+greenSignal = ImageTk.PhotoImage(Image.open(f"{sysPath}/assets/greenSignal.png").resize((30, 30)))
+# redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
+# greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
 imgDicts = {"greenSignal":greenSignal,"redSignal":redSignal}
 mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10,style = "MainMenu")
 mainMenu.pack()
