@@ -11,6 +11,7 @@ from config.config import sysPath
 from tool.crc import crc16,checkBuffer
 from service.logger import Logger
 from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,saveSetting
+from service.gps import gpsData,getGpsInfo,saveGpsEvent,saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
@@ -166,6 +167,23 @@ def RequestDevice():
 
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
+
+def getGPS():
+    while True:
+        getGpsInfo()
+getGpsThread = threading.Thread(target=getGPS)
+getGpsThread.start()
+
+def saveGPS():
+  global gpsData
+  while not saveGpsEvent.wait(5*60):
+    if gpsData.active == True:
+        saveLocation(gpsData.year,gpsData.month,gpsData.date,gpsData.hour,gpsData.minute,gpsData.second,gpsData.latitude,gpsData.longitude)
+        pass
+
+saveGpsThread = threading.Thread(target=saveGPS)
+saveGpsThread.start()
+
 
 def on_closing():
     if messagebox.askokcancel("Quit", "Do you want to quit?"):

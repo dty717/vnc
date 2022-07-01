@@ -6,6 +6,7 @@ from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
 from service.device import write_single_register,write_single_coil,DeviceAddr,deviceInfo,deviceController
 from database.mongodb import dbGetLastHistory
+from service.gps import gpsData
 
 mainHistoryText = None
 backgroundColors = ["#ffffff","#1fa1af"]

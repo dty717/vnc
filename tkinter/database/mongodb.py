@@ -13,6 +13,7 @@ dbDeviceHistory = dbSmartFloating.SmartFloatingHistories
 dbConcentration1History = dbSmartFloating.Concentration1Histories
 dbConcentration2History = dbSmartFloating.Concentration2Histories
 dbConcentration3History = dbSmartFloating.Concentration3Histories
+dbLocation = dbSmartFloating.location
 
 def dbLogging(currentTime,systemType,info,otherInfo):
     dbDeviceLog.insert_one({
@@ -81,7 +82,21 @@ def dbGetConcentration3History(logQuery ={},page = 0 , nPerPage = 30):
     concentration3History = dbConcentration3History.find(logQuery)
     return concentration3History.skip(page * nPerPage).limit(nPerPage)
 
+def insertLocation(time, latitude, longitude):
+    location = dbLocation.find_one(
+        {"time": time})
+    if not location:
+        dbLocation.insert_one({
+            "time": time,
+            "latitude": latitude,
+            "longitude": longitude
+        })
+    return
 
+def getLastLocation():
+    return dbLocation.find({}).sort('time', -1).limit(1)
+
+# def 
 # Issue the serverStatus command and print the results
 # serverStatusResult=db.command("serverStatus")
 # pprint(serverStatusResult)

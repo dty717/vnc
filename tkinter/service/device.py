@@ -6,11 +6,11 @@ import os
 from tkinter import messagebox
 from enum import Enum
 
-from config.config import sysPath,serName,__unitIdentifier
+from config.config import sysPath,deviceSerName ,__unitIdentifier
 from tool.crc import checkLen,checkCrc,crc16
 from service.logger import Logger
 
-ser = serial.Serial(serName,timeout=0.2) 
+ser = serial.Serial(deviceSerName ,timeout=0.2) 
 serialQueues = []
 sendBusy = False
 isSending = False
