@@ -27,7 +27,7 @@ def updateMainDate(year, month, day, hour, minitue, second, value, state):
                  "报警状态:"+stateString(state))
 
 class MainBoard(Frame):
-    def __init__(self, master, header,data, **kargs):
+    def __init__(self, master, header, data, **kargs):
         super().__init__(master, kargs)
         # concentration2Histories = list(dbGetConcentration2History(nPerPage = 0)); 
         # for index,concentration2History in enumerate(concentration2Histories):
@@ -43,7 +43,7 @@ class MainBoard(Frame):
         else:
             self.mainHistoryText.set("""做样时间:
     做样数据:
-    报警状态:""")
+    报警状态:"""+stateString(deviceInfo.warningInfo))
         headerFrame = Frame(self, bg="#1fa1af")
         mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg="#1fa1af", font=(None, 16),justify = "left")
         mainHistory.pack(side=LEFT, padx = 100 , pady = 60)
@@ -51,8 +51,8 @@ class MainBoard(Frame):
         stopButton = Button(headerFrame, text="停止", fg="white", bg="red", font=(None, 25),command = self.stop,activebackground="darkred",activeforeground = "white")
         stopButton.pack(side=LEFT)
         headerFrame.pack(side=TOP, fill=X)
-        mainTable = SimpleTable(self, header=header, data=data)
-        mainTable.pack(side=BOTTOM, fill=X)
+        self.mainTable = SimpleTable(self, header=header, data=data)
+        self.mainTable.pack(side=BOTTOM, fill=X)
         #
         #modelSelectGroup
         #
@@ -164,6 +164,36 @@ class MainBoard(Frame):
     def stop(self):
         # write_single_coil
         write_single_coil(0, 1, lambda rec: None, repeatTimes = 0 , needMesBox = True)
+        return
+    def refreshPage(self):
+        lastHistory = list(dbGetLastHistory()); 
+        if len(lastHistory) == 1:
+            lastHistory = lastHistory[0]
+            self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
+                 "做样数据:"+str(lastHistory['value'])+"mg/L\n" +
+                 "报警状态:"+stateString(deviceInfo.warningInfo))
+        else:
+            self.mainHistoryText.set("""做样时间:
+    做样数据:
+    报警状态:"""+stateString(deviceInfo.warningInfo))
+        self.lastSelectModelButton.configure(background=backgroundColors[0])
+        modelButton = self.selectModelButton(deviceController.modelSelect)
+        modelButton.configure(background=backgroundColors[1])
+        self.lastSelectModelButton = modelButton
+        # 
+        self.lastSelectOperationButton.configure(background=backgroundColors[0])
+        operationButton = self.selectModelButton(deviceController.modelSelect)
+        operationButton.configure(background=backgroundColors[1])
+        self.lastSelectOperationButton = operationButton
+        # 
+        data=[
+    ['标一', deviceInfo.concentration1Value,deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue,deviceInfo.concentration1CValue],
+    ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
+    ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
+    ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]]
+        for row in range(4):
+            for column in range(5):
+                self.mainTable.set(row, column, data[row][column])
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",

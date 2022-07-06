@@ -6,7 +6,7 @@ from PIL import Image, ImageTk
 import time
 import threading
 
-from config.labelString import *
+from config.labelString import titleLabel
 from config.config import sysPath
 from tool.crc import crc16,checkBuffer
 from service.logger import Logger
@@ -130,7 +130,6 @@ def changeMenuTab(event):
     if currentMenu == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
     elif  currentMenu == ".!notebook.!historyboard":
-        # historyBoard.refreshPage()
         pass
     elif  currentMenu == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
@@ -147,12 +146,33 @@ crcCheck = crc16(bufQuery,0,len(bufQuery))
 bufQuery.append(crcCheck>>8)
 bufQuery.append(crcCheck&0xff)
 
+def queryHandle(queryRecv):
+    if getBytesInfo(queryRecv,deviceInfo,lastMenu):
+        updatePage()
+
+def updatePage():
+    if lastMenu == ".!notebook.!mainboard":
+        mainBoard.refreshPage()
+    elif lastMenu == ".!notebook.!historyboard":
+        pass
+    elif lastMenu == ".!notebook.!controllingboard":
+        pass
+    elif lastMenu == ".!notebook.!timeSelectingboard":
+        pass
+    elif lastMenu == ".!notebook.!settingboard":
+        pass
+    elif lastMenu == ".!notebook.!systemLogboard":
+        pass
+    elif lastMenu == ".!notebook.!cameraboard":
+        pass
+    elif lastMenu == ".!notebook.!locationboard":
+        pass
 
 def RequestDevice():
   global deviceController,deviceInfo
   while not requestDeviceEvent.wait(5):
-    sendReq(bufQuery, lambda queryRecv : getBytesInfo(queryRecv,deviceInfo), repeatTimes = 0 , needMesBox = False)
-    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController), repeatTimes = 0 , needMesBox = False)
+    sendReq(bufQuery, queryHandle, repeatTimes = 0 , needMesBox = False)
+    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController,lastMenu), repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)

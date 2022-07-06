@@ -3,14 +3,16 @@ import time
 import threading
 import jsonpickle
 import os
+import datetime
 from tkinter import messagebox
 from enum import Enum
 
 from config.config import sysPath,deviceSerName ,__unitIdentifier
 from tool.crc import checkLen,checkCrc,crc16
 from service.logger import Logger
+from database.mongodb import dbGetHistory,dbSaveConcentration1History,dbSaveConcentration2History,dbSaveConcentration3History
 
-ser = serial.Serial(deviceSerName ,timeout=0.2) 
+ser = serial.Serial(deviceSerName,baudrate =115200,timeout=0.2) 
 serialQueues = []
 sendBusy = False
 isSending = False
@@ -272,6 +274,7 @@ class DeviceAddr(Enum):
     measureMinuteAddr = 0x9d
     measureSecondAddr = 0x9e
     warningInfoAddr = 0x9f
+    dataFlagAddr = 0xa0
 
 class DeviceController:
     def __init__(self):
@@ -350,6 +353,7 @@ class DeviceInfo:
         self.measureMinute = 0
         self.measureSecond = 0
         self.warningInfo = 0
+        self.dataFlag = 0
     #
     def __str__(self):
         return """init = {}
@@ -375,15 +379,16 @@ measureDay = {}
 measureHour = {}
 measureMinute = {}
 measureSecond = {}
-warningInfo = {}""".format(self.init,self.concentration1Value,self.concentration1MaxValue,self.concentration1AValue,
+warningInfo = {}
+dataFlag = {}""".format(self.init,self.concentration1Value,self.concentration1MaxValue,self.concentration1AValue,
     self.concentration1CValue,self.concentration2Value,self.concentration2MaxValue,self.concentration2AValue,self.concentration2CValue,
     self.concentration3Value,self.concentration3MaxValue,self.concentration3AValue,self.concentration3CValue,self.sampleValue,
     self.sampleMaxValue,self.sampleAValue,self.sampleCValue,self.measureYear,self.measureMonth,self.measureDay,self.measureHour,
-    self.measureMinute,self.measureSecond,self.warningInfo)
+    self.measureMinute,self.measureSecond,self.warningInfo,self.dataFlag)
 
 shiftAddr = 3
 
-def getBytesControllingInfo(buffer,deviceController):
+def getBytesControllingInfo(buffer,deviceController,lastMenu):
     if not deviceController.init:
         deviceController.init = True
         deviceController.modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
@@ -473,7 +478,7 @@ def getBytesControllingInfo(buffer,deviceController):
     pass
 
 shiftAddr2 = 3 - 2 * DeviceAddr.concentration1ValueAddr.value
-def getBytesInfo(buffer,deviceInfo):
+def getBytesInfo(buffer,deviceInfo,lastMenu):
     if not deviceInfo.init:
         deviceInfo.init = True
         deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
@@ -499,6 +504,7 @@ def getBytesInfo(buffer,deviceInfo):
         deviceInfo.measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
         deviceInfo.measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
         deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
     else:
         _concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
         if _concentration1Value != deviceInfo.concentration1Value:
@@ -569,9 +575,28 @@ def getBytesInfo(buffer,deviceInfo):
         _warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if _warningInfo != deviceInfo.warningInfo:
             deviceInfo.warningInfo = _warningInfo
-        # print(deviceInfo)
-    pass
-
+        _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        if _dataFlag != deviceInfo.dataFlag:
+            # save data
+            if deviceInfo.dataFlag == 0:
+                currentTime = datetime.datetime(deviceInfo.measureYear,deviceInfo.measureMonth,deviceInfo.measureDay,
+                        deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
+                if _dataFlag == 1:
+                    dbGetHistory(currentTime,deviceInfo.sampleValue,
+                        deviceInfo.sampleMaxValue,deviceInfo.sampleAValue,deviceInfo.sampleCValue)
+                elif _dataFlag == 2:
+                    dbSaveConcentration1History(currentTime,deviceInfo.concentration1Value,
+                        deviceInfo.concentration1MaxValue,deviceInfo.concentration1AValue,deviceInfo.concentration1CValue)
+                elif _dataFlag == 3:
+                    dbSaveConcentration2History(currentTime,deviceInfo.concentration2Value,
+                        deviceInfo.concentration2MaxValue,deviceInfo.concentration2AValue,deviceInfo.concentration2CValue)
+                elif _dataFlag == 4:
+                    dbSaveConcentration3History(currentTime,deviceInfo.concentration3Value,
+                        deviceInfo.concentration3MaxValue,deviceInfo.concentration3AValue,deviceInfo.concentration3CValue)
+                if lastMenu == ".!notebook.!mainboard" or lastMenu == ".!notebook.!historyboard":
+                    return True
+            deviceInfo.dataFlag = _dataFlag
+    return False
 
 if os.path.exists(f"{sysPath}/deviceController.json"):
     f_deviceController = open(f"{sysPath}/deviceController.json", "r")
@@ -585,7 +610,6 @@ if os.path.exists(f"{sysPath}/deviceInfo.json"):
     deviceInfo.init = False
 else:
     deviceInfo = DeviceInfo()
-
 
 # deviceController = DeviceController()
 # deviceInfo = DeviceInfo()
