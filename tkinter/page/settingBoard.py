@@ -3,9 +3,9 @@ from tkinter import ttk
 from components.groupLabelButton import GroupLabelButton
 from components.labelButton import LabelTextButton,SwitchLabelButton
 from PIL import Image
-
+from tool.bytesConvert import floatToRegister
 from config.config import *
-from service.device import write_single_register,DeviceAddr,deviceInfo,deviceController
+from service.device import write_single_register,write_multiple_registers,DeviceAddr,deviceInfo,deviceController
 
 class SettingBoard(Frame):
     def __init__(self, master,imgDicts,**kargs):
@@ -48,20 +48,20 @@ class SettingBoard(Frame):
         concentrationSettingValueGroup = GroupLabelButton(self,title = "标定浓度")
         concentrationSettingValueGroup.pack(pady = 20)
         concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标一浓度",
-            command = lambda content:write_single_register(DeviceAddr.concentration1SettingValueAddr.value,int(float(content)), 
-                                            lambda rec:setattr(deviceController,'concentration1SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+            command = lambda content:write_multiple_registers(DeviceAddr.concentration1SettingValueAddr.value,floatToRegister(content), 
+                                            lambda rec:setattr(deviceController,'concentration1SettingValue',float(content)), repeatTimes = 0 , needMesBox = True)
         )
         concentration1SettingValueLabelText.setText(deviceController.concentration1SettingValue)
         concentration1SettingValueLabelText.pack(anchor = W,pady = 5)
         concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标二浓度",
-            command = lambda content:write_single_register(DeviceAddr.concentration2SettingValueAddr.value,int(float(content)), 
-                                            lambda rec:setattr(deviceController,'concentration2SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+            command = lambda content:write_multiple_registers(DeviceAddr.concentration2SettingValueAddr.value,floatToRegister(content), 
+                                            lambda rec:setattr(deviceController,'concentration2SettingValue',float(content)), repeatTimes = 0 , needMesBox = True)
         )
         concentration2SettingValueLabelText.setText(deviceController.concentration2SettingValue)
         concentration2SettingValueLabelText.pack(anchor = W,pady = 5)
         concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标三浓度",
-            command = lambda content:write_single_register(DeviceAddr.concentration3SettingValueAddr.value,int(float(content)), 
-                                            lambda rec:setattr(deviceController,'concentration3SettingValue',int(float(content))), repeatTimes = 0 , needMesBox = True)
+            command = lambda content:write_multiple_registers(DeviceAddr.concentration3SettingValueAddr.value,floatToRegister(content), 
+                                            lambda rec:setattr(deviceController,'concentration3SettingValue',float(content)), repeatTimes = 0 , needMesBox = True)
         )
         concentration3SettingValueLabelText.setText(deviceController.concentration3SettingValue)
         concentration3SettingValueLabelText.pack(anchor = W,pady = 5)

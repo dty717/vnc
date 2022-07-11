@@ -3,6 +3,7 @@ from tkinter import ttk
 import threading
 from config.config import srcIndex
 from PIL import Image,ImageTk
+from service.logger import Logger
 import cv2
 
 
@@ -16,14 +17,20 @@ class CameraBoard(Frame):
         self.thread.start()
         self.panel = None
         self.pauseLoop()
+        if not self.stream.isOpened():
+            Logger.log("摄像异常", "当前摄像头无法打开", "设备端口"+str(srcIndex), 1200)
     def videoLoop(self):
         # DISCLAIMER:
         # I'm not a GUI developer, nor do I even pretend to be. This
         # try/except statement is a pretty ugly hack to get around
         # a RunTime error that Tkinter throws due to threading
+        if not self.stream.isOpened():
+            return
         try:
             # keep looping over frames until we are instructed to stop
             while not self.stopEvent.is_set():
+                if self.stream == None:
+                    return
                 # grab the frame from the video stream and resize it to
                 # have a maximum width of 300 pixels
                 (grabbed, img) = self.stream.read()

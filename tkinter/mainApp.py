@@ -205,6 +205,7 @@ saveGpsThread = threading.Thread(target=saveGPS)
 saveGpsThread.start()
 
 
+
 def on_closing():
     if messagebox.askokcancel("Quit", "Do you want to quit?"):
         saveSetting()

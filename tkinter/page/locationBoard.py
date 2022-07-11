@@ -24,21 +24,25 @@ class LocationBoard(Frame):
             latitude = lat_deg
             longitude = lon_deg
         cityInfo = tkintermapview.convert_coordinates_to_city(latitude, longitude)
-        if cityInfo == None:
-            cityInfo = str(round(latitude,4))+","+str(round(longitude,4))
+        if cityInfo != None:
+            cityInfo += "\r\n"
         else:
-            cityInfo  = "\r\n" + str(round(latitude,4))+","+str(round(longitude,4))
+            cityInfo = ""
+        if latitude > 0:
+            cityInfo += str(round(latitude,4)) +"E, "
+        else:
+            cityInfo += str(round(-latitude,4)) +"W, "
+        if longitude > 0:
+            cityInfo += str(round(longitude,4)) +"N"
+        else:
+            cityInfo += str(round(-longitude,4)) +"S"
         self.map_widget.set_position(latitude, longitude, marker=False)  # Berlin, Germany
         self.marker = self.map_widget.set_marker(latitude, longitude, text=cityInfo, command=self.marker_click)
-    def marker_click(marker):
+    def marker_click(self,marker):
         print(f"marker clicked - text: {marker.text}  position: {marker.position}")
-
-
-        # 
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",
     #           self.contents.get())
-
 
 # mianBoard = Frame(tabNoteBook, width=100, height=100, bg="red")
 # mianBoard.pack(fill=BOTH, expand=1)

@@ -8,7 +8,7 @@ class SwitchLabelButton(Frame):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="#1fa1af")
-        label = Label(self, text=text, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
+        label = Label(self, text=text,anchor = W, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.imageLabel = Label(self,image=imgDicts["redSignal"],bg = "#1fa1af")
         self.imageLabel.pack(side="left", fill="x")
@@ -31,7 +31,7 @@ class LabelTextButton(Frame):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="#1fa1af")
-        label = Label(self, text=text, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
+        label = Label(self, text=text,anchor = W, fg="black", bg="#1fa1af",width = 12 , font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.text = Entry(self, width=15)
         self.text .pack(side="left", fill="x")
