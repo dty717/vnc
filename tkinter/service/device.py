@@ -6,6 +6,7 @@ import os
 import datetime
 from tkinter import messagebox
 from enum import Enum
+from gpiozero import LED
 
 from config.config import sysPath,deviceSerName ,__unitIdentifier
 from tool.crc import checkLen,checkCrc,crc16
@@ -14,6 +15,8 @@ from tool.bytesConvert import bytesToFloat
 from service.logger import Logger
 from database.mongodb import dbGetHistory,dbSaveConcentration1History,dbSaveConcentration2History,dbSaveConcentration3History
 
+power = LED(18)
+
 ser = serial.Serial(deviceSerName,baudrate =115200,timeout=0.2) 
 serialQueues = []
 sendBusy = False
@@ -21,6 +24,7 @@ isSending = False
 lastTime = time.time()
 isBlocking = False
 requestDeviceEvent = threading.Event()
+timeSelectEvent = threading.Event()
 
 
 class RequestData:
@@ -75,6 +79,10 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
 def request(sendReqBuf,callBack ,needMesBox):
     global isSending,isBlocking,lastTime
     isSending = True
+    if power.value == 0:
+        if needMesBox:
+            messagebox.showerror("设备异常", "仪器未开启")
+        return
     if not ser.is_open:
         if isBlocking:
             return True
@@ -115,7 +123,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
             Logger.log("通讯异常", "设备问询回复地址错误", "", 1200)
             return False
         if not checkCrc(recBytes):
-            Logger.log("通讯异常", "设备问询回复校验错误", str(e).split('\n')[0].strip(), 1200)
+            Logger.log("通讯异常", "设备问询回复校验错误", ' '.join([str(e) for e in recBytes]), 1200)
             return False
         if not checkLen(recBytes,(sendReqBuf[4]<<8)|sendReqBuf[5]):
             Logger.log("通讯异常", "设备问询回复长度错误", "", 1200)
@@ -123,7 +131,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
         try:
             callBack(recBytes)
         except Exception as e:
-            Logger.log("通讯异常", "设备问询解析异常", str(e).split('\n')[0].strip(), 1200)
+            Logger.log("通讯异常", "设备问询解析异常", ' '.join([str(e) for e in recBytes]), 1200)
         return True
     if len(recBytes)==0:
         if needMesBox:
@@ -391,7 +399,7 @@ dataFlag = {}""".format(self.init,self.concentration1Value,self.concentration1Ma
 
 shiftAddr = 3
 
-def getBytesControllingInfo(buffer,deviceController,lastMenu):
+def getBytesControllingInfo(buffer,deviceController,lastMenuName):
     if not deviceController.init:
         deviceController.init = True
         deviceController.modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
@@ -481,7 +489,7 @@ def getBytesControllingInfo(buffer,deviceController,lastMenu):
     pass
 
 shiftAddr2 = 3 - 2 * DeviceAddr.concentration1ValueAddr.value
-def getBytesInfo(buffer,deviceInfo,lastMenu):
+def getBytesInfo(buffer,deviceInfo,lastMenuName):
     if not deviceInfo.init:
         deviceInfo.init = True
         deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
@@ -581,6 +589,7 @@ def getBytesInfo(buffer,deviceInfo,lastMenu):
         _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
+            Logger.logWithOutDuration("系统测试", "保存数据", "dataFlag:"+str(_dataFlag))
             if deviceInfo.dataFlag == 0:
                 currentTime = datetime.datetime(deviceInfo.measureYear,deviceInfo.measureMonth,deviceInfo.measureDay,
                         deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
@@ -596,7 +605,8 @@ def getBytesInfo(buffer,deviceInfo,lastMenu):
                 elif _dataFlag == 4:
                     dbSaveConcentration3History(currentTime,deviceInfo.concentration3Value,
                         deviceInfo.concentration3MaxValue,deviceInfo.concentration3AValue,deviceInfo.concentration3CValue)
-                if lastMenu == ".!notebook.!mainboard" or lastMenu == ".!notebook.!historyboard":
+                deviceInfo.dataFlag = _dataFlag
+                if lastMenuName == ".!notebook.!mainboard" or lastMenuName == ".!notebook.!historyboard":
                     return True
             deviceInfo.dataFlag = _dataFlag
     return False

@@ -128,7 +128,8 @@ def getGpsInfo():
                     startIndex = pointIndex
                     break
 
-
 def saveLocation(year,month,date,hour,minute,second,latitude,longitude):
-    insertLocation(datetime.datetime(year,month,date,hour,minute,second), latitude, longitude)
-    return
+    if hour > 24:
+        insertLocation(datetime.datetime(year,month,date,hour%24,minute,second) + datetime.timedelta(days=1), latitude, longitude)
+    else:
+        insertLocation(datetime.datetime(year,month,date,hour,minute,second), latitude, longitude)

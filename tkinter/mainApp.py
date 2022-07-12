@@ -1,16 +1,15 @@
 from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
-import jsonpickle
 from PIL import Image, ImageTk
-import time
+from datetime import datetime
 import threading
 
 from config.labelString import titleLabel
-from config.config import sysPath
-from tool.crc import crc16,checkBuffer
+from config.config import sysPath,primaryColor,primaryDarkColor,primaryLightColor
+from tool.crc import crc16
 from service.logger import Logger
-from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,saveSetting
+from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting
 from service.gps import gpsData,getGpsInfo,saveGpsEvent,saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -30,15 +29,17 @@ screenHeight = root.winfo_screenheight() - screenHeightShift
 
 root.geometry("%dx%d+0+0" % (screenWidth, screenHeight))
 root.title(titleLabel)
-root.configure(background="#1fa1af")
+root.configure(background=primaryDarkColor)
 styleConfig = ttk.Style()
 # 'ne' as in compass direction
-styleConfig.configure('MainMenu', tabposition='wn',background="#1fa1af")
-styleConfig.configure('MainMenu.Tab',background="white", font=("Helvetica", 16))
-styleConfig.configure('HistoryBoard', background="#1fa1af")
-styleConfig.configure('HistoryBoard.Tab',background="white", font=("Helvetica", 14))
+styleConfig.configure('MainMenu', tabposition='wn',background=primaryDarkColor)
+styleConfig.configure('MainMenu.Tab',background=primaryLightColor, font=("Helvetica", 16))
+styleConfig.map('MainMenu.Tab',background = [('selected',primaryDarkColor)],foreground= [('selected','white')])
+styleConfig.configure('HistoryBoard', background=primaryColor)
+styleConfig.configure('HistoryBoard.Tab',background=primaryLightColor, font=("Helvetica", 12),padding = 4)
+styleConfig.map('HistoryBoard.Tab',background = [('selected',primaryDarkColor)],foreground= [('selected','white')])
 styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
-styleConfig.map('Treeview',background = [('selected','red')])
+styleConfig.map('Treeview',background = [('selected',primaryColor)])
 
 images = (
     PhotoImage("img_close", data='''
@@ -101,14 +102,14 @@ mainBoard = MainBoard(mainMenu,header=['', '基值', '峰值', 'A值', 'C值'], 
     ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
     ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
     ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]],
-    width=50, height=50, bg="#1fa1af")
-historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg="#1fa1af")
-controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg="#1fa1af")
-timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg="#1fa1af")
-settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg="#1fa1af")
-systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg="#1fa1af")
-cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg="#1fa1af")
-locationBoard = LocationBoard(mainMenu, width=50, height=50, bg="#1fa1af")
+    width=50, height=50, bg=primaryColor)
+historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg=primaryColor)
+controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg=primaryColor)
+timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg=primaryColor)
+settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg=primaryColor)
+systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
+cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg=primaryColor)
+locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
 
 mainMenu.add(mainBoard, text="主显示面")
 mainMenu.add(historyBoard, text="历史数据")
@@ -119,19 +120,39 @@ mainMenu.add(systemLogBoard, text="运行日志")
 mainMenu.add(cameraBoard, text="视频监控")
 mainMenu.add(locationBoard, text="位置监测")
 
-lastMenu = ".!notebook.!mainboard"
+lastMenuName = ".!notebook.!mainboard"
+
+def getMenu(menuName):
+    if menuName == ".!notebook.!mainboard":
+        return mainBoard
+    elif menuName == ".!notebook.!historyboard":
+        return historyBoard
+    elif menuName == ".!notebook.!controllingboard":
+        return controllingBoard
+    elif menuName == ".!notebook.!timeselectingboard":
+        return timeSelectingBoard
+    elif menuName == ".!notebook.!settingboard":
+        return settingBoard
+    elif menuName == ".!notebook.!systemlogboard":
+        return systemLogBoard
+    elif menuName == ".!notebook.!cameraboard":
+        return cameraBoard
+    elif menuName == ".!notebook.!locationboard":
+        return locationBoard
+
 
 def changeMenuTab(event):
-    global lastMenu
-    currentMenu = mainMenu.select()
-    if lastMenu == ".!notebook.!cameraboard" and currentMenu != ".!notebook.!cameraboard":
+    global lastMenuName
+    currentMenuName = mainMenu.select()
+    # currentMenu = getMenu(currentMenuName)
+    if lastMenuName == ".!notebook.!cameraboard" and currentMenuName != ".!notebook.!cameraboard":
         cameraBoard.pauseLoop()
-    lastMenu = currentMenu
-    if currentMenu == ".!notebook.!systemlogboard":
+    lastMenuName = currentMenuName
+    if currentMenuName == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
-    elif  currentMenu == ".!notebook.!historyboard":
+    elif  currentMenuName == ".!notebook.!historyboard":
         pass
-    elif  currentMenu == ".!notebook.!cameraboard":
+    elif  currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
 mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
@@ -147,32 +168,32 @@ bufQuery.append(crcCheck>>8)
 bufQuery.append(crcCheck&0xff)
 
 def queryHandle(queryRecv):
-    if getBytesInfo(queryRecv,deviceInfo,lastMenu):
+    if getBytesInfo(queryRecv,deviceInfo,lastMenuName):
         updatePage()
 
 def updatePage():
-    if lastMenu == ".!notebook.!mainboard":
+    if lastMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
-    elif lastMenu == ".!notebook.!historyboard":
+    elif lastMenuName == ".!notebook.!historyboard":
         pass
-    elif lastMenu == ".!notebook.!controllingboard":
+    elif lastMenuName == ".!notebook.!controllingboard":
         pass
-    elif lastMenu == ".!notebook.!timeSelectingboard":
+    elif lastMenuName == ".!notebook.!timeSelectingboard":
         pass
-    elif lastMenu == ".!notebook.!settingboard":
+    elif lastMenuName == ".!notebook.!settingboard":
         pass
-    elif lastMenu == ".!notebook.!systemLogboard":
+    elif lastMenuName == ".!notebook.!systemLogboard":
         pass
-    elif lastMenu == ".!notebook.!cameraboard":
+    elif lastMenuName == ".!notebook.!cameraboard":
         pass
-    elif lastMenu == ".!notebook.!locationboard":
+    elif lastMenuName == ".!notebook.!locationboard":
         pass
 
 def RequestDevice():
   global deviceController,deviceInfo
   while not requestDeviceEvent.wait(5):
     sendReq(bufQuery, queryHandle, repeatTimes = 0 , needMesBox = False)
-    sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController,lastMenu), repeatTimes = 0 , needMesBox = False)
+    # sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController,lastMenuName), repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)
@@ -204,10 +225,27 @@ def saveGPS():
 saveGpsThread = threading.Thread(target=saveGPS)
 saveGpsThread.start()
 
+def selectTime():
+  global deviceController 
+  while not timeSelectEvent.wait(10*60):
+    # datetime
+    now = datetime.now()
+    if now.minute + 20 > 60:
+        during = 60 * 60 - now.minute * 60 - now.second -now.microsecond / 1000000
+        timeSelectEvent.wait(during)
+        print(datetime.now())
+        hour = datetime.now().hour
+        if deviceController.selectingHours[hour]:
+            Logger.logWithOutDuration("系统测试", "整点做样", str(hour))
+        timeSelectEvent.wait(60)
+    pass
+
+selectTimeThread = threading.Thread(target=selectTime)
+selectTimeThread.start()
 
 
 def on_closing():
-    if messagebox.askokcancel("Quit", "Do you want to quit?"):
+    if messagebox.askokcancel("退出", "确定退出吗?"):
         saveSetting()
         root.destroy()
 

@@ -45,7 +45,7 @@ class TkinterMapView(tkinter.Frame):
             # map widget is placed in a CTkFrame from customtkinter library
             if hasattr(self.master, "canvas") and hasattr(self.master, "fg_color"):
                 if type(self.master.fg_color) == tuple or type(self.master.fg_color) == list:
-                    self.bg_color: str = self.master.fg_color[self.master.appearance_mode]
+                    self.bg_color: str = self.master.fg_color[self.master._appearance_mode]
                 else:
                     self.bg_color: str = self.master.fg_color
 
@@ -416,12 +416,30 @@ class TkinterMapView(tkinter.Frame):
 
         # try to get the tile from the server
         try:
+            headers = {
+                "Host": "a.tile.openstreetmap.org",
+                "Connection": "keep-alive",
+                "Pragma": "no-cache",
+                "Cache-Control": "no-cache",
+                "sec-ch-ua": "\".Not/A)Brand\";v=\"99\", \"Google Chrome\";v=\"103\", \"Chromium\";v=\"103\"",
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": "\"Windows\"",
+                "Upgrade-Insecure-Requests": "1",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36",
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-User": "?1",
+                "Sec-Fetch-Dest": "document",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en,en-US;q=0.9,zh;q=0.8,zh-CN;q=0.7,de;q=0.6"
+            }
             url = self.tile_server.replace("{x}", str(x)).replace("{y}", str(y)).replace("{z}", str(zoom))
-            image = Image.open(requests.get(url, stream=True).raw)
+            image = Image.open(requests.get(url, stream=True,headers = headers,timeout=15.0).raw)
 
             if self.overlay_tile_server is not None:
                 url = self.overlay_tile_server.replace("{x}", str(x)).replace("{y}", str(y)).replace("{z}", str(zoom))
-                image_overlay = Image.open(requests.get(url, stream=True).raw)
+                image_overlay = Image.open(requests.get(url, stream=True,headers = headers,timeout=15.0).raw)
                 image = image.convert("RGBA")
                 image_overlay = image_overlay.convert("RGBA")
 

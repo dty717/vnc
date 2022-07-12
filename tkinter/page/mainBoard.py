@@ -4,18 +4,17 @@ from tkinter import ttk
 from datetime import datetime
 from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
-from service.device import write_single_register,write_single_coil,DeviceAddr,deviceInfo,deviceController
+from service.device import write_single_register,write_single_coil,DeviceAddr,deviceInfo,deviceController,power
 from database.mongodb import dbGetLastHistory
 from service.gps import gpsData
-from gpiozero import LED
-
-power = LED(18)
+from config.config import primaryColor
 mainHistoryText = None
-backgroundColors = ["#ffffff","#1fa1af"]
+backgroundColors = ["#ffffff",primaryColor]
 
 def test():
     messagebox.showinfo("设置", str(deviceController))
-    updateMainDate(2022,12,12,1,1,32,121.2112,0)
+    messagebox.showinfo("信息", str(deviceInfo))
+    # updateMainDate(2022,12,12,1,1,32,121.2112,0)
 
 def stateString(state):
     if state == 0:
@@ -46,11 +45,12 @@ class MainBoard(Frame):
             self.mainHistoryText.set("""做样时间:
     做样数据:
     报警状态:"""+stateString(deviceInfo.warningInfo))
-        headerFrame = Frame(self, bg="#1fa1af")
-        mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg="#1fa1af", font=(None, 16),justify = "left")
+        headerFrame = Frame(self, bg=primaryColor)
+        mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg=primaryColor, font=(None, 16),justify = "left")
         mainHistory.pack(side=LEFT, padx = 40 , pady = 60)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
         stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
+        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = test,activebackground="darkred",activeforeground = "white")
         stopButton.pack(side=LEFT,padx = 10)
         self.powerButton = Button(headerFrame, text="开启设备", fg="white", bg="red", font=(None, 20),command = self.setPower,activebackground="darkred",activeforeground = "white")
         self.powerButton.pack(side=LEFT)
@@ -67,7 +67,7 @@ class MainBoard(Frame):
         #
         modelSelectGroup = GroupLabelButton(self,title = "模式选择", padx = 10)
         # Line1
-        modelSelectGroupLine1 = Frame(modelSelectGroup, bg="#1fa1af")
+        modelSelectGroupLine1 = Frame(modelSelectGroup, bg=primaryColor)
         self.selectOperateButton = Button(modelSelectGroupLine1, text="手动做样",command = self.selectOperate , font=(None, 12))
         self.selectOperateButton.pack(side="left",padx = 10,pady = 10)
         self.selectIntervalButton = Button(modelSelectGroupLine1, text="间隔做样",command = self.selectInterval, font=(None, 12))
@@ -76,7 +76,7 @@ class MainBoard(Frame):
         self.selectHourButton.pack(side="left",padx = 10,pady = 10)
         modelSelectGroupLine1.pack(fill = X)
         # Line2
-        modelSelectGroupLine2 = Frame(modelSelectGroup, bg="#1fa1af")
+        modelSelectGroupLine2 = Frame(modelSelectGroup, bg=primaryColor)
         self.selectCalibrateButton = Button(modelSelectGroupLine2, text="标定模式",command = self.selectCalibrate, font=(None, 12))
         self.selectCalibrateButton.pack(side="left",padx = 10,pady = 10)
         self.selectPumpButton = Button(modelSelectGroupLine2, text="手动进样",command = self.selectPump, font=(None, 12))
@@ -90,14 +90,14 @@ class MainBoard(Frame):
         #
         operationSelectGroup = GroupLabelButton(self,title = "手动做样", padx = 10)
         # Line1
-        operationSelectGroupLine1 = Frame(operationSelectGroup, bg="#1fa1af")
+        operationSelectGroupLine1 = Frame(operationSelectGroup, bg=primaryColor)
         self.operateSampleButton = Button(operationSelectGroupLine1, text="水样",command = self.operateSample, font=(None, 12))
         self.operateSampleButton.pack(side="left",padx = 10,pady = 10)
         self.operateConcentration1Button = Button(operationSelectGroupLine1, text="标一",command = self.operateConcentration1, font=(None, 12))
         self.operateConcentration1Button.pack(side="left",padx = 10,pady = 10)
         operationSelectGroupLine1.pack(fill = X)
         # Line2
-        operationSelectGroupLine2 = Frame(operationSelectGroup, bg="#1fa1af")
+        operationSelectGroupLine2 = Frame(operationSelectGroup, bg=primaryColor)
         self.operateConcentration2Button = Button(operationSelectGroupLine2, text="标二",command = self.operateConcentration2, font=(None, 12))
         self.operateConcentration2Button.pack(side="left",padx = 10,pady = 10)
         self.operateConcentration3Button = Button(operationSelectGroupLine2, text="标三",command = self.operateConcentration3, font=(None, 12))
