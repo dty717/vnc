@@ -30,7 +30,7 @@ class HistoryBoard(Frame):
         historyTableDatas.heading("AValue",text="A值",anchor=W)
         historyTableDatas.heading("CValue",text="C值",anchor=W)
         # data
-        histories = list(dbGetHistory(nPerPage = 0)); 
+        histories = list(dbGetHistory(nPerPage = 0))
         for index,history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             historyTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(history.values())[1:])
@@ -62,7 +62,7 @@ class HistoryBoard(Frame):
         concentration1HistoryTableDatas.heading("AValue",text="A值",anchor=W)
         concentration1HistoryTableDatas.heading("CValue",text="C值",anchor=W)
         # data
-        concentration1Histories = list(dbGetConcentration1History(nPerPage = 0)); 
+        concentration1Histories = list(dbGetConcentration1History(nPerPage = 0))
         for index,concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration1HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration1History.values())[1:])
@@ -95,7 +95,7 @@ class HistoryBoard(Frame):
         concentration2HistoryTableDatas.heading("AValue",text="A值",anchor=W)
         concentration2HistoryTableDatas.heading("CValue",text="C值",anchor=W)
         # data
-        concentration2Histories = list(dbGetConcentration2History(nPerPage = 0)); 
+        concentration2Histories = list(dbGetConcentration2History(nPerPage = 0))
         for index,concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
@@ -128,7 +128,7 @@ class HistoryBoard(Frame):
         concentration3HistoryTableDatas.heading("AValue",text="A值",anchor=W)
         concentration3HistoryTableDatas.heading("CValue",text="C值",anchor=W)
         # data
-        concentration3Histories = list(dbGetConcentration3History(nPerPage = 0)); 
+        concentration3Histories = list(dbGetConcentration3History(nPerPage = 0))
         for index,concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration3HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration3History.values())[1:])
@@ -155,7 +155,7 @@ class HistoryBoard(Frame):
         historyTableDatas = self.historyTableDatas
         historyTableDatas.clearDatas()
         # data
-        histories = list(dbGetHistory(nPerPage = 0)); 
+        histories = list(dbGetHistory(nPerPage = 0))
         for index,history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             historyTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(history.values())[1:])
@@ -167,7 +167,7 @@ class HistoryBoard(Frame):
         concentration1HistoryTableDatas = self.concentration1HistoryTableDatas
         concentration1HistoryTableDatas.clearDatas()
         # data
-        concentration1Histories = list(dbGetConcentration1History(nPerPage = 0)); 
+        concentration1Histories = list(dbGetConcentration1History(nPerPage = 0))
         for index,concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration1HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration1History.values())[1:])
@@ -179,7 +179,7 @@ class HistoryBoard(Frame):
         concentration2HistoryTableDatas = self.concentration2HistoryTableDatas
         concentration2HistoryTableDatas.clearDatas()
         # data
-        concentration2Histories = list(dbGetConcentration2History(nPerPage = 0)); 
+        concentration2Histories = list(dbGetConcentration2History(nPerPage = 0))
         for index,concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
@@ -191,7 +191,7 @@ class HistoryBoard(Frame):
         concentration3HistoryTableDatas = self.concentration3HistoryTableDatas
         concentration3HistoryTableDatas.clearDatas()
         # data
-        concentration3Histories = list(dbGetConcentration3History(nPerPage = 0)); 
+        concentration3Histories = list(dbGetConcentration3History(nPerPage = 0))
         for index,concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime("%Y-%m-%d %H:%M:%S")
             concentration3HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration3History.values())[1:])

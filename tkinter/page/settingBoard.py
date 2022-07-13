@@ -14,7 +14,7 @@ class SettingBoard(Frame):
         #calibrateTimeGroup
         #  
         calibrateTimeGroup = GroupLabelButton(self,title = "标定时间")
-        calibrateTimeGroup.pack()
+        calibrateTimeGroup.pack(pady = 20)
         calibrateDayLabelText = LabelTextButton(calibrateTimeGroup,text="标定日",
             command = lambda content:write_single_register(DeviceAddr.calibrateDayAddr.value,int(float(content)), 
                                             lambda rec:setattr(deviceController,'calibrateDay',int(float(content))), repeatTimes = 0 , needMesBox = True)
@@ -46,7 +46,7 @@ class SettingBoard(Frame):
         #concentrationSettingValueGroup
         # 
         concentrationSettingValueGroup = GroupLabelButton(self,title = "标定浓度")
-        concentrationSettingValueGroup.pack(pady = 20)
+        concentrationSettingValueGroup.pack(pady = 10)
         concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup,text="标一浓度",
             command = lambda content:write_multiple_registers(DeviceAddr.concentration1SettingValueAddr.value,floatToRegister(content), 
                                             lambda rec:setattr(deviceController,'concentration1SettingValue',float(content)), repeatTimes = 0 , needMesBox = True)

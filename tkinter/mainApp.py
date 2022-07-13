@@ -9,7 +9,7 @@ from config.labelString import titleLabel
 from config.config import sysPath,primaryColor,primaryDarkColor,primaryLightColor
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting
+from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting,lastClickStartTime,lastSelectTime
 from service.gps import gpsData,getGpsInfo,saveGpsEvent,saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -19,6 +19,8 @@ from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
 from page.cameraBoard import CameraBoard
 from page.locationBoard import LocationBoard
+from database.mongodb import dbGetLastHistory
+
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
@@ -39,7 +41,7 @@ styleConfig.configure('HistoryBoard', background=primaryColor)
 styleConfig.configure('HistoryBoard.Tab',background=primaryLightColor, font=("Helvetica", 12),padding = 4)
 styleConfig.map('HistoryBoard.Tab',background = [('selected',primaryDarkColor)],foreground= [('selected','white')])
 styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
-styleConfig.map('Treeview',background = [('selected',primaryColor)])
+styleConfig.map('Treeview',background = [('selected',primaryDarkColor)])
 
 images = (
     PhotoImage("img_close", data='''
@@ -151,7 +153,9 @@ def changeMenuTab(event):
     if currentMenuName == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
     elif  currentMenuName == ".!notebook.!historyboard":
-        pass
+        historyBoard.refreshPage()
+    elif  currentMenuName == ".!notebook.!mainboard":
+        mainBoard.refreshPage()        
     elif  currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
@@ -162,7 +166,7 @@ crcCheck = crc16(bufControlling,0,len(bufControlling))
 bufControlling.append(crcCheck>>8)
 bufControlling.append(crcCheck&0xff)
 
-bufQuery= [0x01,0x03,0x00,0x81,0x00,0x1f]
+bufQuery= [0x01,0x03,0x00,0x81,0x00,0x23]
 crcCheck = crc16(bufQuery,0,len(bufQuery))
 bufQuery.append(crcCheck>>8)
 bufQuery.append(crcCheck&0xff)
@@ -175,7 +179,7 @@ def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
     elif lastMenuName == ".!notebook.!historyboard":
-        pass
+        historyBoard.refreshPage()
     elif lastMenuName == ".!notebook.!controllingboard":
         pass
     elif lastMenuName == ".!notebook.!timeSelectingboard":
@@ -225,18 +229,44 @@ def saveGPS():
 saveGpsThread = threading.Thread(target=saveGPS)
 saveGpsThread.start()
 
+def checkLastSelectTime():
+    global lastSelectTime,lastClickStartTime
+    now = datetime.now()
+    if lastSelectTime > lastClickStartTime and now > lastSelectTime + datetime.timedelta(hours=1, minutes = 40) and power.value == 1:
+        lastHistory = list(dbGetLastHistory())
+        if len(lastHistory) == 0:
+            return False
+        else:
+            lastHistory = lastHistory[0]
+            if now > lastHistory['time'] + datetime.timedelta(hours=1, minutes = 40):
+                return False
+    return True
+                
+
 def selectTime():
-  global deviceController 
+  global deviceController,lastSelectTime
   while not timeSelectEvent.wait(10*60):
     # datetime
     now = datetime.now()
+    if not checkLastSelectTime():
+        # error
+        Logger.log("设备异常", "设备做样异常,未能整点做样", "", 3600)
+        continue
     if now.minute + 20 > 60:
         during = 60 * 60 - now.minute * 60 - now.second -now.microsecond / 1000000
         timeSelectEvent.wait(during)
         print(datetime.now())
         hour = datetime.now().hour
         if deviceController.selectingHours[hour]:
-            Logger.logWithOutDuration("系统测试", "整点做样", str(hour))
+            if checkLastSelectTime():
+                lastSelectTime = datetime.now()
+                # start select time
+                power.value = 1
+                timeSelectEvent.wait(60)
+                write_single_register(DeviceAddr.modelSelectAddr.value, 1, 
+                    lambda rec: None, repeatTimes = 3 , needMesBox = True)
+                write_single_register(DeviceAddr.operationSelectAddr.value, 1, 
+                    lambda rec: None, repeatTimes = 3 , needMesBox = True)
         timeSelectEvent.wait(60)
     pass
 

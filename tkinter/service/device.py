@@ -13,9 +13,11 @@ from tool.crc import checkLen,checkCrc,crc16
 from tool.bytesConvert import bytesToFloat
 
 from service.logger import Logger
-from database.mongodb import dbGetHistory,dbSaveConcentration1History,dbSaveConcentration2History,dbSaveConcentration3History
+from database.mongodb import dbSaveHistory,dbSaveConcentration1History,dbSaveConcentration2History,dbSaveConcentration3History
 
 power = LED(18)
+lastClickStartTime = datetime.datetime.now()
+lastSelectTime = datetime.datetime.now()
 
 ser = serial.Serial(deviceSerName,baudrate =115200,timeout=0.2) 
 serialQueues = []
@@ -53,7 +55,7 @@ def sendReq(sendReqBuf, callBack, repeatTimes, needMesBox):
         for i in range(queuesCount):
             if compare(serialQueues[i].sendBuf,sendReqBuf):
                 return
-        serialQueues.append(RequestData(sendReqBuf,callBack, repeatTimes,needMesBox));
+        serialQueues.append(RequestData(sendReqBuf,callBack, repeatTimes,needMesBox))
         if len(serialQueues) > 5:
             serialQueues.clear()
             isSending = False
@@ -153,7 +155,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
         if len(recBytes) != 8:
             if (needMesBox):
                 messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
-            Logger.log("通讯异常", "设备设置回复长度错误", "", 1200);
+            Logger.log("通讯异常", "设备设置回复长度错误", "", 1200)
             return False    
         for i in range(8):
             if recBytes[i] != sendReqBuf[i]:
@@ -535,7 +537,7 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
         _concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
         if _concentration2MaxValue != deviceInfo.concentration2MaxValue:
             deviceInfo.concentration2MaxValue = _concentration2MaxValue
-        _concentration2AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value+shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
+        _concentration2AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
         if _concentration2AValue != deviceInfo.concentration2AValue:
             deviceInfo.concentration2AValue = _concentration2AValue
         _concentration2CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
@@ -547,10 +549,10 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
         _concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
         if _concentration3MaxValue != deviceInfo.concentration3MaxValue:
             deviceInfo.concentration3MaxValue = _concentration3MaxValue
-        _concentration3AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value+shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
+        _concentration3AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
         if _concentration3AValue != deviceInfo.concentration3AValue:
             deviceInfo.concentration3AValue = _concentration3AValue
-        _concentration3CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value+shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
+        _concentration3CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
         if _concentration3CValue != deviceInfo.concentration3CValue:
             deviceInfo.concentration3CValue = _concentration3CValue    
         _sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
@@ -589,13 +591,15 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
         _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
-            Logger.logWithOutDuration("系统测试", "保存数据", "dataFlag:"+str(_dataFlag))
             if deviceInfo.dataFlag == 0:
-                currentTime = datetime.datetime(deviceInfo.measureYear,deviceInfo.measureMonth,deviceInfo.measureDay,
-                        deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
+                # currentTime = datetime.datetime(deviceInfo.measureYear,deviceInfo.measureMonth,deviceInfo.measureDay,
+                #         deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
+                currentTime = datetime.datetime.now()
                 if _dataFlag == 1:
-                    dbGetHistory(currentTime,deviceInfo.sampleValue,
+                    dbSaveHistory(currentTime,deviceInfo.sampleValue,
                         deviceInfo.sampleMaxValue,deviceInfo.sampleAValue,deviceInfo.sampleCValue)
+                    if lastSelectTime >= lastClickStartTime:
+                        power.value = 0
                 elif _dataFlag == 2:
                     dbSaveConcentration1History(currentTime,deviceInfo.concentration1Value,
                         deviceInfo.concentration1MaxValue,deviceInfo.concentration1AValue,deviceInfo.concentration1CValue)

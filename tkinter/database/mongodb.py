@@ -27,6 +27,10 @@ def dbGetLogging(logQuery ={},page = 0 , nPerPage = 30):
     deviceLog = dbDeviceLog.find(logQuery)
     return deviceLog.skip(page * nPerPage).limit(nPerPage)
 
+def dbGetHistory(logQuery ={},page = 0 , nPerPage = 30):
+    deviceHistory = dbDeviceHistory.find(logQuery)
+    return deviceHistory.skip(page * nPerPage).limit(nPerPage)
+
 def dbSaveHistory(currentTime,value,maxValue,AValue,CValue):
     dbDeviceHistory.insert_one({
         "time": currentTime,
@@ -35,10 +39,6 @@ def dbSaveHistory(currentTime,value,maxValue,AValue,CValue):
         "AValue": AValue,
         "CValue": CValue
     })
-
-def dbGetHistory(logQuery ={},page = 0 , nPerPage = 30):
-    deviceHistory = dbDeviceHistory.find(logQuery)
-    return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
 def dbGetLastHistory():
     return dbDeviceHistory.find({}).sort('time', -1).limit(1)

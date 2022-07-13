@@ -4,7 +4,7 @@ from tkinter import ttk
 from datetime import datetime
 from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
-from service.device import write_single_register,write_single_coil,DeviceAddr,deviceInfo,deviceController,power
+from service.device import write_single_register,write_single_coil,DeviceAddr,deviceInfo,deviceController,power,lastClickStartTime,lastSelectTime
 from database.mongodb import dbGetLastHistory
 from service.gps import gpsData
 from config.config import primaryColor
@@ -30,12 +30,12 @@ def updateMainDate(year, month, day, hour, minitue, second, value, state):
 class MainBoard(Frame):
     def __init__(self, master, header, data, **kargs):
         super().__init__(master, kargs)
-        # concentration2Histories = list(dbGetConcentration2History(nPerPage = 0)); 
+        # concentration2Histories = list(dbGetConcentration2History(nPerPage = 0)) 
         # for index,concentration2History in enumerate(concentration2Histories):
         #     concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
         #     concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
         self.mainHistoryText = StringVar()
-        lastHistory = list(dbGetLastHistory()); 
+        lastHistory = list(dbGetLastHistory()) 
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
@@ -49,8 +49,8 @@ class MainBoard(Frame):
         mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg=primaryColor, font=(None, 16),justify = "left")
         mainHistory.pack(side=LEFT, padx = 40 , pady = 60)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
-        stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
-        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = test,activebackground="darkred",activeforeground = "white")
+        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
+        stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = test,activebackground="darkred",activeforeground = "white")
         stopButton.pack(side=LEFT,padx = 10)
         self.powerButton = Button(headerFrame, text="开启设备", fg="white", bg="red", font=(None, 20),command = self.setPower,activebackground="darkred",activeforeground = "white")
         self.powerButton.pack(side=LEFT)
@@ -126,7 +126,7 @@ class MainBoard(Frame):
         elif value == 5:
             return self.selectPumpButton
     def selectIdle(self):
-        self.selectModel(DeviceAddr.modelSelectAddr.value, 5 , self.selectModelButton(0))
+        self.selectModel(DeviceAddr.modelSelectAddr.value, 0 , self.selectModelButton(0))
         return
     def selectOperate(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value, 1 , self.selectModelButton(1))
@@ -183,17 +183,20 @@ class MainBoard(Frame):
         write_single_coil(0, 1, lambda rec: None, repeatTimes = 0 , needMesBox = True)
         return
     def setPower(self):
+        global lastClickStartTime,lastSelectTime
         if power.value == 0:
             power.on()
             if power.value == 1:
+                lastClickStartTime = datetime.now()
                 self.powerButton.configure(background="green",text="关闭设备",activebackground="darkgreen")
         else:
             power.off()
             if power.value == 0:
+                lastClickStartTime = lastSelectTime
                 self.powerButton.configure(background="red",text="开启设备",activebackground="darkred")
         return
     def refreshPage(self):
-        lastHistory = list(dbGetLastHistory()); 
+        lastHistory = list(dbGetLastHistory()) 
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
@@ -220,8 +223,8 @@ class MainBoard(Frame):
     ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
     ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]]
         for row in range(4):
-            for column in range(5):
-                self.mainTable.set(row, column, data[row][column])
+            for column in range(1,5):
+                self.mainTable.set(row + 1, column, data[row][column])
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",

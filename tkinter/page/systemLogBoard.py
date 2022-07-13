@@ -25,7 +25,7 @@ class SystemLogBoard(Frame):
         tableDatas.heading("info",text="详细信息",anchor=W)
         tableDatas.heading("otherInfo",text="其他信息",anchor=W)
         # data
-        loggings = list(dbGetLogging(nPerPage = 0)); 
+        loggings = list(dbGetLogging(nPerPage = 0))
         for index,logInfo in enumerate(loggings):
             logInfo['time'] = logInfo['time'].strftime("%Y-%m-%d %H:%M:%S")
             tableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(logInfo.values())[1:])
@@ -40,7 +40,7 @@ class SystemLogBoard(Frame):
         self.treeTable.delete(*self.treeTable.get_children())
         tableDatas = self.tableDatas
         tableDatas.clearDatas()
-        loggings = list(dbGetLogging(nPerPage = 0)); 
+        loggings = list(dbGetLogging(nPerPage = 0))
         for index,logInfo in enumerate(loggings):
             logInfo['time'] = logInfo['time'].strftime("%Y-%m-%d %H:%M:%S")
             tableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(logInfo.values())[1:])

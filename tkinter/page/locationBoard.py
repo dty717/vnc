@@ -15,7 +15,7 @@ class LocationBoard(Frame):
         self.map_widget = tkintermapview.TkinterMapView(self, width=1000, height=700, corner_radius=0)
         # self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)  # google satellite
         self.map_widget.pack(fill="both", expand=True)
-        lastLocation = list(getLastLocation()); 
+        lastLocation = list(getLastLocation())
         if len(lastLocation) == 1:
             lastLocation = lastLocation[0]
             latitude = lastLocation['latitude']
