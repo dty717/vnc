@@ -45,9 +45,12 @@ class MainBoard(Frame):
             self.mainHistoryText.set("""做样时间:
     做样数据:
     报警状态:"""+stateString(deviceInfo.warningInfo))
+        # 
+        beforeHeaderFrame = Frame(self, bg=primaryColor)
+        beforeHeaderFrame.pack(side=TOP, fill=X,pady = 30)
         headerFrame = Frame(self, bg=primaryColor)
         mainHistory = Label(headerFrame, textvariable=self.mainHistoryText, fg="white", bg=primaryColor, font=(None, 16),justify = "left")
-        mainHistory.pack(side=LEFT, padx = 40 , pady = 60)
+        mainHistory.pack(side=LEFT, padx = 40)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
         # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
         stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = test,activebackground="darkred",activeforeground = "white")
@@ -59,7 +62,29 @@ class MainBoard(Frame):
         else:
             self.powerButton.configure(background="red",text="开启设备",activebackground="darkred")
         # 
-        headerFrame.pack(side=TOP, fill=X)
+        headerFrame.pack(side=TOP, fill=X,pady = 10)
+        # 
+        stateFrame = Frame(self, bg=primaryColor)
+        stateLabel = Label(stateFrame, text="当前状态:", fg="black", bg=primaryColor, font=(None, 16),justify = "left")
+        stateLabel.pack(side=LEFT)
+        self.currentModelSelectText = StringVar()
+        self.currentModelSelectText.set(self.getcurrentModelSelect(deviceInfo.currentModelSelect))
+        currentModelSelectButton = Button(stateFrame, textvariable=self.currentModelSelectText,relief = FLAT ,fg="black",disabledforeground = "black", bg=primaryColor, font=(None, 16))
+        currentModelSelectButton.pack(side=LEFT,padx = 10)
+        currentModelSelectButton["state"] = DISABLED
+        self.currentOperationSelectText = StringVar()
+        self.currentOperationSelectText.set(self.getCurrentOperationSelect(deviceInfo.currentOperationSelect))
+        currentOperationSelectButton = Button(stateFrame, textvariable=self.currentOperationSelectText,relief = FLAT, fg="black",disabledforeground = "black", bg=primaryColor, font=(None, 16))
+        currentOperationSelectButton.pack(side=LEFT,padx = 0)
+        currentOperationSelectButton["state"] = DISABLED
+        self.currentStateText = StringVar()
+        self.currentStateText.set(self.getCurrentState(deviceInfo.currentState))
+        currentStateButton = Button(stateFrame, textvariable=self.currentStateText,relief = FLAT, fg="black",disabledforeground = "black", bg=primaryColor, font=(None, 16))
+        currentStateButton.pack(side=LEFT,padx = 10)
+        currentStateButton["state"] = DISABLED
+        # 
+        stateFrame.pack(side=TOP, fill=X,pady = 10,padx = 40)
+        # 
         self.mainTable = SimpleTable(self, header=header, data=data)
         self.mainTable.pack(side=BOTTOM, fill=X)
         #
@@ -81,7 +106,7 @@ class MainBoard(Frame):
         self.selectCalibrateButton.pack(side="left",padx = 10,pady = 10)
         self.selectPumpButton = Button(modelSelectGroupLine2, text="手动进样",command = self.selectPump, font=(None, 12))
         self.selectPumpButton.pack(side="left",padx = 10,pady = 10)
-        self.selectIdleButton = Button(modelSelectGroupLine2, text="系统空闲",command = self.selectIdle, font=(None, 12))
+        self.selectIdleButton = Button(modelSelectGroupLine2, text="空闲模式",command = self.selectIdle, font=(None, 12))
         self.selectIdleButton.pack(side="left",padx = 10,pady = 10)
         modelSelectGroupLine2.pack(fill = X)
         modelSelectGroup.pack(side=LEFT , anchor = N ,padx = 40)
@@ -125,6 +150,75 @@ class MainBoard(Frame):
             return self.selectCalibrateButton
         elif value == 5:
             return self.selectPumpButton
+    def getcurrentModelSelect(self,value):
+        if value == 0:
+            return "空闲模式"        
+        elif value == 1:
+            return "手动做样"
+        elif value == 2:
+            return "间隔做样"
+        elif value == 3:
+            return "整点做样"
+        elif value == 4:
+            return "标定模式"
+        elif value == 5:
+            return "手动进样"
+    def getCurrentOperationSelect(self,value):
+        if value == 0:
+            return "空闲"        
+        elif value == 1:
+            return "水样"
+        elif value == 2:
+            return "标一"
+        elif value == 3:
+            return "标二"
+        elif value == 4:
+            return "标三"    
+    def getCurrentState(self,value):
+        if value == 0:
+            return "仪器空闲"
+        elif value == 1:
+            return "做样前准备"
+        elif value == 2:
+            return "抽废液"
+        elif value == 3:
+            return "排废液"
+        elif value == 4:
+            return "抽蒸馏水"
+        elif value == 5:
+            return "进蒸馏水"
+        elif value == 6:
+            return "抽空气"
+        elif value == 7:
+            return "进空气"
+        elif value == 8:
+            return "抽水样"
+        elif value == 9:
+            return "进水样"
+        elif value == 10:
+            return "抽试剂一"
+        elif value == 11:
+            return "进试剂一"
+        elif value == 12:
+            return "抽试剂二"
+        elif value == 13:
+            return "进试剂二"
+        elif value == 14:
+            return "抽试剂三"
+        elif value == 15:
+            return "进试剂三"
+        elif value == 16:
+            return "加热"
+        elif value == 17:
+            return "冷却"
+        elif value == 18:
+            return "找基值"
+        elif value == 19:
+            return "找峰值"
+        elif value == 20:
+            return "抽反应液"
+        elif value == 21:
+            return "推反应液"                                        
     def selectIdle(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value, 0 , self.selectModelButton(0))
         return
@@ -206,6 +300,9 @@ class MainBoard(Frame):
             self.mainHistoryText.set("""做样时间:
     做样数据:
     报警状态:"""+stateString(deviceInfo.warningInfo))
+        self.currentModelSelectText.set(self.getcurrentModelSelect(deviceInfo.currentModelSelect))
+        self.currentOperationSelectText.set(self.getCurrentOperationSelect(deviceInfo.currentOperationSelect))
+        self.currentStateText.set(self.getCurrentState(deviceInfo.currentState))
         self.lastSelectModelButton.configure(background=backgroundColors[0])
         modelButton = self.selectModelButton(deviceController.modelSelect)
         modelButton.configure(background=backgroundColors[1])

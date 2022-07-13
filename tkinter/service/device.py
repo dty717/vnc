@@ -288,6 +288,9 @@ class DeviceAddr(Enum):
     measureSecondAddr = 0x9e
     warningInfoAddr = 0x9f
     dataFlagAddr = 0xa0
+    currentModelSelectAddr = 0xa1
+    currentOperationSelectAddr = 0xa2
+    currentStateAddr = 0xa3
 
 class DeviceController:
     def __init__(self):
@@ -367,6 +370,9 @@ class DeviceInfo:
         self.measureSecond = 0
         self.warningInfo = 0
         self.dataFlag = 0
+        self.currentModelSelect = 0
+        self.currentOperationSelect = 0
+        self.currentState = 0
     #
     def __str__(self):
         return """init = {}
@@ -393,11 +399,14 @@ measureHour = {}
 measureMinute = {}
 measureSecond = {}
 warningInfo = {}
-dataFlag = {}""".format(self.init,self.concentration1Value,self.concentration1MaxValue,self.concentration1AValue,
+dataFlag = {}
+currentModelSelect = {}
+currentOperationSelect = {}
+currentState = {}""".format(self.init,self.concentration1Value,self.concentration1MaxValue,self.concentration1AValue,
     self.concentration1CValue,self.concentration2Value,self.concentration2MaxValue,self.concentration2AValue,self.concentration2CValue,
     self.concentration3Value,self.concentration3MaxValue,self.concentration3AValue,self.concentration3CValue,self.sampleValue,
     self.sampleMaxValue,self.sampleAValue,self.sampleCValue,self.measureYear,self.measureMonth,self.measureDay,self.measureHour,
-    self.measureMinute,self.measureSecond,self.warningInfo,self.dataFlag)
+    self.measureMinute,self.measureSecond,self.warningInfo,self.dataFlag,self.currentModelSelect,self.currentOperationSelect,self.currentState)
 
 shiftAddr = 3
 
@@ -518,6 +527,9 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
         deviceInfo.measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
         deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        deviceInfo.currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        deviceInfo.currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
+        deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
     else:
         _concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
         if _concentration1Value != deviceInfo.concentration1Value:
@@ -588,6 +600,15 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
         _warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if _warningInfo != deviceInfo.warningInfo:
             deviceInfo.warningInfo = _warningInfo
+        currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        if currentModelSelect != deviceInfo.warningInfo:
+            deviceInfo.warningInfo = currentModelSelect
+        currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        if currentOperationSelect != deviceInfo.warningInfo:
+            deviceInfo.warningInfo = currentOperationSelect
+        currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        if currentState != deviceInfo.warningInfo:
+            deviceInfo.warningInfo = currentState
         _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
