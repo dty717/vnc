@@ -33,6 +33,8 @@ class HistoryBoard(Frame):
         histories = list(dbGetHistory(nPerPage = 0))
         for index,history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
+            history['AValue'] = round(history['AValue'],4)
+            history['CValue'] = round(history['CValue'],4)
             historyTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(history.values())[1:])
         historyTab = Frame(self)
         historyTableScrollBar = Scrollbar(historyTab)
@@ -65,6 +67,8 @@ class HistoryBoard(Frame):
         concentration1Histories = list(dbGetConcentration1History(nPerPage = 0))
         for index,concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration1History['AValue'] = round(concentration1History['AValue'],4)
+            concentration1History['CValue'] = round(concentration1History['CValue'],4)
             concentration1HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration1History.values())[1:])
         concentration1HistoryTab = Frame(self)
         concentration1HistoryTableScrollBar = Scrollbar(concentration1HistoryTab)
@@ -98,6 +102,8 @@ class HistoryBoard(Frame):
         concentration2Histories = list(dbGetConcentration2History(nPerPage = 0))
         for index,concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration2History['AValue'] = round(concentration2History['AValue'],4)
+            concentration2History['CValue'] = round(concentration2History['CValue'],4)
             concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
         concentration2HistoryTab = Frame(self)
         concentration2HistoryTableScrollBar = Scrollbar(concentration2HistoryTab)
@@ -131,6 +137,8 @@ class HistoryBoard(Frame):
         concentration3Histories = list(dbGetConcentration3History(nPerPage = 0))
         for index,concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration3History['AValue'] = round(concentration3History['AValue'],4)
+            concentration3History['CValue'] = round(concentration3History['CValue'],4)
             concentration3HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration3History.values())[1:])
         concentration3HistoryTab = Frame(self)
         concentration3HistoryTableScrollBar = Scrollbar(concentration3HistoryTab)
@@ -158,6 +166,8 @@ class HistoryBoard(Frame):
         histories = list(dbGetHistory(nPerPage = 0))
         for index,history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
+            history['AValue'] = round(history['AValue'],4)
+            history['CValue'] = round(history['CValue'],4)
             historyTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(history.values())[1:])
         self.historyTreeTable.refreshDate(historyTableDatas)
         ##
@@ -170,6 +180,8 @@ class HistoryBoard(Frame):
         concentration1Histories = list(dbGetConcentration1History(nPerPage = 0))
         for index,concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration1History['AValue'] = round(concentration1History['AValue'],4)
+            concentration1History['CValue'] = round(concentration1History['CValue'],4)
             concentration1HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration1History.values())[1:])
         self.concentration1HistoryTreeTable.refreshDate(concentration1HistoryTableDatas)
         ##
@@ -182,6 +194,8 @@ class HistoryBoard(Frame):
         concentration2Histories = list(dbGetConcentration2History(nPerPage = 0))
         for index,concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration2History['AValue'] = round(concentration2History['AValue'],4)
+            concentration2History['CValue'] = round(concentration2History['CValue'],4)
             concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
         self.concentration2HistoryTreeTable.refreshDate(concentration2HistoryTableDatas)
         ##
@@ -194,6 +208,8 @@ class HistoryBoard(Frame):
         concentration3Histories = list(dbGetConcentration3History(nPerPage = 0))
         for index,concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime("%Y-%m-%d %H:%M:%S")
+            concentration3History['AValue'] = round(concentration3History['AValue'],4)
+            concentration3History['CValue'] = round(concentration3History['CValue'],4)
             concentration3HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration3History.values())[1:])
         self.concentration3HistoryTreeTable.refreshDate(concentration3HistoryTableDatas)
 # mianBoard = Frame(tabNoteBook, width=100, height=100, bg="red")

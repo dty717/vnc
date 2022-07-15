@@ -39,7 +39,7 @@ class MainBoard(Frame):
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
-                 "做样数据:"+str(lastHistory['value'])+"mg/L\n" +
+                 "做样数据:"+str(round(lastHistory['CValue'], 4))+"mg/L\n" +
                  "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
@@ -294,7 +294,7 @@ class MainBoard(Frame):
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
-                 "做样数据:"+str(lastHistory['value'])+"mg/L\n" +
+                 "做样数据:"+str(round(lastHistory['CValue'], 4))+"mg/L\n" +
                  "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
@@ -315,10 +315,10 @@ class MainBoard(Frame):
         # self.lastSelectOperationButton = operationButton
         # 
         data=[
-    ['标一', deviceInfo.concentration1Value,deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue,deviceInfo.concentration1CValue],
-    ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
-    ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
-    ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]]
+        ['标一', round(deviceInfo.concentration1Value, 4),round(deviceInfo.concentration1MaxValue, 4), round(deviceInfo.concentration1AValue, 4),round(deviceInfo.concentration1CValue, 4)],
+        ['标二', round(deviceInfo.concentration2Value, 4),round(deviceInfo.concentration2MaxValue, 4), round(deviceInfo.concentration2AValue, 4),round(deviceInfo.concentration2CValue, 4)],
+        ['标三', round(deviceInfo.concentration3Value, 4),round(deviceInfo.concentration3MaxValue, 4), round(deviceInfo.concentration3AValue, 4),round(deviceInfo.concentration3CValue, 4)],
+        ['水样', round(deviceInfo.sampleValue, 4),round(deviceInfo.sampleMaxValue, 4), round(deviceInfo.sampleAValue, 4),round(deviceInfo.sampleCValue, 4)]]
         for row in range(4):
             for column in range(1,5):
                 self.mainTable.set(row + 1, column, data[row][column])

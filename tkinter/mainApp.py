@@ -2,14 +2,16 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from datetime import datetime
+from datetime import datetime,timedelta
 import threading
-
+import asyncio
+import json
+import websocket
 from config.labelString import titleLabel
-from config.config import sysPath,primaryColor,primaryDarkColor,primaryLightColor
+from config.config import sysPath,primaryColor,primaryDarkColor,primaryLightColor,wsHostname,url,deviceID
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting,lastClickStartTime,lastSelectTime
+from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting,lastClickStartTime,lastSelectTime,power
 from service.gps import gpsData,getGpsInfo,saveGpsEvent,saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -100,10 +102,10 @@ mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,paddi
 mainMenu.pack()
 
 mainBoard = MainBoard(mainMenu,header=['', '基值', '峰值', 'A值', 'C值'], data=[
-    ['标一', deviceInfo.concentration1Value,deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue,deviceInfo.concentration1CValue],
-    ['标二', deviceInfo.concentration2Value,deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue,deviceInfo.concentration2CValue],
-    ['标三', deviceInfo.concentration3Value,deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue,deviceInfo.concentration3CValue],
-    ['水样', deviceInfo.sampleValue,deviceInfo.sampleMaxValue, deviceInfo.sampleAValue,deviceInfo.sampleCValue]],
+    ['标一', round(deviceInfo.concentration1Value, 4),round(deviceInfo.concentration1MaxValue, 4), round(deviceInfo.concentration1AValue, 4),round(deviceInfo.concentration1CValue, 4)],
+    ['标二', round(deviceInfo.concentration2Value, 4),round(deviceInfo.concentration2MaxValue, 4), round(deviceInfo.concentration2AValue, 4),round(deviceInfo.concentration2CValue, 4)],
+    ['标三', round(deviceInfo.concentration3Value, 4),round(deviceInfo.concentration3MaxValue, 4), round(deviceInfo.concentration3AValue, 4),round(deviceInfo.concentration3CValue, 4)],
+    ['水样', round(deviceInfo.sampleValue, 4),round(deviceInfo.sampleMaxValue, 4), round(deviceInfo.sampleAValue, 4),round(deviceInfo.sampleCValue, 4)]],
     width=50, height=50, bg=primaryColor)
 historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg=primaryColor)
 controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg=primaryColor)
@@ -155,7 +157,9 @@ def changeMenuTab(event):
     elif  currentMenuName == ".!notebook.!historyboard":
         historyBoard.refreshPage()
     elif  currentMenuName == ".!notebook.!mainboard":
-        mainBoard.refreshPage()        
+        mainBoard.refreshPage()
+    elif  currentMenuName == ".!notebook.!locationboard":
+        locationBoard.refreshPage()
     elif  currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
@@ -174,6 +178,7 @@ bufQuery.append(crcCheck&0xff)
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv,deviceInfo,lastMenuName):
         updatePage()
+    Logger.logWithOutDuration("系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
 
 def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
@@ -232,13 +237,13 @@ saveGpsThread.start()
 def checkLastSelectTime():
     global lastSelectTime,lastClickStartTime
     now = datetime.now()
-    if lastSelectTime > lastClickStartTime and now > lastSelectTime + datetime.timedelta(hours=1, minutes = 40) and power.value == 1:
+    if lastSelectTime > lastClickStartTime and now > lastSelectTime + timedelta(hours=1, minutes = 40) and power.value == 1:
         lastHistory = list(dbGetLastHistory())
         if len(lastHistory) == 0:
             return False
         else:
             lastHistory = lastHistory[0]
-            if now > lastHistory['time'] + datetime.timedelta(hours=1, minutes = 40):
+            if now > lastHistory['time'] + timedelta(hours=1, minutes = 40):
                 return False
     return True
                 
@@ -270,8 +275,43 @@ def selectTime():
         timeSelectEvent.wait(60)
     pass
 
-selectTimeThread = threading.Thread(target=selectTime)
-selectTimeThread.start()
+# selectTimeThread = threading.Thread(target=selectTime)
+# selectTimeThread.start()
+
+jsonDecoder = json.JSONDecoder()
+
+wid = None
+def on_message(ws, message):
+    global wid
+    jsonObj = jsonDecoder.decode(message)
+    wType = jsonObj["type"]
+    if wType =='id':
+        wid = jsonObj["id"]
+        ws.send("{\"type\":\"deviceID\",\"name\":\""+deviceID+"\",\"id\":"+str(wid)+"}")
+def on_error(ws, error):
+    print(error)
+def on_close(ws, close_status_code, close_msg):
+    print("### closed ###")
+def on_open(ws):
+    print("Opened connection")
+# websocket.enableTrace(True)
+ws = websocket.WebSocketApp(url,
+                            subprotocols=["json"],
+                            on_open=on_open,
+                            on_message=on_message,
+                            on_error=on_error,
+                            on_close=on_close)
+
+websocketThread = threading.Thread(target=ws.run_forever)
+websocketThread.start()
+
+# asyncio.run(connectWebsocket())
+
+# connectWebsocketLoop = asyncio.get_event_loop()
+# try:
+#     connectWebsocketLoop.run_until_complete(connectWebsocket())
+# finally:
+#     connectWebsocketLoop.close()
 
 
 def on_closing():
