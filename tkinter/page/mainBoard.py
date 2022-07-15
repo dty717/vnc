@@ -53,9 +53,8 @@ class MainBoard(Frame):
                             fg="white", bg=primaryColor, font=(None, 16), justify="left")
         mainHistory.pack(side=LEFT, padx=40)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
-        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
-        stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(
-            None, 20), command=test, activebackground="darkred", activeforeground="white")
+        stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
+        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
         stopButton.pack(side=LEFT, padx=10)
         self.powerButton = Button(headerFrame, text="开启设备", fg="white", bg="red", font=(
             None, 20), command=self.setPower, activebackground="darkred", activeforeground="white")
@@ -333,6 +332,12 @@ class MainBoard(Frame):
                     background="red", text="开启设备", activebackground="darkred")
         return
     def refreshPage(self):
+        if power.value == 0:
+            self.powerButton.configure(
+                background="red", text="开启设备", activebackground="darkred")
+        else:
+            self.powerButton.configure(
+                background="green", text="关闭设备", activebackground="darkgreen")
         lastHistory = list(dbGetLastHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]

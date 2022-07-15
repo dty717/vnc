@@ -122,7 +122,7 @@ historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg=primaryColor)
 controllingBoard = ControllingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 timeSelectingBoard = TimeSelectingBoard(
-    mainMenu, width=50, height=50, bg=primaryColor)
+    mainMenu, width=50, height=50, bg=primaryColor,padx = 20)
 settingBoard = SettingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
@@ -171,6 +171,12 @@ def changeMenuTab(event):
         historyBoard.refreshPage()
     elif currentMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
+    elif currentMenuName == ".!notebook.!controllingboard":
+        controllingBoard.refreshPage()
+    elif currentMenuName == ".!notebook.!timeselectingboard":
+        timeSelectingBoard.refreshPage()
+    elif currentMenuName == ".!notebook.!settingboard":
+        settingBoard.refreshPage()
     elif currentMenuName == ".!notebook.!locationboard":
         locationBoard.refreshPage()
     elif currentMenuName == ".!notebook.!cameraboard":
@@ -188,23 +194,17 @@ crcCheck = crc16(bufQuery, 0, len(bufQuery))
 bufQuery.append(crcCheck >> 8)
 bufQuery.append(crcCheck & 0xff)
 
-def queryHandle(queryRecv):
-    if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
-        updatePage()
-    Logger.logWithOutDuration(
-        "系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
-
 def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
     elif lastMenuName == ".!notebook.!historyboard":
         historyBoard.refreshPage()
     elif lastMenuName == ".!notebook.!controllingboard":
-        pass
+        controllingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!timeSelectingboard":
-        pass
+        timeSelectingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!settingboard":
-        pass
+        settingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!systemLogboard":
         pass
     elif lastMenuName == ".!notebook.!cameraboard":
@@ -212,11 +212,23 @@ def updatePage():
     elif lastMenuName == ".!notebook.!locationboard":
         pass
 
+def queryHandle(queryRecv):
+    if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
+        updatePage()
+    Logger.logWithOutDuration(
+        "系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
+
+def controllingHandle(controllingRecv):
+    if getBytesControllingInfo(controllingRecv,deviceController,lastMenuName):
+        updatePage()
+    Logger.logWithOutDuration(
+        "系统测试", "controlling rec", ' '.join([str(e) for e in controllingRecv]))
+
 def RequestDevice():
   global deviceController, deviceInfo
   while not requestDeviceEvent.wait(5):
     sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
-    # sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController,lastMenuName), repeatTimes = 0 , needMesBox = False)
+    sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)
@@ -289,8 +301,8 @@ def selectTime():
                                       lambda rec: None, repeatTimes=3, needMesBox=True)
         timeSelectEvent.wait(60)
     pass
-# selectTimeThread = threading.Thread(target=selectTime)
-# selectTimeThread.start()
+selectTimeThread = threading.Thread(target=selectTime)
+selectTimeThread.start()
 
 jsonDecoder = json.JSONDecoder()
 

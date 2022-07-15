@@ -23,3 +23,5 @@ url = 'wss://' + wsHostname + ":6503"
 deviceID = "SmartDetect_FD_DL2022071300000001"
 sampleType = "P"
 uploadURL = 'http://server.delinapi.top:3000/SaveSmartDetectHistory'
+
+usingLocalTime = True

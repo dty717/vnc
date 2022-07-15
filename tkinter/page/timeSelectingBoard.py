@@ -2,10 +2,9 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from service.device import write_single_register, write_multiple_registers, DeviceAddr, deviceInfo, deviceController
-from config.config import primaryColor
+from config.config import primaryColor,usingLocalTime
 
 backgroundColors = ["#ffffff", primaryColor]
-usingLocalTime = True
 
 class TimeSelectingBoard(Frame):
     def __init__(self, master, **kargs):
@@ -99,6 +98,13 @@ class TimeSelectingBoard(Frame):
         # lambda : print(self.buttonHours[index])
         #
         # lambda :write_single_register(DeviceAddr.reactionTubeCleanAddr.value,1, lambda rec:setattr(deviceController,'reactionTubeClean',1) or switchReactionTubeClean.open(), repeatTimes = 0 , needMesBox = True),
-
+    def refreshPage(self):
+        for i in range(24):
+            button_hour = self.buttonHours[i]
+            if deviceController.selectingHours[i] == 0:
+                button_hour.configure(background=backgroundColors[0])
+            else:
+                button_hour.configure(background=backgroundColors[1])
+        return    
 # mianBoard = Frame(tabNoteBook, width=100, height=100, bg = primaryColor))
 # mianBoard.pack(fill=BOTH, expand=1)

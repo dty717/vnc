@@ -15,71 +15,71 @@ class SettingBoard(Frame):
         #
         calibrateTimeGroup = GroupLabelButton(self, title="标定时间")
         calibrateTimeGroup.pack(pady=20)
-        calibrateDayLabelText = LabelTextButton(calibrateTimeGroup, text="标定日",
+        self.calibrateDayLabelText = LabelTextButton(calibrateTimeGroup, text="标定日",
                                                 command=lambda content: write_single_register(DeviceAddr.calibrateDayAddr.value, int(float(content)),
                                                                                               lambda rec: setattr(deviceController, 'calibrateDay', int(float(content))), repeatTimes=0, needMesBox=True)
                                                 )
-        calibrateDayLabelText.setText(deviceController.calibrateDay)
-        calibrateDayLabelText.pack(anchor=W, pady=5)
-        calibrateHourLabelText = LabelTextButton(calibrateTimeGroup, text="标定时",
+        self.calibrateDayLabelText.setText(deviceController.calibrateDay)
+        self.calibrateDayLabelText.pack(anchor=W, pady=5)
+        self.calibrateHourLabelText = LabelTextButton(calibrateTimeGroup, text="标定时",
                                                  command=lambda content: write_single_register(DeviceAddr.calibrateHourAddr.value, int(float(content)),
                                                                                                lambda rec: setattr(deviceController, 'calibrateHour', int(float(content))), repeatTimes=0, needMesBox=True)
                                                  )
-        calibrateHourLabelText.setText(deviceController.calibrateHour)
-        calibrateHourLabelText.pack(anchor=W, pady=5)
-        calibrateMinuteLabelText = LabelTextButton(calibrateTimeGroup, text="标定分",
+        self.calibrateHourLabelText.setText(deviceController.calibrateHour)
+        self.calibrateHourLabelText.pack(anchor=W, pady=5)
+        self.calibrateMinuteLabelText = LabelTextButton(calibrateTimeGroup, text="标定分",
                                                    command=lambda content: write_single_register(DeviceAddr.calibrateMinuteAddr.value, int(float(content)),
                                                                                                  lambda rec: setattr(deviceController, 'calibrateMinute', int(float(content))), repeatTimes=0, needMesBox=True)
                                                    )
-        calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
-        calibrateMinuteLabelText.pack(anchor=W, pady=5)
-        switchImmediateCalibrate = SwitchLabelButton(calibrateTimeGroup, imgDicts, text="立即标定",
-                                                     textYES="开始", clickYES=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 1, lambda rec: setattr(deviceController, 'immediateCalibrate', 1) or switchImmediateCalibrate.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="取消", clickNO=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 0, lambda rec: setattr(deviceController, 'immediateCalibrate', 0) or switchImmediateCalibrate.close(), repeatTimes=0, needMesBox=True),
+        self.calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
+        self.calibrateMinuteLabelText.pack(anchor=W, pady=5)
+        self.switchImmediateCalibrate = SwitchLabelButton(calibrateTimeGroup, imgDicts, text="立即标定",
+                                                     textYES="开始", clickYES=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 1, lambda rec: setattr(deviceController, 'immediateCalibrate', 1) or self.switchImmediateCalibrate.open(), repeatTimes=0, needMesBox=True),
+                                                     textNO="取消", clickNO=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 0, lambda rec: setattr(deviceController, 'immediateCalibrate', 0) or self.switchImmediateCalibrate.close(), repeatTimes=0, needMesBox=True),
                                                      )
         if deviceController.immediateCalibrate == 1:
-            switchImmediateCalibrate.open()
+            self.switchImmediateCalibrate.open()
         else:
-            switchImmediateCalibrate.close()
-        switchImmediateCalibrate.pack(anchor=W, pady=5)
+            self.switchImmediateCalibrate.close()
+        self.switchImmediateCalibrate.pack(anchor=W, pady=5)
         #
         #concentrationSettingValueGroup
         #
         concentrationSettingValueGroup = GroupLabelButton(self, title="标定浓度")
         concentrationSettingValueGroup.pack(pady=10)
-        concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标一浓度",
+        self.concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标一浓度",
                                                               command=lambda content: write_multiple_registers(DeviceAddr.concentration1SettingValueAddr.value, floatToRegister(content),
                                                                                                                lambda rec: setattr(deviceController, 'concentration1SettingValue', float(content)), repeatTimes=0, needMesBox=True)
                                                               )
-        concentration1SettingValueLabelText.setText(
+        self.concentration1SettingValueLabelText.setText(
             deviceController.concentration1SettingValue)
-        concentration1SettingValueLabelText.pack(anchor=W, pady=5)
-        concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标二浓度",
+        self.concentration1SettingValueLabelText.pack(anchor=W, pady=5)
+        self.concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标二浓度",
                                                               command=lambda content: write_multiple_registers(DeviceAddr.concentration2SettingValueAddr.value, floatToRegister(content),
                                                                                                                lambda rec: setattr(deviceController, 'concentration2SettingValue', float(content)), repeatTimes=0, needMesBox=True)
                                                               )
-        concentration2SettingValueLabelText.setText(
+        self.concentration2SettingValueLabelText.setText(
             deviceController.concentration2SettingValue)
-        concentration2SettingValueLabelText.pack(anchor=W, pady=5)
-        concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标三浓度",
+        self.concentration2SettingValueLabelText.pack(anchor=W, pady=5)
+        self.concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标三浓度",
                                                               command=lambda content: write_multiple_registers(DeviceAddr.concentration3SettingValueAddr.value, floatToRegister(content),
                                                                                                                lambda rec: setattr(deviceController, 'concentration3SettingValue', float(content)), repeatTimes=0, needMesBox=True)
                                                               )
-        concentration3SettingValueLabelText.setText(
+        self.concentration3SettingValueLabelText.setText(
             deviceController.concentration3SettingValue)
-        concentration3SettingValueLabelText.pack(anchor=W, pady=5)
+        self.concentration3SettingValueLabelText.pack(anchor=W, pady=5)
         #
         #sampleTimeGroup
         #
         sampleTimeGroup = GroupLabelButton(self, title="做样时间")
         sampleTimeGroup.pack(pady=20)
-        measurementIntervalLabelText = LabelTextButton(sampleTimeGroup, text="间隔时间",
+        self.measurementIntervalLabelText = LabelTextButton(sampleTimeGroup, text="间隔时间",
                                                        command=lambda content: write_single_register(DeviceAddr.measurementIntervalAddr.value, int(float(content)),
                                                                                                      lambda rec: setattr(deviceController, 'measurementInterval', int(float(content))), repeatTimes=0, needMesBox=True)
                                                        )
-        measurementIntervalLabelText.setText(
+        self.measurementIntervalLabelText.setText(
             deviceController.measurementInterval)
-        measurementIntervalLabelText.pack(anchor=W, pady=5)
+        self.measurementIntervalLabelText.pack(anchor=W, pady=5)
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()
@@ -93,6 +93,23 @@ class SettingBoard(Frame):
         # # It prints the current value of the variable.
         # self.entrythingy.bind('<Key-Return>',
         #                      self.print_contents)
+    def refreshPage(self):
+        self.calibrateDayLabelText.setText(deviceController.calibrateDay)
+        self.calibrateHourLabelText.setText(deviceController.calibrateHour)
+        self.calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
+        if deviceController.immediateCalibrate == 1:
+            self.switchImmediateCalibrate.open()
+        else:
+            self.switchImmediateCalibrate.close()
+        self.concentration1SettingValueLabelText.setText(
+            deviceController.concentration1SettingValue)
+        self.concentration2SettingValueLabelText.setText(
+            deviceController.concentration2SettingValue)
+        self.concentration3SettingValueLabelText.setText(
+            deviceController.concentration3SettingValue)
+        self.measurementIntervalLabelText.setText(
+            deviceController.measurementInterval)
+        return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",
     #           self.contents.get())
