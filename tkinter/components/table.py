@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 
 class SimpleTable(Frame):
-    def __init__(self, parent, header=[], data=[[]] ,width=10, height = 3):
+    def __init__(self, parent, header=[], data=[[]], width=10, height=3):
         # use black background so it "peeks through" to
         # form grid lines
         Frame.__init__(self, parent, background="black")
@@ -12,7 +12,7 @@ class SimpleTable(Frame):
         current_row = []
         for column in range(columns):
             label = Label(self, text=header[column],
-                          borderwidth=0, width=width , height = height)
+                          borderwidth=0, width=width, height=height)
             label.grid(row=0, column=column, sticky="nsew", padx=1, pady=1)
             current_row.append(label)
         self._widgets.append(current_row)
@@ -20,7 +20,7 @@ class SimpleTable(Frame):
             current_row = []
             for column in range(columns):
                 label = Label(self, text=data[row][column],
-                              borderwidth=0, width=width,height = height)
+                              borderwidth=0, width=width, height=height)
                 label.grid(row=row+1, column=column,
                            sticky="nsew", padx=1, pady=1)
                 current_row.append(label)
@@ -31,13 +31,11 @@ class SimpleTable(Frame):
         widget = self._widgets[row][column]
         widget.configure(text=value)
 
-
-
 class TreeTable(ttk.Treeview):
-    def __init__(self, parent,tableDatas,**kargs):
+    def __init__(self, parent, tableDatas, **kargs):
         # use black background so it "peeks through" to
         # form grid lines
-        ttk.Treeview.__init__(self, parent,**kargs)
+        ttk.Treeview.__init__(self, parent, **kargs)
         self['columns'] = tableDatas.columns
         for columnConfig in tableDatas.columnConfigs:
             self.column(columnConfig["name"], **columnConfig["attrs"])
@@ -48,10 +46,9 @@ class TreeTable(ttk.Treeview):
     def set(self, row, column, value):
         widget = self._widgets[row][column]
         widget.configure(text=value)
-    def refreshDate(self,tableDatas):
+    def refreshDate(self, tableDatas):
         for tableData in tableDatas.datas:
             self.insert(**tableData)
-
 
 # Inserted at the root, program chooses id:
 # tree.insert('', 'end', 'widgets', text='Widget Tour')

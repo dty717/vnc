@@ -15,7 +15,7 @@ dbConcentration2History = dbSmartFloating.Concentration2Histories
 dbConcentration3History = dbSmartFloating.Concentration3Histories
 dbLocation = dbSmartFloating.location
 
-def dbLogging(currentTime,systemType,info,otherInfo):
+def dbLogging(currentTime, systemType, info, otherInfo):
     dbDeviceLog.insert_one({
         "time": currentTime,
         "systemType": systemType,
@@ -23,15 +23,15 @@ def dbLogging(currentTime,systemType,info,otherInfo):
         "otherInfo": otherInfo
     })
 
-def dbGetLogging(logQuery ={},page = 0 , nPerPage = 30):
+def dbGetLogging(logQuery={}, page=0, nPerPage=30):
     deviceLog = dbDeviceLog.find(logQuery)
     return deviceLog.skip(page * nPerPage).limit(nPerPage)
 
-def dbGetHistory(logQuery ={},page = 0 , nPerPage = 30):
+def dbGetHistory(logQuery={}, page=0, nPerPage=30):
     deviceHistory = dbDeviceHistory.find(logQuery)
     return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
-def dbSaveHistory(currentTime,value,maxValue,AValue,CValue):
+def dbSaveHistory(currentTime, value, maxValue, AValue, CValue):
     dbDeviceHistory.insert_one({
         "time": currentTime,
         "value": value,
@@ -43,7 +43,7 @@ def dbSaveHistory(currentTime,value,maxValue,AValue,CValue):
 def dbGetLastHistory():
     return dbDeviceHistory.find({}).sort('time', -1).limit(1)
 
-def dbSaveConcentration1History(currentTime,value,maxValue,AValue,CValue):
+def dbSaveConcentration1History(currentTime, value, maxValue, AValue, CValue):
     dbConcentration1History.insert_one({
         "time": currentTime,
         "value": value,
@@ -52,11 +52,11 @@ def dbSaveConcentration1History(currentTime,value,maxValue,AValue,CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration1History(logQuery ={},page = 0 , nPerPage = 30):
+def dbGetConcentration1History(logQuery={}, page=0, nPerPage=30):
     concentration1History = dbConcentration1History.find(logQuery)
     return concentration1History.skip(page * nPerPage).limit(nPerPage)
 
-def dbSaveConcentration2History(currentTime,value,maxValue,AValue,CValue):
+def dbSaveConcentration2History(currentTime, value, maxValue, AValue, CValue):
     dbConcentration2History.insert_one({
         "time": currentTime,
         "value": value,
@@ -65,11 +65,11 @@ def dbSaveConcentration2History(currentTime,value,maxValue,AValue,CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration2History(logQuery ={},page = 0 , nPerPage = 30):
+def dbGetConcentration2History(logQuery={}, page=0, nPerPage=30):
     concentration2History = dbConcentration2History.find(logQuery)
     return concentration2History.skip(page * nPerPage).limit(nPerPage)
 
-def dbSaveConcentration3History(currentTime,value,maxValue,AValue,CValue):
+def dbSaveConcentration3History(currentTime, value, maxValue, AValue, CValue):
     dbConcentration3History.insert_one({
         "time": currentTime,
         "value": value,
@@ -78,7 +78,7 @@ def dbSaveConcentration3History(currentTime,value,maxValue,AValue,CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration3History(logQuery ={},page = 0 , nPerPage = 30):
+def dbGetConcentration3History(logQuery={}, page=0, nPerPage=30):
     concentration3History = dbConcentration3History.find(logQuery)
     return concentration3History.skip(page * nPerPage).limit(nPerPage)
 
@@ -95,46 +95,6 @@ def insertLocation(time, latitude, longitude):
 
 def getLastLocation():
     return dbLocation.find({}).sort('time', -1).limit(1)
-
-# def 
-# Issue the serverStatus command and print the results
-# serverStatusResult=db.command("serverStatus")
-# pprint(serverStatusResult)
-
-def getPosition(img, test1, test2):
-    # a = {
-    #     'mouseX': 1,
-    #     'mouseY': 2,
-    #     'effectiveList': [
-    #         {
-    #             'x':1,
-    #             'y':2
-    #         }
-    #     ]
-    # }
-    return None
-
-
-def insertPosition(mouseX, mouseY, heroX, heroY):
-    mousePos = db.position.find_one(
-        {"mouseX": mouseX, "mouseY": mouseY})
-    # _position = {
-    #     "x": x,
-    #     "y": y
-    # }
-    if not mousePos:
-        db.position.insert_one({
-            "mouseX": mouseX,
-            "mouseY": mouseY,
-            "heroX": heroX,
-            "heroY": heroY
-        })
-    else:
-        # mousePos['effectiveList'].append(_position)
-        print(mousePos,heroX,heroY)
-        db.position.update_one({'_id': mousePos.get('_id')}, {
-            "$set": {'heroX': heroX, 'heroY': heroY}})
-    return
 
 # insertPosition(1,2,3,4)
 

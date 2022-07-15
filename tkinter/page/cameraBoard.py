@@ -2,15 +2,14 @@ from tkinter import *
 from tkinter import ttk
 import threading
 from config.config import srcIndex
-from PIL import Image,ImageTk
+from PIL import Image, ImageTk
 from service.logger import Logger
 import cv2
 
-
 class CameraBoard(Frame):
     cameraRunning = False
-    def __init__(self, master,**kargs):
-        super().__init__(master,kargs)
+    def __init__(self, master, **kargs):
+        super().__init__(master, kargs)
         self.stream = cv2.VideoCapture(srcIndex)
         self.stopEvent = threading.Event()
         self.thread = threading.Thread(target=self.videoLoop, args=())
@@ -46,7 +45,7 @@ class CameraBoard(Frame):
                 # print(image)
                 # # if the panel is not None, we need to initialize it
                 if self.panel is None:
-                    self.panel = Label(self,image=image)
+                    self.panel = Label(self, image=image)
                     self.panel.image = image
                     self.panel.pack(side="left", padx=10, pady=10)
                 # otherwise, simply update the panel

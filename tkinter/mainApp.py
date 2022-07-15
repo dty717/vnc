@@ -2,17 +2,17 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import messagebox
 from PIL import Image, ImageTk
-from datetime import datetime,timedelta
+from datetime import datetime, timedelta
 import threading
 import asyncio
 import json
 import websocket
 from config.labelString import titleLabel
-from config.config import sysPath,primaryColor,primaryDarkColor,primaryLightColor,wsHostname,url,deviceID
+from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import sendReq,deviceController,deviceInfo,getBytesControllingInfo,getBytesInfo,requestDeviceEvent,timeSelectEvent,saveSetting,lastClickStartTime,lastSelectTime,power
-from service.gps import gpsData,getGpsInfo,saveGpsEvent,saveLocation
+from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power
+from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
@@ -22,7 +22,6 @@ from page.systemLogBoard import SystemLogBoard
 from page.cameraBoard import CameraBoard
 from page.locationBoard import LocationBoard
 from database.mongodb import dbGetLastHistory
-
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
@@ -36,14 +35,20 @@ root.title(titleLabel)
 root.configure(background=primaryDarkColor)
 styleConfig = ttk.Style()
 # 'ne' as in compass direction
-styleConfig.configure('MainMenu', tabposition='wn',background=primaryDarkColor)
-styleConfig.configure('MainMenu.Tab',background=primaryLightColor, font=("Helvetica", 16))
-styleConfig.map('MainMenu.Tab',background = [('selected',primaryDarkColor)],foreground= [('selected','white')])
+styleConfig.configure('MainMenu', tabposition='wn',
+                      background=primaryDarkColor)
+styleConfig.configure(
+    'MainMenu.Tab', background=primaryLightColor, font=("Helvetica", 16))
+styleConfig.map('MainMenu.Tab', background=[
+                ('selected', primaryDarkColor)], foreground=[('selected', 'white')])
 styleConfig.configure('HistoryBoard', background=primaryColor)
-styleConfig.configure('HistoryBoard.Tab',background=primaryLightColor, font=("Helvetica", 12),padding = 4)
-styleConfig.map('HistoryBoard.Tab',background = [('selected',primaryDarkColor)],foreground= [('selected','white')])
-styleConfig.configure('Treeview',background="#D3D3D3",foreground="black",rowheight = 25,fieldbackground="#D3D3D3")
-styleConfig.map('Treeview',background = [('selected',primaryDarkColor)])
+styleConfig.configure('HistoryBoard.Tab', background=primaryLightColor, font=(
+    "Helvetica", 12), padding=4)
+styleConfig.map('HistoryBoard.Tab', background=[
+                ('selected', primaryDarkColor)], foreground=[('selected', 'white')])
+styleConfig.configure('Treeview', background="#D3D3D3",
+                      foreground="black", rowheight=25, fieldbackground="#D3D3D3")
+styleConfig.map('Treeview', background=[('selected', primaryDarkColor)])
 
 images = (
     PhotoImage("img_close", data='''
@@ -63,12 +68,12 @@ images = (
 )
 styleConfig.element_create("close", "image", "img_close",
                            ("active", "pressed", "!disabled", "img_closepressed"),
-                           ("active", "!disabled", "img_closeactive"), width = 130, padding = 30,sticky='')
+                           ("active", "!disabled", "img_closeactive"), width=130, padding=30, sticky='')
 
 styleConfig.layout("MainMenu", [
                    ("MainMenu.client", {"sticky": "nswe"})])
 styleConfig.layout("HistoryBoard", [
-                   ("HistoryBoard.client", {"sticky": "nswe"})])                   
+                   ("HistoryBoard.client", {"sticky": "nswe"})])
 styleConfig.layout("MainMenu.Tab", [
     ("MainMenu.tab", {
         "sticky": "nswe",
@@ -93,24 +98,33 @@ styleConfig.layout("MainMenu.Tab", [
     })
 ])
 
-redSignal = ImageTk.PhotoImage(Image.open(f"{sysPath}/assets/redSignal.png").resize((30, 30)))
-greenSignal = ImageTk.PhotoImage(Image.open(f"{sysPath}/assets/greenSignal.png").resize((30, 30)))
+redSignal = ImageTk.PhotoImage(Image.open(
+    f"{sysPath}/assets/redSignal.png").resize((30, 30)))
+greenSignal = ImageTk.PhotoImage(Image.open(
+    f"{sysPath}/assets/greenSignal.png").resize((30, 30)))
 # redSignal = PhotoImage(file = f"{sysPath}/assets/redSignal.png")
 # greenSignal = PhotoImage(file = f"{sysPath}/assets/greenSignal.png")
-imgDicts = {"greenSignal":greenSignal,"redSignal":redSignal}
-mainMenu = ttk.Notebook(root,width=screenWidth-300, height=screenHeight-50,padding = 10,style = "MainMenu")
+imgDicts = {"greenSignal": greenSignal, "redSignal": redSignal}
+mainMenu = ttk.Notebook(root, width=screenWidth-300,
+                        height=screenHeight-50, padding=10, style="MainMenu")
 mainMenu.pack()
 
-mainBoard = MainBoard(mainMenu,header=['', '基值', '峰值', 'A值', 'C值'], data=[
-    ['标一', round(deviceInfo.concentration1Value, 4),round(deviceInfo.concentration1MaxValue, 4), round(deviceInfo.concentration1AValue, 4),round(deviceInfo.concentration1CValue, 4)],
-    ['标二', round(deviceInfo.concentration2Value, 4),round(deviceInfo.concentration2MaxValue, 4), round(deviceInfo.concentration2AValue, 4),round(deviceInfo.concentration2CValue, 4)],
-    ['标三', round(deviceInfo.concentration3Value, 4),round(deviceInfo.concentration3MaxValue, 4), round(deviceInfo.concentration3AValue, 4),round(deviceInfo.concentration3CValue, 4)],
-    ['水样', round(deviceInfo.sampleValue, 4),round(deviceInfo.sampleMaxValue, 4), round(deviceInfo.sampleAValue, 4),round(deviceInfo.sampleCValue, 4)]],
+mainBoard = MainBoard(mainMenu, header=['', '基值', '峰值', 'A值', 'C值'], data=[
+    ['标一', round(deviceInfo.concentration1Value, 4), round(deviceInfo.concentration1MaxValue, 4), round(
+        deviceInfo.concentration1AValue, 4), round(deviceInfo.concentration1CValue, 4)],
+    ['标二', round(deviceInfo.concentration2Value, 4), round(deviceInfo.concentration2MaxValue, 4), round(
+        deviceInfo.concentration2AValue, 4), round(deviceInfo.concentration2CValue, 4)],
+    ['标三', round(deviceInfo.concentration3Value, 4), round(deviceInfo.concentration3MaxValue, 4), round(
+        deviceInfo.concentration3AValue, 4), round(deviceInfo.concentration3CValue, 4)],
+    ['水样', round(deviceInfo.sampleValue, 4), round(deviceInfo.sampleMaxValue, 4), round(deviceInfo.sampleAValue, 4), round(deviceInfo.sampleCValue, 4)]],
     width=50, height=50, bg=primaryColor)
 historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg=primaryColor)
-controllingBoard = ControllingBoard(mainMenu,imgDicts, width=50, height=50, bg=primaryColor)
-timeSelectingBoard = TimeSelectingBoard(mainMenu, width=50, height=50, bg=primaryColor)
-settingBoard = SettingBoard(mainMenu,imgDicts, width=50, height=50, bg=primaryColor)
+controllingBoard = ControllingBoard(
+    mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
+timeSelectingBoard = TimeSelectingBoard(
+    mainMenu, width=50, height=50, bg=primaryColor)
+settingBoard = SettingBoard(
+    mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
 cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg=primaryColor)
 locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
@@ -144,7 +158,6 @@ def getMenu(menuName):
     elif menuName == ".!notebook.!locationboard":
         return locationBoard
 
-
 def changeMenuTab(event):
     global lastMenuName
     currentMenuName = mainMenu.select()
@@ -154,31 +167,32 @@ def changeMenuTab(event):
     lastMenuName = currentMenuName
     if currentMenuName == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
-    elif  currentMenuName == ".!notebook.!historyboard":
+    elif currentMenuName == ".!notebook.!historyboard":
         historyBoard.refreshPage()
-    elif  currentMenuName == ".!notebook.!mainboard":
+    elif currentMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
-    elif  currentMenuName == ".!notebook.!locationboard":
+    elif currentMenuName == ".!notebook.!locationboard":
         locationBoard.refreshPage()
-    elif  currentMenuName == ".!notebook.!cameraboard":
+    elif currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
 mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
 
-bufControlling= [0x01,0x03,0x00,0x00,0x00,0x2e]
-crcCheck = crc16(bufControlling,0,len(bufControlling))
-bufControlling.append(crcCheck>>8)
-bufControlling.append(crcCheck&0xff)
+bufControlling = [0x01, 0x03, 0x00, 0x00, 0x00, 0x2e]
+crcCheck = crc16(bufControlling, 0, len(bufControlling))
+bufControlling.append(crcCheck >> 8)
+bufControlling.append(crcCheck & 0xff)
 
-bufQuery= [0x01,0x03,0x00,0x81,0x00,0x23]
-crcCheck = crc16(bufQuery,0,len(bufQuery))
-bufQuery.append(crcCheck>>8)
-bufQuery.append(crcCheck&0xff)
+bufQuery = [0x01, 0x03, 0x00, 0x81, 0x00, 0x23]
+crcCheck = crc16(bufQuery, 0, len(bufQuery))
+bufQuery.append(crcCheck >> 8)
+bufQuery.append(crcCheck & 0xff)
 
 def queryHandle(queryRecv):
-    if getBytesInfo(queryRecv,deviceInfo,lastMenuName):
+    if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
         updatePage()
-    Logger.logWithOutDuration("系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
+    Logger.logWithOutDuration(
+        "系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
 
 def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
@@ -199,9 +213,9 @@ def updatePage():
         pass
 
 def RequestDevice():
-  global deviceController,deviceInfo
+  global deviceController, deviceInfo
   while not requestDeviceEvent.wait(5):
-    sendReq(bufQuery, queryHandle, repeatTimes = 0 , needMesBox = False)
+    sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
     # sendReq(bufControlling, lambda controllingRecv : getBytesControllingInfo(controllingRecv,deviceController,lastMenuName), repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
@@ -221,6 +235,7 @@ requestDeviceThread.start()
 def getGPS():
     while True:
         getGpsInfo()
+
 getGpsThread = threading.Thread(target=getGPS)
 getGpsThread.start()
 
@@ -228,28 +243,28 @@ def saveGPS():
   global gpsData
   while not saveGpsEvent.wait(5*60):
     if gpsData.active == True:
-        saveLocation(gpsData.year,gpsData.month,gpsData.date,gpsData.hour,gpsData.minute,gpsData.second,gpsData.latitude,gpsData.longitude)
+        saveLocation(gpsData.year, gpsData.month, gpsData.date, gpsData.hour,
+                     gpsData.minute, gpsData.second, gpsData.latitude, gpsData.longitude)
         pass
 
 saveGpsThread = threading.Thread(target=saveGPS)
 saveGpsThread.start()
 
 def checkLastSelectTime():
-    global lastSelectTime,lastClickStartTime
+    global lastSelectTime, lastClickStartTime
     now = datetime.now()
-    if lastSelectTime > lastClickStartTime and now > lastSelectTime + timedelta(hours=1, minutes = 40) and power.value == 1:
+    if lastSelectTime > lastClickStartTime and now > lastSelectTime + timedelta(hours=1, minutes=40) and power.value == 1:
         lastHistory = list(dbGetLastHistory())
         if len(lastHistory) == 0:
             return False
         else:
             lastHistory = lastHistory[0]
-            if now > lastHistory['time'] + timedelta(hours=1, minutes = 40):
+            if now > lastHistory['time'] + timedelta(hours=1, minutes=40):
                 return False
     return True
-                
 
 def selectTime():
-  global deviceController,lastSelectTime
+  global deviceController, lastSelectTime
   while not timeSelectEvent.wait(10*60):
     # datetime
     now = datetime.now()
@@ -258,7 +273,7 @@ def selectTime():
         Logger.log("设备异常", "设备做样异常,未能整点做样", "", 3600)
         continue
     if now.minute + 20 > 60:
-        during = 60 * 60 - now.minute * 60 - now.second -now.microsecond / 1000000
+        during = 60 * 60 - now.minute * 60 - now.second - now.microsecond / 1000000
         timeSelectEvent.wait(during)
         print(datetime.now())
         hour = datetime.now().hour
@@ -268,30 +283,34 @@ def selectTime():
                 # start select time
                 power.value = 1
                 timeSelectEvent.wait(60)
-                write_single_register(DeviceAddr.modelSelectAddr.value, 1, 
-                    lambda rec: None, repeatTimes = 3 , needMesBox = True)
-                write_single_register(DeviceAddr.operationSelectAddr.value, 1, 
-                    lambda rec: None, repeatTimes = 3 , needMesBox = True)
+                write_single_register(DeviceAddr.modelSelectAddr.value, 1,
+                                      lambda rec: None, repeatTimes=3, needMesBox=True)
+                write_single_register(DeviceAddr.operationSelectAddr.value, 1,
+                                      lambda rec: None, repeatTimes=3, needMesBox=True)
         timeSelectEvent.wait(60)
     pass
-
 # selectTimeThread = threading.Thread(target=selectTime)
 # selectTimeThread.start()
 
 jsonDecoder = json.JSONDecoder()
 
 wid = None
+
 def on_message(ws, message):
     global wid
     jsonObj = jsonDecoder.decode(message)
     wType = jsonObj["type"]
-    if wType =='id':
+    if wType == 'id':
         wid = jsonObj["id"]
-        ws.send("{\"type\":\"deviceID\",\"name\":\""+deviceID+"\",\"id\":"+str(wid)+"}")
+        ws.send("{\"type\":\"deviceID\",\"name\":\"" +
+                deviceID+"\",\"id\":"+str(wid)+"}")
+
 def on_error(ws, error):
     print(error)
+
 def on_close(ws, close_status_code, close_msg):
     print("### closed ###")
+
 def on_open(ws):
     print("Opened connection")
 # websocket.enableTrace(True)
@@ -301,7 +320,6 @@ ws = websocket.WebSocketApp(url,
                             on_message=on_message,
                             on_error=on_error,
                             on_close=on_close)
-
 websocketThread = threading.Thread(target=ws.run_forever)
 websocketThread.start()
 
@@ -312,7 +330,6 @@ websocketThread.start()
 #     connectWebsocketLoop.run_until_complete(connectWebsocket())
 # finally:
 #     connectWebsocketLoop.close()
-
 
 def on_closing():
     if messagebox.askokcancel("退出", "确定退出吗?"):

@@ -54,14 +54,15 @@ table_crc_lo = [
     0x44, 0x84, 0x85, 0x45, 0x87, 0x47, 0x46, 0x86, 0x82, 0x42,
     0x43, 0x83, 0x41, 0x81, 0x80, 0x40]
 
+
 def crc16(buffer,  start, buffer_length):
     crc_hi = 0xFF
     crc_lo = 0xFF
     bufferIndex = 0
     while True:
-        if(buffer_length<=0):
+        if(buffer_length <= 0):
             break
-        buffer_length-=1
+        buffer_length -= 1
         i = crc_hi ^ buffer[bufferIndex]
         bufferIndex += 1
         crc_hi = crc_lo ^ table_crc_hi[i]
@@ -69,20 +70,23 @@ def crc16(buffer,  start, buffer_length):
     return (crc_hi << 8 | crc_lo)
     # return [ crc_hi,crc_lo]
 
+
 def checkCrc(buffer):
-    crcCheck = crc16(buffer,0,len(buffer) - 2)
-    if (buffer[-2]<<8|buffer[-1]) == crcCheck:
+    crcCheck = crc16(buffer, 0, len(buffer) - 2)
+    if (buffer[-2] << 8 | buffer[-1]) == crcCheck:
         return True
     else:
         return False
 
-def checkLen(buffer,targetLen):
+
+def checkLen(buffer, targetLen):
     if buffer[2] == targetLen*2 == len(buffer) - 5:
         return True
     else:
         return False
 
-def checkBuffer(recBuffer,requestBuffer):
+
+def checkBuffer(recBuffer, requestBuffer):
     if len(recBuffer) < 4:
         # print("length too small")
         return False
@@ -93,7 +97,7 @@ def checkBuffer(recBuffer,requestBuffer):
         # print("command error")
         return False
     if recBuffer[1] == 0x03:
-        if not checkLen(recBuffer,(requestBuffer[4]<<8)|requestBuffer[5]):
+        if not checkLen(recBuffer, (requestBuffer[4] << 8) | requestBuffer[5]):
             # print("length error")
             return False
     return checkCrc(recBuffer)

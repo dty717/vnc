@@ -3,6 +3,7 @@ from tkinter import ttk
 from PIL import Image
 from config.config import *
 
+
 class TableDatas():
     def __init__(self):
         self.columnConfigs = []
@@ -13,13 +14,13 @@ class TableDatas():
         self.columns = columns
     def column(self, name, **attrs):
         self.columnConfigs.append({
-            "name":name,
-            "attrs":attrs
+            "name": name,
+            "attrs": attrs
         })
     def heading(self, name, **attrs):
         self.headingConfigs.append({
-            "name":name,
-            "attrs":attrs
+            "name": name,
+            "attrs": attrs
         })
     def insert(self, **data):
         self.datas.append(data)

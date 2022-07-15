@@ -436,7 +436,7 @@ class TkinterMapView(tkinter.Frame):
             }
             url = self.tile_server.replace("{x}", str(x)).replace("{y}", str(y)).replace("{z}", str(zoom))
             image = Image.open(requests.get(url, stream=True,headers = headers,timeout=15.0).raw)
-
+            # 
             if self.overlay_tile_server is not None:
                 url = self.overlay_tile_server.replace("{x}", str(x)).replace("{y}", str(y)).replace("{z}", str(zoom))
                 image_overlay = Image.open(requests.get(url, stream=True,headers = headers,timeout=15.0).raw)

@@ -12,7 +12,7 @@ time_zone_shift = 8
 lat_deg = 35.516268
 lon_deg = 113.377695
 
-imgDicts = {"greenSignal":None,"redSignal":None}
+imgDicts = {"greenSignal": None, "redSignal": None}
 
 primaryColor = "#26a69a"
 primaryLightColor = "#64d8cb"

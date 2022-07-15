@@ -4,22 +4,23 @@ import threading
 import jsonpickle
 import os
 import datetime
+import requests
 from tkinter import messagebox
 from enum import Enum
 from gpiozero import LED
 
-from config.config import sysPath,deviceSerName ,__unitIdentifier,uploadURL,deviceID,sampleType
-from tool.crc import checkLen,checkCrc,crc16
+from config.config import sysPath, deviceSerName, __unitIdentifier, uploadURL, deviceID, sampleType
+from tool.crc import checkLen, checkCrc, crc16
 from tool.bytesConvert import bytesToFloat
 from service.gps import gpsData
 from service.logger import Logger
-from database.mongodb import dbSaveHistory,dbSaveConcentration1History,dbSaveConcentration2History,dbSaveConcentration3History
+from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History
 
 power = LED(18)
 lastClickStartTime = datetime.datetime.now()
 lastSelectTime = datetime.datetime.now()
 
-ser = serial.Serial(deviceSerName,baudrate =115200,timeout=0.2) 
+ser = serial.Serial(deviceSerName, baudrate=115200, timeout=0.2)
 serialQueues = []
 sendBusy = False
 isSending = False
@@ -28,9 +29,8 @@ isBlocking = False
 requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 
-
 class RequestData:
-    def __init__(self, sendBuf,callBack, repeatTimes ,needMesBox):
+    def __init__(self, sendBuf, callBack, repeatTimes, needMesBox):
         self.sendBuf = sendBuf
         self.repeatTimes = repeatTimes
         self.callBack = callBack
@@ -43,29 +43,31 @@ def compare(arr1, arr2):
                 return False
         return True
     else:
-        return False    
+        return False
 
 def sendReq(sendReqBuf, callBack, repeatTimes, needMesBox):
-    global sendBusy,lastTime,isSending,serialQueues
+    global sendBusy, lastTime, isSending, serialQueues
     if (not isSending) and (len(serialQueues) == 0):
-        serialQueues.append(RequestData(sendReqBuf, callBack,repeatTimes,needMesBox))
+        serialQueues.append(RequestData(
+            sendReqBuf, callBack, repeatTimes, needMesBox))
         send(sendReqBuf, callBack, repeatTimes, needMesBox)
     else:
         queuesCount = len(serialQueues)
         for i in range(queuesCount):
-            if compare(serialQueues[i].sendBuf,sendReqBuf):
+            if compare(serialQueues[i].sendBuf, sendReqBuf):
                 return
-        serialQueues.append(RequestData(sendReqBuf,callBack, repeatTimes,needMesBox))
+        serialQueues.append(RequestData(
+            sendReqBuf, callBack, repeatTimes, needMesBox))
         if len(serialQueues) > 5:
             serialQueues.clear()
             isSending = False
 
 def send(sendReqBuf, callBack, repeatTimes, needMesBox):
-    global sendBusy,lastTime,isSending,serialQueues
+    global sendBusy, lastTime, isSending, serialQueues
     if sendReqBuf[1] != 0x03:
         sendBusy = True
     lastTime = time.time()
-    if not request(sendReqBuf,callBack, needMesBox):
+    if not request(sendReqBuf, callBack, needMesBox):
         if repeatTimes > 0:
             send(s, callBack, repeatTimes - 1, needMesBox)
             return
@@ -74,12 +76,13 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
     else:
         serialQueues.remove(serialQueues[0])
     isSending = False
-    if len(serialQueues)>0:
+    if len(serialQueues) > 0:
         requestData = serialQueues[0]
-        send(requestData.sendBuf, requestData.callBack, requestData.repeatTimes,requestData.needMesBox)
+        send(requestData.sendBuf, requestData.callBack,
+             requestData.repeatTimes, requestData.needMesBox)
 
-def request(sendReqBuf,callBack ,needMesBox):
-    global isSending,isBlocking,lastTime
+def request(sendReqBuf, callBack, needMesBox):
+    global isSending, isBlocking, lastTime
     isSending = True
     if power.value == 0:
         if needMesBox:
@@ -100,7 +103,7 @@ def request(sendReqBuf,callBack ,needMesBox):
         return
     _now = time.time()
     try:
-        if _now - lastTime<1:
+        if _now - lastTime < 1:
             requestDeviceEvent.wait(lastTime+1-_now)
         lastTime = time.time()
         ser.flush()
@@ -114,33 +117,37 @@ def request(sendReqBuf,callBack ,needMesBox):
     except:
         return False
     isSending = False
-    return checkRecv(sendReqBuf,recBytes,callBack, needMesBox)
+    return checkRecv(sendReqBuf, recBytes, callBack, needMesBox)
 
-def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
-    if sendReqBuf[1] ==0x03:
-        if len(recBytes)==0:
+def checkRecv(sendReqBuf, recBytes, callBack, needMesBox):
+    if sendReqBuf[1] == 0x03:
+        if len(recBytes) == 0:
             Logger.log("通讯异常", "设备问询无回复", "", 1200)
             return False
-        if sendReqBuf[0]!=recBytes[0]:
-            Logger.log("通讯异常", "设备问询回复地址错误", ' '.join([str(e) for e in recBytes]), 1200)
+        if sendReqBuf[0] != recBytes[0]:
+            Logger.log("通讯异常", "设备问询回复地址错误", ' '.join(
+                [str(e) for e in recBytes]), 1200)
             return False
         if not checkCrc(recBytes):
-            Logger.log("通讯异常", "设备问询回复校验错误", ' '.join([str(e) for e in recBytes]), 1200)
+            Logger.log("通讯异常", "设备问询回复校验错误", ' '.join(
+                [str(e) for e in recBytes]), 1200)
             return False
-        if not checkLen(recBytes,(sendReqBuf[4]<<8)|sendReqBuf[5]):
+        if not checkLen(recBytes, (sendReqBuf[4] << 8) | sendReqBuf[5]):
             Logger.log("通讯异常", "设备问询回复长度错误", "", 1200)
             return False
         try:
             callBack(recBytes)
         except Exception as e:
-            Logger.log("通讯异常", "设备问询解析异常", ' '.join([str(e) for e in recBytes]), 1200)
+            Logger.log("通讯异常", "设备问询解析异常", ' '.join(
+                [str(e) for e in recBytes]), 1200)
         return True
-    if len(recBytes)==0:
+    if len(recBytes) == 0:
         if needMesBox:
             messagebox.showerror("通讯异常", "设备未反应")
-        Logger.log("通讯异常", "设备设置无回复", str(sendReqBuf[0]) + " " + str(sendReqBuf[1]) + " " + str(sendReqBuf[2]) + " " + str(sendReqBuf[3]) + " "+ str(sendReqBuf[4]) + " " + str(sendReqBuf[5]) + " ", 1200)
+        Logger.log("通讯异常", "设备设置无回复", str(sendReqBuf[0]) + " " + str(sendReqBuf[1]) + " " + str(
+            sendReqBuf[2]) + " " + str(sendReqBuf[3]) + " " + str(sendReqBuf[4]) + " " + str(sendReqBuf[5]) + " ", 1200)
         return False
-    if sendReqBuf[0]!=recBytes[0]:
+    if sendReqBuf[0] != recBytes[0]:
         if needMesBox:
             messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
         Logger.log("通讯异常", "设备设置回复地址错误", "", 1200)
@@ -156,7 +163,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
             if (needMesBox):
                 messagebox.showerror("通讯异常", "通讯繁忙,稍后再试")
             Logger.log("通讯异常", "设备设置回复长度错误", "", 1200)
-            return False    
+            return False
         for i in range(8):
             if recBytes[i] != sendReqBuf[i]:
                 equal = False
@@ -178,6 +185,7 @@ def checkRecv(sendReqBuf,recBytes,callBack, needMesBox):
         if callBack != None:
             callBack(recBytes)
     return equal
+
 
 lastSaveSetting = time.time()
 
@@ -205,10 +213,11 @@ def write_single_coil(starting_address, value, callBack, repeatTimes, needMesBox
     else:
         valueLSB = 0
         valueMSB = (0 >> 8)
-    data = [__unitIdentifier, function_code, starting_address_msb, starting_address_lsb, valueMSB, valueLSB]
-    crcCheck = crc16(data,0,len(data))
-    data.append(crcCheck>>8)
-    data.append(crcCheck&0xff)
+    data = [__unitIdentifier, function_code, starting_address_msb,
+            starting_address_lsb, valueMSB, valueLSB]
+    crcCheck = crc16(data, 0, len(data))
+    data.append(crcCheck >> 8)
+    data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
 def write_single_register(starting_address, value, callBack, repeatTimes, needMesBox):
@@ -217,10 +226,11 @@ def write_single_register(starting_address, value, callBack, repeatTimes, needMe
     starting_address_msb = ((starting_address & 0xFF00) >> 8)
     valueLSB = (value & 0xFF)
     valueMSB = ((value & 0xFF00) >> 8)
-    data = [__unitIdentifier, function_code, starting_address_msb, starting_address_lsb, valueMSB, valueLSB]
-    crcCheck = crc16(data,0,len(data))
-    data.append(crcCheck>>8)
-    data.append(crcCheck&0xff)
+    data = [__unitIdentifier, function_code, starting_address_msb,
+            starting_address_lsb, valueMSB, valueLSB]
+    crcCheck = crc16(data, 0, len(data))
+    data.append(crcCheck >> 8)
+    data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
 def write_multiple_registers(starting_address, values, callBack, repeatTimes, needMesBox):
@@ -231,14 +241,15 @@ def write_multiple_registers(starting_address, values, callBack, repeatTimes, ne
     # valueMSB = ((value & 0xFF00) >> 8)
     quantityLSB = len(values) & 0xFF
     quantityMSB = (len(values) & 0xFF00) >> 8
-    data = [__unitIdentifier, function_code, starting_address_msb, starting_address_lsb, quantityMSB, quantityLSB]
+    data = [__unitIdentifier, function_code, starting_address_msb,
+            starting_address_lsb, quantityMSB, quantityLSB]
     data.append(len(values) * 2)
     for value in values:
         data.append((value & 0xFF00) >> 8)
         data.append(value & 0xFF)
-    crcCheck = crc16(data,0,len(data))
-    data.append(crcCheck>>8)
-    data.append(crcCheck&0xff)
+    crcCheck = crc16(data, 0, len(data))
+    data.append(crcCheck >> 8)
+    data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
 class DeviceAddr(Enum):
@@ -275,7 +286,7 @@ class DeviceAddr(Enum):
     concentration3ValueAddr = 0x8d
     concentration3MaxValueAddr = 0x8e
     concentration3AValueAddr = 0x8f
-    concentration3CValueAddr = 0x91    
+    concentration3CValueAddr = 0x91
     sampleValueAddr = 0x93
     sampleMaxValueAddr = 0x94
     sampleAValueAddr = 0x95
@@ -297,7 +308,8 @@ class DeviceController:
         self.init = False
         self.modelSelect = 0
         self.operationSelect = 0
-        self.selectingHours = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
+        self.selectingHours = [0, 0, 0, 0, 0, 0, 0, 0,
+                               0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         self.calibrateDay = 0
         self.calibrateHour = 0
         self.calibrateMinute = 0
@@ -315,7 +327,7 @@ class DeviceController:
         self.reactionTubeClean = 0
         self.suctionClean = 0
         self.measurementInterval = 0
-    # 
+    #
     def __str__(self):
         return """init = {}
 modelSelect = {}
@@ -337,11 +349,11 @@ chemical2Pump = {}
 chemical3Pump = {}
 reactionTubeClean = {}
 suctionClean = {}
-measurementInterval = {}""".format(self.init,self.modelSelect,self.operationSelect,self.selectingHours,self.calibrateDay,self.calibrateHour,self.calibrateMinute,
-            self.immediateCalibrate,self.concentration1SettingValue,self.concentration2SettingValue,
-            self.concentration3SettingValue,self.samplePump,self.concentration1Pump,self.concentration2Pump,
-            self.concentration3Pump,self.chemical1Pump,self.chemical2Pump,self.chemical3Pump,self.reactionTubeClean,
-            self.suctionClean,self.measurementInterval)
+measurementInterval = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
+                                   self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
+                                   self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
+                                   self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
+                                   self.suctionClean, self.measurementInterval)
 
 class DeviceInfo:
     def __init__(self):
@@ -357,7 +369,7 @@ class DeviceInfo:
         self.concentration3Value = 0
         self.concentration3MaxValue = 0
         self.concentration3AValue = 0
-        self.concentration3CValue = 0    
+        self.concentration3CValue = 0
         self.sampleValue = 0
         self.sampleMaxValue = 0
         self.sampleAValue = 0
@@ -402,244 +414,339 @@ warningInfo = {}
 dataFlag = {}
 currentModelSelect = {}
 currentOperationSelect = {}
-currentState = {}""".format(self.init,self.concentration1Value,self.concentration1MaxValue,self.concentration1AValue,
-    self.concentration1CValue,self.concentration2Value,self.concentration2MaxValue,self.concentration2AValue,self.concentration2CValue,
-    self.concentration3Value,self.concentration3MaxValue,self.concentration3AValue,self.concentration3CValue,self.sampleValue,
-    self.sampleMaxValue,self.sampleAValue,self.sampleCValue,self.measureYear,self.measureMonth,self.measureDay,self.measureHour,
-    self.measureMinute,self.measureSecond,self.warningInfo,self.dataFlag,self.currentModelSelect,self.currentOperationSelect,self.currentState)
+currentState = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
+                            self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
+                            self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
+                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue, self.measureYear, self.measureMonth, self.measureDay, self.measureHour,
+                            self.measureMinute, self.measureSecond, self.warningInfo, self.dataFlag, self.currentModelSelect, self.currentOperationSelect, self.currentState)
 
 shiftAddr = 3
 
-def getBytesControllingInfo(buffer,deviceController,lastMenuName):
+def getBytesControllingInfo(buffer, deviceController, lastMenuName):
     if not deviceController.init:
         deviceController.init = True
-        deviceController.modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
-        deviceController.operationSelect = (buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value + 1]
+        deviceController.modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value]
+                                        << 8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
+        deviceController.operationSelect = (buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value]
+                                            << 8) | buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value + 1]
         for i in range(24):
-            deviceController.selectingHours[i] = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)] <<8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
-        deviceController.calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
-        deviceController.calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
-        deviceController.calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
-        deviceController.immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
-        deviceController.concentration1SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value+4])
-        deviceController.concentration2SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value+4])
-        deviceController.concentration3SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value+4])
-        deviceController.samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
-        deviceController.concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
-        deviceController.concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
-        deviceController.concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
-        deviceController.chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
-        deviceController.chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
-        deviceController.chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
-        deviceController.reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
-        deviceController.suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
-        deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
+            deviceController.selectingHours[i] = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)]
+                                                  << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
+        deviceController.calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value]
+                                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
+        deviceController.calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value]
+                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
+        deviceController.calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value]
+                                            << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
+        deviceController.immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value]
+                                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
+        deviceController.concentration1SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value+4])
+        deviceController.concentration2SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value+4])
+        deviceController.concentration3SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value+4])
+        deviceController.samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value]
+                                       << 8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
+        deviceController.concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value]
+                                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
+        deviceController.concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value]
+                                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
+        deviceController.concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value]
+                                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
+        deviceController.chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value]
+                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
+        deviceController.chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value]
+                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
+        deviceController.chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value]
+                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
+        deviceController.reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value]
+                                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
+        deviceController.suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value]
+                                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
+        deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
+                                                << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
     else:
-        _modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
+        _modelSelect = (buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value]
+                        << 8) | buffer[shiftAddr + 2 * DeviceAddr.modelSelectAddr.value + 1]
         if _modelSelect != deviceController.modelSelect:
             deviceController.modelSelect = _modelSelect
-        _operationSelect = (buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value + 1]
+        _operationSelect = (buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value]
+                            << 8) | buffer[shiftAddr + 2 * DeviceAddr.operationSelectAddr.value + 1]
         if _operationSelect != deviceController.operationSelect:
             deviceController.operationSelect = _operationSelect
         for i in range(24):
-            _selectingHours = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)] <<8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
+            _selectingHours = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)]
+                               << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
             if _selectingHours != deviceController.selectingHours[i]:
                 deviceController.selectingHours[i] = _selectingHours
-        _calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
+        _calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value]
+                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
         if _calibrateDay != deviceController.calibrateDay:
             deviceController.calibrateDay = _calibrateDay
-        _calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
+        _calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value]
+                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value + 1]
         if _calibrateHour != deviceController.calibrateHour:
             deviceController.calibrateHour = _calibrateHour
-        _calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
+        _calibrateMinute = (buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value]
+                            << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateMinuteAddr.value + 1]
         if _calibrateMinute != deviceController.calibrateMinute:
             deviceController.calibrateMinute = _calibrateMinute
-        _immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
+        _immediateCalibrate = (buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value]
+                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.immediateCalibrateAddr.value + 1]
         if _immediateCalibrate != deviceController.immediateCalibrate:
             deviceController.immediateCalibrate = _immediateCalibrate
-        _concentration1SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value+4])
+        _concentration1SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration1SettingValueAddr.value+4])
         if _concentration1SettingValue != deviceController.concentration1SettingValue:
             deviceController.concentration1SettingValue = _concentration1SettingValue
-        _concentration2SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value+4])
+        _concentration2SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration2SettingValueAddr.value+4])
         if _concentration2SettingValue != deviceController.concentration2SettingValue:
             deviceController.concentration2SettingValue = _concentration2SettingValue
-        _concentration3SettingValue = bytesToFloat(buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value+4])
+        _concentration3SettingValue = bytesToFloat(
+            buffer[shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value: shiftAddr + 2 * DeviceAddr.concentration3SettingValueAddr.value+4])
         if _concentration3SettingValue != deviceController.concentration3SettingValue:
             deviceController.concentration3SettingValue = _concentration3SettingValue
-        _samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
+        _samplePump = (buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value]
+                       << 8) | buffer[shiftAddr + 2 * DeviceAddr.samplePumpAddr.value + 1]
         if _samplePump != deviceController.samplePump:
             deviceController.samplePump = _samplePump
-        _concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
+        _concentration1Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value]
+                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration1PumpAddr.value + 1]
         if _concentration1Pump != deviceController.concentration1Pump:
             deviceController.concentration1Pump = _concentration1Pump
-        _concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
+        _concentration2Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value]
+                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration2PumpAddr.value + 1]
         if _concentration2Pump != deviceController.concentration2Pump:
             deviceController.concentration2Pump = _concentration2Pump
-        _concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
+        _concentration3Pump = (buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value]
+                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.concentration3PumpAddr.value + 1]
         if _concentration3Pump != deviceController.concentration3Pump:
             deviceController.concentration3Pump = _concentration3Pump
-        _chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
+        _chemical1Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value]
+                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical1PumpAddr.value + 1]
         if _chemical1Pump != deviceController.chemical1Pump:
             deviceController.chemical1Pump = _chemical1Pump
-        _chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
+        _chemical2Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value]
+                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
         if _chemical2Pump != deviceController.chemical2Pump:
             deviceController.chemical2Pump = _chemical2Pump
-        _chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
+        _chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value]
+                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
         if _chemical3Pump != deviceController.chemical3Pump:
             deviceController.chemical3Pump = _chemical3Pump
-        _reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
+        _reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value]
+                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
         if _reactionTubeClean != deviceController.reactionTubeClean:
             deviceController.reactionTubeClean = _reactionTubeClean
-        _suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
+        _suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value]
+                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
         if _suctionClean != deviceController.suctionClean:
             deviceController.suctionClean = _suctionClean
-        _measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value] <<8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
+        _measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
+                                << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
         if _measurementInterval != deviceController.measurementInterval:
             deviceController.measurementInterval = _measurementInterval
         # print(deviceController)
     pass
 
 shiftAddr2 = 3 - 2 * DeviceAddr.concentration1ValueAddr.value
-def getBytesInfo(buffer,deviceInfo,lastMenuName):
+
+def getBytesInfo(buffer, deviceInfo, lastMenuName):
     updateFlag = False
     if not deviceInfo.init:
         deviceInfo.init = True
-        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
-        deviceInfo.currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
-        deviceInfo.currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
-        deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
+        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        deviceInfo.currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value]
+                                         << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
+        deviceInfo.currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value]
+                                             << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
+        deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value]
+                                   << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
         if deviceInfo.currentOperationSelect == 2:
-            deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
-            deviceInfo.concentration1MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value + 1]
-            deviceInfo.concentration1AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value + 4])
-            deviceInfo.concentration1CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value + 4])
+            deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value]
+                                              << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
+            deviceInfo.concentration1MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value]
+                                                 << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value + 1]
+            deviceInfo.concentration1AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value + 4])
+            deviceInfo.concentration1CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value + 4])
         elif deviceInfo.currentOperationSelect == 3:
-            deviceInfo.concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
-            deviceInfo.concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
-            deviceInfo.concentration2AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4] )
-            deviceInfo.concentration2CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
+            deviceInfo.concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value]
+                                              << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
+            deviceInfo.concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value]
+                                                 << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
+            deviceInfo.concentration2AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
+            deviceInfo.concentration2CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
         elif deviceInfo.currentOperationSelect == 4:
-            deviceInfo.concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
-            deviceInfo.concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
-            deviceInfo.concentration3AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
-            deviceInfo.concentration3CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
+            deviceInfo.concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value]
+                                              << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
+            deviceInfo.concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value]
+                                                 << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
+            deviceInfo.concentration3AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
+            deviceInfo.concentration3CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
         elif deviceInfo.currentOperationSelect == 1:
-            deviceInfo.sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
-            deviceInfo.sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
-            deviceInfo.sampleAValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
-            deviceInfo.sampleCValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
-        deviceInfo.measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
-        deviceInfo.measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
-        deviceInfo.measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
-        deviceInfo.measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
-        deviceInfo.measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
-        deviceInfo.measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
-        deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+            deviceInfo.sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value]
+                                      << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
+            deviceInfo.sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value]
+                                         << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
+            deviceInfo.sampleAValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
+            deviceInfo.sampleCValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
+        deviceInfo.measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value]
+                                  << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
+        deviceInfo.measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value]
+                                   << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
+        deviceInfo.measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value]
+                                 << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
+        deviceInfo.measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value]
+                                  << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
+        deviceInfo.measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value]
+                                    << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
+        deviceInfo.measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value]
+                                    << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
+        deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value]
+                                  << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         updateFlag = True
     else:
-        _warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        _warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value]
+                        << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if _warningInfo != deviceInfo.warningInfo:
             deviceInfo.warningInfo = _warningInfo
             updateFlag = True
-        _currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
+        _currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
         if _currentModelSelect != deviceInfo.currentModelSelect:
             deviceInfo.currentModelSelect = _currentModelSelect
             updateFlag = True
-        _currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
+        _currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value]
+                                   << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
         if _currentOperationSelect != deviceInfo.currentOperationSelect:
             deviceInfo.currentOperationSelect = _currentOperationSelect
             updateFlag = True
-        _currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
+        _currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value]
+                         << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
         if _currentState != deviceInfo.currentState:
             deviceInfo.currentState = _currentState
             updateFlag = True
         if deviceInfo.currentOperationSelect == 2:
-            _concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
+            _concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value]
+                                    << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
             if _concentration1Value != deviceInfo.concentration1Value:
                 deviceInfo.concentration1Value = _concentration1Value
                 updateFlag = True
-            _concentration1MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value + 1]
+            _concentration1MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value]
+                                       << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value + 1]
             if _concentration1MaxValue != deviceInfo.concentration1MaxValue:
                 deviceInfo.concentration1MaxValue = _concentration1MaxValue
                 updateFlag = True
-            _concentration1AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value + 4])
+            _concentration1AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value + 4])
             if _concentration1AValue != deviceInfo.concentration1AValue:
                 deviceInfo.concentration1AValue = _concentration1AValue
                 updateFlag = True
-            _concentration1CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value + 4])
+            _concentration1CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value + 4])
             if _concentration1CValue != deviceInfo.concentration1CValue:
                 deviceInfo.concentration1CValue = _concentration1CValue
                 updateFlag = True
         elif deviceInfo.currentOperationSelect == 3:
-            _concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
+            _concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value]
+                                    << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
             if _concentration2Value != deviceInfo.concentration2Value:
                 deviceInfo.concentration2Value = _concentration2Value
                 updateFlag = True
-            _concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
+            _concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value]
+                                       << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
             if _concentration2MaxValue != deviceInfo.concentration2MaxValue:
                 deviceInfo.concentration2MaxValue = _concentration2MaxValue
                 updateFlag = True
-            _concentration2AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
+            _concentration2AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
             if _concentration2AValue != deviceInfo.concentration2AValue:
                 deviceInfo.concentration2AValue = _concentration2AValue
                 updateFlag = True
-            _concentration2CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
+            _concentration2CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
             if _concentration2CValue != deviceInfo.concentration2CValue:
                 deviceInfo.concentration2CValue = _concentration2CValue
                 updateFlag = True
         elif deviceInfo.currentOperationSelect == 4:
-            _concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
+            _concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value]
+                                    << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
             if _concentration3Value != deviceInfo.concentration3Value:
                 deviceInfo.concentration3Value = _concentration3Value
                 updateFlag = True
-            _concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
+            _concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value]
+                                       << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
             if _concentration3MaxValue != deviceInfo.concentration3MaxValue:
                 deviceInfo.concentration3MaxValue = _concentration3MaxValue
                 updateFlag = True
-            _concentration3AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
+            _concentration3AValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
             if _concentration3AValue != deviceInfo.concentration3AValue:
                 deviceInfo.concentration3AValue = _concentration3AValue
                 updateFlag = True
-            _concentration3CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
+            _concentration3CValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
             if _concentration3CValue != deviceInfo.concentration3CValue:
-                deviceInfo.concentration3CValue = _concentration3CValue    
+                deviceInfo.concentration3CValue = _concentration3CValue
                 updateFlag = True
         elif deviceInfo.currentOperationSelect == 1:
-            _sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
+            _sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value]
+                            << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
             if _sampleValue != deviceInfo.sampleValue:
                 deviceInfo.sampleValue = _sampleValue
                 updateFlag = True
-            _sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
+            _sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
             if _sampleMaxValue != deviceInfo.sampleMaxValue:
                 deviceInfo.sampleMaxValue = _sampleMaxValue
                 updateFlag = True
-            _sampleAValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
+            _sampleAValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
             if _sampleAValue != deviceInfo.sampleAValue:
                 deviceInfo.sampleAValue = _sampleAValue
                 updateFlag = True
-            _sampleCValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
+            _sampleCValue = bytesToFloat(
+                buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
             if _sampleCValue != deviceInfo.sampleCValue:
                 deviceInfo.sampleCValue = _sampleCValue
                 updateFlag = True
-        _measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
+        _measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value]
+                        << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
         if _measureYear != deviceInfo.measureYear:
             deviceInfo.measureYear = _measureYear
-        _measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
+        _measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value]
+                         << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
         if _measureMonth != deviceInfo.measureMonth:
             deviceInfo.measureMonth = _measureMonth
-        _measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
+        _measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value]
+                       << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
         if _measureDay != deviceInfo.measureDay:
             deviceInfo.measureDay = _measureDay
-        _measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
+        _measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value]
+                        << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
         if _measureHour != deviceInfo.measureHour:
             deviceInfo.measureHour = _measureHour
-        _measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
+        _measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value]
+                          << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
         if _measureMinute != deviceInfo.measureMinute:
             deviceInfo.measureMinute = _measureMinute
-        _measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
+        _measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value]
+                          << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
         if _measureSecond != deviceInfo.measureSecond:
             deviceInfo.measureSecond = _measureSecond
-        _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] <<8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value]
+                     << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
             if deviceInfo.dataFlag == 0:
@@ -647,26 +754,29 @@ def getBytesInfo(buffer,deviceInfo,lastMenuName):
                 #         deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
                 currentTime = datetime.datetime.now()
                 if _dataFlag == 1:
-                    dbSaveHistory(currentTime,deviceInfo.sampleValue,
-                        deviceInfo.sampleMaxValue,deviceInfo.sampleAValue,deviceInfo.sampleCValue)
+                    dbSaveHistory(currentTime, deviceInfo.sampleValue,
+                                  deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, deviceInfo.sampleCValue)
                     if gpsData.active:
-                        dataInfo =  round(gpsData.latitude,4) + gpsData.latitudeFlag + ", " + round(gpsData.longitude,4) + gpsData.longitudeFlag
+                        dataInfo = round(gpsData.latitude, 4) + gpsData.latitudeFlag + \
+                            ", " + round(gpsData.longitude, 4) + \
+                            gpsData.longitudeFlag
                     else:
                         dataInfo = ""
-                    uploadData = {'deviceID': deviceID,'sampleType': sampleType,'value':deviceInfo.sampleCValue,'time':currentTime,dataInfo:dataInfo}
+                    uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
+                                  'value': deviceInfo.sampleCValue, 'time': currentTime, dataInfo: dataInfo}
                     try:
-                        requests.post(uploadURL, json = uploadData)
+                        requests.post(uploadURL, json=uploadData)
                     except Exception as e:
                         Logger.log("网络异常", "数据无法上传", '', 1200)
                 elif _dataFlag == 2:
-                    dbSaveConcentration1History(currentTime,deviceInfo.concentration1Value,
-                        deviceInfo.concentration1MaxValue,deviceInfo.concentration1AValue,deviceInfo.concentration1CValue)
+                    dbSaveConcentration1History(currentTime, deviceInfo.concentration1Value,
+                                                deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue, deviceInfo.concentration1CValue)
                 elif _dataFlag == 3:
-                    dbSaveConcentration2History(currentTime,deviceInfo.concentration2Value,
-                        deviceInfo.concentration2MaxValue,deviceInfo.concentration2AValue,deviceInfo.concentration2CValue)
+                    dbSaveConcentration2History(currentTime, deviceInfo.concentration2Value,
+                                                deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue, deviceInfo.concentration2CValue)
                 elif _dataFlag == 4:
-                    dbSaveConcentration3History(currentTime,deviceInfo.concentration3Value,
-                        deviceInfo.concentration3MaxValue,deviceInfo.concentration3AValue,deviceInfo.concentration3CValue)
+                    dbSaveConcentration3History(currentTime, deviceInfo.concentration3Value,
+                                                deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue, deviceInfo.concentration3CValue)
                 deviceInfo.dataFlag = _dataFlag
                 if lastMenuName == ".!notebook.!mainboard" or lastMenuName == ".!notebook.!historyboard":
                     updateFlag = True
