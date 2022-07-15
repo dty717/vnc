@@ -296,9 +296,9 @@ def selectTime():
                 power.value = 1
                 timeSelectEvent.wait(60)
                 write_single_register(DeviceAddr.modelSelectAddr.value, 1,
-                                      lambda rec: None, repeatTimes=3, needMesBox=True)
+                                      lambda rec: None, repeatTimes=3, needMesBox=False)
                 write_single_register(DeviceAddr.operationSelectAddr.value, 1,
-                                      lambda rec: None, repeatTimes=3, needMesBox=True)
+                                      lambda rec: None, repeatTimes=3, needMesBox=False)
         timeSelectEvent.wait(60)
     pass
 selectTimeThread = threading.Thread(target=selectTime)

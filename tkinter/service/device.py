@@ -790,11 +790,11 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, deviceInfo.sampleCValue)
                     power.value = 0
                     dataInfo = ""
-                    if gpsData.active:
-                        dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
-                    uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
-                                  'value': deviceInfo.sampleCValue, 'time': str(currentTime), dataInfo: dataInfo}
                     try:
+                        if gpsData.active:
+                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+                        uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
+                                    'value': deviceInfo.sampleCValue, 'time': str(currentTime), dataInfo: dataInfo}
                         requests.post(uploadURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)
