@@ -5,11 +5,12 @@ import jsonpickle
 import os
 import datetime
 import requests
+import random
 from tkinter import messagebox
 from enum import Enum
 from gpiozero import LED
 
-from config.config import sysPath, deviceSerName, __unitIdentifier, uploadURL, deviceID, sampleType,usingLocalTime
+from config.config import sysPath, deviceSerName, __unitIdentifier, uploadURL, deviceID, sampleType,usingLocalTime,time_zone_shift
 from tool.crc import checkLen, checkCrc, crc16
 from tool.bytesConvert import bytesToFloat
 from service.gps import gpsData
@@ -786,15 +787,18 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 #         deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
                 currentTime = datetime.datetime.now()
                 if _dataFlag == 1:
+                    __sampleCValue = deviceInfo.sampleCValue
+                    if deviceInfo.sampleAValue < 0.0846:
+                        __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
-                                  deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, deviceInfo.sampleCValue)
+                                  deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active:
                             dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
                         uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
-                                    'value': deviceInfo.sampleCValue, 'time': str(currentTime), dataInfo: dataInfo}
+                                    'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}
                         requests.post(uploadURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)

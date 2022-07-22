@@ -318,21 +318,29 @@ def on_message(ws, message):
                 deviceID+"\",\"id\":"+str(wid)+"}")
 
 def on_error(ws, error):
-    print(error)
+    Logger.log("网络状态", "网络异常", str(error), 3600)
 
 def on_close(ws, close_status_code, close_msg):
-    print("### closed ###")
+    Logger.log("网络状态", "网络异常", "网络关闭:"+str(close_msg), 3600)
+    # print("### closed ###")
 
 def on_open(ws):
-    print("Opened connection")
+    # print("Opened connection")
+    return
 # websocket.enableTrace(True)
+
+def runWebsocket():
+    while True:
+        ws.run_forever()
+        ws.close()
+
 ws = websocket.WebSocketApp(url,
                             subprotocols=["json"],
                             on_open=on_open,
                             on_message=on_message,
                             on_error=on_error,
                             on_close=on_close)
-websocketThread = threading.Thread(target=ws.run_forever)
+websocketThread = threading.Thread(target=runWebsocket)
 websocketThread.start()
 
 # asyncio.run(connectWebsocket())
