@@ -70,7 +70,7 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
     lastTime = time.time()
     if not request(sendReqBuf, callBack, needMesBox):
         if repeatTimes > 0:
-            send(s, callBack, repeatTimes - 1, needMesBox)
+            send(sendReqBuf, callBack, repeatTimes - 1, needMesBox)
             return
         else:
             serialQueues.remove(serialQueues[0])
@@ -792,6 +792,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                         __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
+                    time.sleep(60)
                     power.value = 0
                     dataInfo = ""
                     try:
