@@ -1,0 +1,4 @@
+jsonpickle
+pymongo
+websocket-client
+opencv-contrib-python
