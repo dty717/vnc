@@ -4,10 +4,10 @@ from tkinter import ttk
 from datetime import datetime
 from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
-from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, power, lastClickStartTime, lastSelectTime
+from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, power, waterDetect, lastClickStartTime, lastSelectTime
 from database.mongodb import dbGetLastHistory
 from service.gps import gpsData
-from config.config import primaryColor
+from config.config import primaryColor,usingWaterDetect
 mainHistoryText = None
 backgroundColors = ["#ffffff", primaryColor]
 
@@ -18,8 +18,15 @@ def test():
 
 def stateString(state):
     if state == 0:
-        return "正常"
-    return "异常"
+        if waterDetect.value or not usingWaterDetect:
+            return "正常"
+        else:
+            return "设备进水"
+    else:
+        if waterDetect.value or not usingWaterDetect:
+            return "异常"
+        else:
+            return "异常且进水"
 
 def updateMainDate(year, month, day, hour, minitue, second, value, state):
     global mainHistoryText

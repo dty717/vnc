@@ -8,9 +8,9 @@ import requests
 import random
 from tkinter import messagebox
 from enum import Enum
-from gpiozero import LED
+from gpiozero import LED, Button
 
-from config.config import sysPath, deviceSerName, __unitIdentifier, uploadURL, deviceID, sampleType,usingLocalTime,time_zone_shift
+from config.config import sysPath, deviceSerName, __unitIdentifier, uploadDataURL, uploadWarningURL, deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift
 from tool.crc import checkLen, checkCrc, crc16
 from tool.bytesConvert import bytesToFloat
 from service.gps import gpsData
@@ -18,6 +18,8 @@ from service.logger import Logger
 from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History
 
 power = LED(18)
+waterDetect = Button(2)
+
 lastClickStartTime = datetime.datetime.now()
 lastSelectTime = datetime.datetime.now()
 
@@ -29,6 +31,14 @@ lastTime = time.time()
 isBlocking = False
 requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
+
+def waterDetectWarning():
+    uploadData = {'deviceID': deviceID,'deviceType': deviceType, 'title': "报警测试", 'body': "设备进水"}
+    requests.post(uploadWarningURL, json=uploadData)
+    return
+# var { deviceID = "SmartDetect_A_00003",deviceType="SmartDetect",title="hello",body="body"} = req.body;
+#     var phones = await sendPhonesByDeviceType({deviceID,title,body,deviceType})
+#     res.send(phones)
 
 class RequestData:
     def __init__(self, sendBuf, callBack, repeatTimes, needMesBox):
@@ -788,8 +798,8 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 currentTime = datetime.datetime.now()
                 if _dataFlag == 1:
                     __sampleCValue = deviceInfo.sampleCValue
-                    if deviceInfo.sampleAValue < 0.0846:
-                        __sampleCValue = 0.01 + 5 * random.random()/1000
+                    # if deviceInfo.sampleAValue < 0.0846:
+                    #     __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     time.sleep(60)
@@ -800,7 +810,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                             dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
                         uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
                                     'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}
-                        requests.post(uploadURL, json=uploadData)
+                        requests.post(uploadDataURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)
                 elif _dataFlag == 2:

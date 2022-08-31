@@ -21,7 +21,11 @@ primaryDarkColor = "#00766c"
 wsHostname = "test.dty71719dfd.site"
 url = 'wss://' + wsHostname + ":6503"
 deviceID = "SmartDetect_FD_DL2022071300000001"
+deviceType = "SmartDetect"
 sampleType = "P"
-uploadURL = 'http://server.delinapi.top:3000/SaveSmartDetectHistory'
+uploadDataURL = 'http://server.delinapi.top:3000/SaveSmartDetectHistory'
+uploadWarningURL = 'http://server.delinapi.top:3000/warning'
 
 usingLocalTime = True
+
+usingWaterDetect = False

@@ -8,10 +8,10 @@ import asyncio
 import json
 import websocket
 from config.labelString import titleLabel
-from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID
+from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID,usingWaterDetect
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power
+from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect
 from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -212,6 +212,22 @@ def updatePage():
     elif lastMenuName == ".!notebook.!locationboard":
         pass
 
+# detect water for danger:
+def waterDetectCallBack():
+    Logger.log("设备异常", "设备进水", "请尽快处理", 60)
+    power.value = 0
+    updatePage()
+    waterDetectWarning()
+
+# detect water for danger:
+def waterDetectReleaseCallBack():
+    Logger.log("设备异常", "设备未进水", "异常解除", 60)
+    updatePage()
+
+if usingWaterDetect:
+    waterDetect.when_pressed = waterDetectReleaseCallBack
+    waterDetect.when_released = waterDetectCallBack
+
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
         updatePage()
@@ -290,7 +306,7 @@ def selectTime():
         print(datetime.now())
         hour = datetime.now().hour
         if deviceController.selectingHours[hour]:
-            if checkLastSelectTime():
+            if checkLastSelectTime() and (not usingWaterDetect or waterDetect.value):
                 lastSelectTime = datetime.now()
                 # start select time
                 power.value = 1
@@ -306,6 +322,7 @@ selectTimeThread.start()
 
 jsonDecoder = json.JSONDecoder()
 
+# wid = device's websocket id
 wid = None
 
 def on_message(ws, message):

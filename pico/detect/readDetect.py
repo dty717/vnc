@@ -56,8 +56,14 @@ def animate(i):
         blueList.append(jsonObj['blue'])
         redList.append(jsonObj['red'])
         greenList.append(jsonObj['green'])
+        blueList = blueList[-300:]
+        redList = redList[-300:]
+        greenList = greenList[-300:]
         # Draw x and y lists
         ax.clear()
+        # ax.plot(np.real(np.fft.fft(blueList[-300:]))[1:])
+        # ax.plot(np.real(np.fft.fft(redList[-300:])))
+        # ax.plot(np.real(np.fft.fft(greenList[-300:]))[1:])
         ax.plot(blueList[-300:])
         ax.plot(redList[-300:])
         ax.plot(greenList[-300:])
@@ -83,13 +89,13 @@ def animate(i):
         #   else:
         #     lastMathTime = 0
         maxCount = -1
-        maxShift =  100000000000000
+        minShift =  100000000000000
         maxElemName = elementList[0].name
         maxCurrentCount = -1
-        maxCurrentShift =  100000000000000
+        minCurrentShift =  100000000000000
         maxCurrentElemName = elementList[0].name
         for elem in elementList:
-          count = np.count_nonzero(elem.match(
+          count = np.array(elem.match(
             np.average(redList[-300:]),
             np.max(redList[-300:]),
             np.min(redList[-300:]),
@@ -102,7 +108,27 @@ def animate(i):
             np.max(blueList[-300:]),
             np.min(blueList[-300:]),
             np.std(blueList[-300:])
+          )).dot(np.array(
+            (
+              37, 10, 10, 1,
+              111,10,10,3,
+              111,10,10,3,
+            )
           ))
+          # print(elem.name,elem.match(
+          #   np.average(redList[-300:]),
+          #   np.max(redList[-300:]),
+          #   np.min(redList[-300:]),
+          #   np.std(redList[-300:]),
+          #   np.average(greenList[-300:]),
+          #   np.max(greenList[-300:]),
+          #   np.min(greenList[-300:]),
+          #   np.std(greenList[-300:]),
+          #   np.average(blueList[-300:]),
+          #   np.max(blueList[-300:]),
+          #   np.min(blueList[-300:]),
+          #   np.std(blueList[-300:])
+          # ))
           if maxCount < count:
             maxCount = count
             maxElemName = elem.name
@@ -121,29 +147,51 @@ def animate(i):
                 np.min(blueList[-300:]),
                 np.std(blueList[-300:])
             )
-            if elemMatchShift < maxCurrentCount:
-              
-            maxElemName += ","+ elem.name
-          currentCount = np.count_nonzero(elem.match(
-            np.average(redList[-10:]),
-            np.max(redList[-10:]),
-            np.min(redList[-10:]),
-            np.std(redList[-10:]),
-            np.average(greenList[-10:]),
-            np.max(greenList[-10:]),
-            np.min(greenList[-10:]),
-            np.std(greenList[-10:]),
-            np.average(blueList[-10:]),
-            np.max(blueList[-10:]),
-            np.min(blueList[-10:]),
-            np.std(blueList[-10:])
+            if elemMatchShift < minShift:
+              minShift = elemMatchShift
+              maxElemName = elem.name
+          currentCount = np.array(elem.match(
+              np.average(redList[-30:]),
+              np.max(redList[-30:]),
+              np.min(redList[-30:]),
+              np.std(redList[-30:]),
+              np.average(greenList[-30:]),
+              np.max(greenList[-30:]),
+              np.min(greenList[-30:]),
+              np.std(greenList[-30:]),
+              np.average(blueList[-30:]),
+              np.max(blueList[-30:]),
+              np.min(blueList[-30:]),
+              np.std(blueList[-30:])
+          )).dot(np.array(
+              (
+                  37, 10, 10, 1,
+                  111, 30, 30, 3,
+                  111, 30, 30, 3,
+              )
           ))
           # currentCount = np.count_nonzero(elem.matchCurrent(redList[-1],greenList[-1],blueList[-1]))
           if maxCurrentCount < currentCount:
             maxCurrentCount = count
             maxCurrentElemName = elem.name
           elif maxCurrentCount == currentCount:
-            maxCurrentElemName += ","+ elem.name
+            elemMatchCurrentShift = elem.matchShift(
+                np.average(redList[-30:]),
+                np.max(redList[-30:]),
+                np.min(redList[-30:]),
+                np.std(redList[-30:]),
+                np.average(greenList[-30:]),
+                np.max(greenList[-30:]),
+                np.min(greenList[-30:]),
+                np.std(greenList[-30:]),
+                np.average(blueList[-30:]),
+                np.max(blueList[-30:]),
+                np.min(blueList[-30:]),
+                np.std(blueList[-30:])
+            )
+            if elemMatchCurrentShift < minCurrentShift:
+              minCurrentShift = elemMatchCurrentShift
+              maxCurrentElemName = elem.name
         print(maxElemName,maxCurrentElemName)
         # print(water.match(
         #   np.average(redList[-300:]),
@@ -180,7 +228,8 @@ def animate(i):
         # plt.ylabel('Temperature (deg C)')
 
 # Set up plot to call animate() function periodically
-ani = animation.FuncAnimation(fig, animate, interval=10)
+ser.read_all()
+ani = animation.FuncAnimation(fig, animate, interval=5)
 plt.show()
 
 
@@ -280,21 +329,18 @@ class Element:
           (self.blueStd[0] - blueStd)**2 + (self.blueStd[1] - blueStd)**2
     def matchCurrent(self, redCurrent, greenCurrent, blueCurrent):
         return (
-            redCurrent <= (self.redMax[0] + self.redMax[1])/2,
-            redCurrent >= (self.redMin[0] + self.redMin[1])/2,
-            greenCurrent <= (self.greenMax[0] + self.greenMax[1])/2,
-            greenCurrent >= (self.greenMin[0] + self.greenMin[1])/2,
-            blueCurrent <= (self.blueMax[0] + self.blueMax[1])/2,
-            blueCurrent >= (self.blueMin[0] + self.blueMin[1])/2
+            redCurrent <= self.redAverage[1],
+            redCurrent >= self.redAverage[0],
+            greenCurrent <= self.redAverage[1],
+            greenCurrent >= self.redAverage[0],
+            blueCurrent <= self.blueAverage[1],
+            blueCurrent >= self.blueAverage[0]
         )
     def matchCurrentShift(self, redCurrent, greenCurrent, blueCurrent):
         return (
-            (redCurrent - (self.redMax[0] + self.redMax[1])/2)**2 +
-            (redCurrent - (self.redMin[0] + self.redMin[1])/2)**2 +
-            (greenCurrent - (self.greenMax[0] + self.greenMax[1])/2)**2 +
-            (greenCurrent - (self.greenMin[0] + self.greenMin[1])/2)**2 +
-            (blueCurrent - (self.blueMax[0] + self.blueMax[1])/2)**2 +
-            (blueCurrent - (self.blueMin[0] + self.blueMin[1])/2)**2
+            (redCurrent - (self.redAverage[0] + self.redAverage[1])/2)**2 +
+            (greenCurrent - (self.greenAverage[0] + self.greenAverage[1])/2)**2 +
+            (blueCurrent - (self.blueAverage[0] + self.blueAverage[1])/2)**2
         )
 # water = Element('water',
 #   (np.average(redList1[-300:]),np.average(redList1[-300:])),
