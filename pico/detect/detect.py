@@ -10,28 +10,35 @@ from ulab import numpy as np
 led = digitalio.DigitalInOut(board.LED)
 led.direction = digitalio.Direction.OUTPUT
 
+output1 = digitalio.DigitalInOut(board.GP21)
+output1.direction = digitalio.Direction.OUTPUT
+
+output2 = digitalio.DigitalInOut(board.GP20)
+output1.direction = digitalio.Direction.OUTPUT
+
+
 LOW = 0
 HIGH = 1
 
 usingPWM = True
 if usingPWM:
-	out = pulseio.PulseIn(board.GP28)
+	out = pulseio.PulseIn(board.GP9)
 else:
-	out = analogio.AnalogIn(board.GP28)
+	out = analogio.AnalogIn(board.GP9)
 
-en = digitalio.DigitalInOut(board.GP20)
+en = digitalio.DigitalInOut(board.GP6)
 en.direction = digitalio.Direction.OUTPUT
 en.value = HIGH
 
-S0 = digitalio.DigitalInOut(board.GP18)
+S0 = digitalio.DigitalInOut(board.GP2)
 S0.direction = digitalio.Direction.OUTPUT
 S0.value = LOW
-S1 = digitalio.DigitalInOut(board.GP19)
+S1 = digitalio.DigitalInOut(board.GP3)
 S1.direction = digitalio.Direction.OUTPUT
 S1.value = HIGH
-S2 = digitalio.DigitalInOut(board.GP22)
+S2 = digitalio.DigitalInOut(board.GP8)
 S2.direction = digitalio.Direction.OUTPUT
-S3 = digitalio.DigitalInOut(board.GP21)
+S3 = digitalio.DigitalInOut(board.GP7)
 S3.direction = digitalio.Direction.OUTPUT
 
 # print(out.value)
@@ -173,7 +180,6 @@ class Element:
           (self.blueMin[0] - blueMin)**2 + (self.blueMin[1] - blueMin)**2 + \
           (self.blueStd[0] - blueStd)**2 + (self.blueStd[1] - blueStd)**2
 
-
 water = Element('water',
                 (355.6433333333333, 471.16333333333336), (468, 487), (134, 199), (32.588187873658896, 117.68513599148082),
                 (133.84666666666666, 138.40666666666667), (152, 164), (125, 129), (2.0754089289155093, 4.055449009254915),
@@ -187,7 +193,6 @@ air = Element('air',
               )
 
 elementList = [water,air]
-
 
 def checkValue():
 	global redData,greenData,blueData
@@ -285,8 +290,6 @@ def checkValue():
 	else:
 		led.value = 0
 	# print(maxElemName, maxCurrentElemName)
-
-
 
 while True:
     loop()
