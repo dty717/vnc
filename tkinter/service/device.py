@@ -10,10 +10,11 @@ from tkinter import messagebox
 from enum import Enum
 from gpiozero import LED, Button
 
-from config.config import sysPath, deviceSerName, __unitIdentifier, uploadDataURL, uploadWarningURL, deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift
+from config.config import sysPath, deviceSerName, __unitIdentifier, uploadDataURL, uploadWarningURL, deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift, isUsingGPS
 from tool.crc import checkLen, checkCrc, crc16
 from tool.bytesConvert import bytesToFloat
-from service.gps import gpsData
+if isUsingGPS:
+    from service.gps import gpsData
 from service.logger import Logger
 from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History
 
@@ -806,7 +807,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     power.value = 0
                     dataInfo = ""
                     try:
-                        if gpsData.active:
+                        if gpsData.active and isUsingGPS:
                             dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
                         uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
                                     'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}

@@ -6,7 +6,7 @@ from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
 from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, power, waterDetect, lastClickStartTime, lastSelectTime
 from database.mongodb import dbGetLastHistory
-from service.gps import gpsData
+
 from config.config import primaryColor,usingWaterDetect
 mainHistoryText = None
 backgroundColors = ["#ffffff", primaryColor]

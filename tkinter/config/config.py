@@ -1,7 +1,10 @@
 from tkinter import *
 
 sysPath = "/home/dty717/Desktop/github/vnc/tkinter"
+
 deviceSerName = '/dev/ttyUSB0'
+
+isUsingGPS = True
 gpsSerName = '/dev/ttyS0'
 
 srcIndex = 0

@@ -8,11 +8,14 @@ import asyncio
 import json
 import websocket
 from config.labelString import titleLabel
-from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID,usingWaterDetect
+from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID,usingWaterDetect,isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect
-from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
+
+if isUsingGPS:
+    from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
+
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
 from page.controllingBoard import ControllingBoard
@@ -259,13 +262,13 @@ def RequestDevice():
 
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
-
 def getGPS():
     while True:
         getGpsInfo()
 
-getGpsThread = threading.Thread(target=getGPS)
-getGpsThread.start()
+if isUsingGPS:
+    getGpsThread = threading.Thread(target=getGPS)
+    getGpsThread.start()
 
 def saveGPS():
   global gpsData
@@ -275,8 +278,9 @@ def saveGPS():
                      gpsData.minute, gpsData.second, gpsData.latitude, gpsData.longitude)
         pass
 
-saveGpsThread = threading.Thread(target=saveGPS)
-saveGpsThread.start()
+if isUsingGPS:
+    saveGpsThread = threading.Thread(target=saveGPS)
+    saveGpsThread.start()
 
 def checkLastSelectTime():
     global lastSelectTime, lastClickStartTime
