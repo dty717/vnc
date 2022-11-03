@@ -106,7 +106,7 @@ def request(sendReqBuf, callBack, needMesBox):
         else:
             isBlocking = True
         if needMesBox:
-            messagebox.showerror("通讯异常", ser.PortName + "端口被占用或者未开启")
+            messagebox.showerror("通讯异常", str(ser.port) + "端口被占用或者未开启")
         try:
             ser.open()
         except:
