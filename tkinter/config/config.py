@@ -2,9 +2,10 @@ from tkinter import *
 
 sysPath = "/home/dty717/Desktop/github/vnc/tkinter"
 
-deviceSerName = '/dev/ttyUSB0'
+# deviceSerName = '/dev/ttyUSB0'
+deviceSerName = '/dev/ttyS0'
 
-isUsingGPS = True
+isUsingGPS = False
 gpsSerName = '/dev/ttyS0'
 
 srcIndex = 0
@@ -25,10 +26,10 @@ wsHostname = "test.dty71719dfd.site"
 url = 'wss://' + wsHostname + ":6503"
 deviceID = "SmartDetect_FD_DL2022071300000001"
 deviceType = "SmartDetect"
-sampleType = "P"
-uploadDataURL = 'http://server.delinapi.top:3000/SaveSmartDetectHistory'
+sampleType = "FiveParam"
+uploadDataURL = 'http://server.delinapi.top:3000/SaveFiveParametersHistory'
 uploadWarningURL = 'http://server.delinapi.top:3000/warning'
 
 usingLocalTime = True
 
-usingWaterDetect = False
+usingWaterDetect = True

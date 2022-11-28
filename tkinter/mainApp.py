@@ -8,10 +8,12 @@ import asyncio
 import json
 import websocket
 from config.labelString import titleLabel
-from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID,usingWaterDetect,isUsingGPS
+from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, url, sampleType,  deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect
+from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, \
+        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect,\
+        operatingAllStep
 
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
@@ -23,7 +25,8 @@ from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
 from page.cameraBoard import CameraBoard
-from page.locationBoard import LocationBoard
+if isUsingGPS:
+    from page.locationBoard import LocationBoard
 from database.mongodb import dbGetLastHistory
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
@@ -130,7 +133,8 @@ settingBoard = SettingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
 cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg=primaryColor)
-locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
+if isUsingGPS:
+    locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
 
 mainMenu.add(mainBoard, text="主显示面")
 mainMenu.add(historyBoard, text="历史数据")
@@ -139,7 +143,8 @@ mainMenu.add(timeSelectingBoard, text="整点做样")
 mainMenu.add(settingBoard, text="参数设置")
 mainMenu.add(systemLogBoard, text="运行日志")
 mainMenu.add(cameraBoard, text="视频监控")
-mainMenu.add(locationBoard, text="位置监测")
+if isUsingGPS:
+    mainMenu.add(locationBoard, text="位置监测")
 
 lastMenuName = ".!notebook.!mainboard"
 
@@ -158,7 +163,7 @@ def getMenu(menuName):
         return systemLogBoard
     elif menuName == ".!notebook.!cameraboard":
         return cameraBoard
-    elif menuName == ".!notebook.!locationboard":
+    elif menuName == ".!notebook.!locationboard" and isUsingGPS:
         return locationBoard
 
 def changeMenuTab(event):
@@ -180,22 +185,15 @@ def changeMenuTab(event):
         timeSelectingBoard.refreshPage()
     elif currentMenuName == ".!notebook.!settingboard":
         settingBoard.refreshPage()
-    elif currentMenuName == ".!notebook.!locationboard":
+    elif currentMenuName == ".!notebook.!locationboard" and isUsingGPS:
         locationBoard.refreshPage()
     elif currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
 mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
 
-bufControlling = [0x01, 0x03, 0x00, 0x00, 0x00, 0x2e]
-crcCheck = crc16(bufControlling, 0, len(bufControlling))
-bufControlling.append(crcCheck >> 8)
-bufControlling.append(crcCheck & 0xff)
-
-bufQuery = [0x01, 0x03, 0x00, 0x81, 0x00, 0x23]
-crcCheck = crc16(bufQuery, 0, len(bufQuery))
-bufQuery.append(crcCheck >> 8)
-bufQuery.append(crcCheck & 0xff)
+# 01 03 00 04 00 02 85CA
+# 0x01,0x03,0x00,0x02,0x00,0x02,0x65,0xCB
 
 def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
@@ -212,7 +210,7 @@ def updatePage():
         pass
     elif lastMenuName == ".!notebook.!cameraboard":
         pass
-    elif lastMenuName == ".!notebook.!locationboard":
+    elif lastMenuName == ".!notebook.!locationboard" and isUsingGPS:
         pass
 
 # detect water for danger:
@@ -243,11 +241,21 @@ def controllingHandle(controllingRecv):
     Logger.logWithOutDuration(
         "系统测试", "controlling rec", ' '.join([str(e) for e in controllingRecv]))
 
+lastDeviceStep = 0
+lastDeviceAutoRun = 0
+
 def RequestDevice():
-  global deviceController, deviceInfo
-  while not requestDeviceEvent.wait(5):
-    sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
-    sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
+  global deviceController, deviceInfo, lastDeviceStep, lastDeviceAutoRun
+  while not requestDeviceEvent.wait(0.5):
+    if (deviceController.deviceStep != lastDeviceStep or deviceController.deviceAutoRun != lastDeviceAutoRun) and \
+        (lastMenuName == ".!notebook.!mainboard" or lastMenuName == ".!notebook.!controllingboard"):
+        updatePage()
+        lastDeviceStep = deviceController.deviceStep
+        lastDeviceAutoRun = deviceController.deviceAutoRun
+        # return
+    # sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
+    # sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
+    # return
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)
@@ -300,25 +308,30 @@ def selectTime():
   while not timeSelectEvent.wait(10*60):
     # datetime
     now = datetime.now()
-    if not checkLastSelectTime():
-        # error
-        Logger.log("设备异常", "设备做样异常,未能整点做样", "", 3600)
-        continue
+    # if not checkLastSelectTime():
+    #     # error
+    #     Logger.log("设备异常", "设备做样异常,未能整点做样", "", 3600)
+    #     continue
     if now.minute + 20 > 60:
         during = 60 * 60 - now.minute * 60 - now.second - now.microsecond / 1000000
         timeSelectEvent.wait(during)
-        print(datetime.now())
-        hour = datetime.now().hour
+        now = datetime.now()
+        # print(datetime.now())
+        hour = now.hour
         if deviceController.selectingHours[hour]:
-            if checkLastSelectTime() and (not usingWaterDetect or waterDetect.value):
-                lastSelectTime = datetime.now()
+            if (deviceController.deviceAutoRun == 0 and deviceController.deviceStep == 0 ) and (not usingWaterDetect or waterDetect.value):
+                lastSelectTime = now
+                deviceController.threadDate = now
+                mainThread = threading.Thread(
+                    target=operatingAllStep, args=(deviceController.threadDate,))
+                mainThread.start()
                 # start select time
-                power.value = 1
-                timeSelectEvent.wait(60)
-                write_single_register(DeviceAddr.modelSelectAddr.value, 1,
-                                      lambda rec: None, repeatTimes=3, needMesBox=False)
-                write_single_register(DeviceAddr.operationSelectAddr.value, 1,
-                                      lambda rec: None, repeatTimes=3, needMesBox=False)
+                # power.value = 1
+                # timeSelectEvent.wait(60)
+                # write_single_register(DeviceAddr.modelSelectAddr.value, 1,
+                #                       lambda rec: None, repeatTimes=3, needMesBox=False)
+                # write_single_register(DeviceAddr.operationSelectAddr.value, 1,
+                #                       lambda rec: None, repeatTimes=3, needMesBox=False)
         timeSelectEvent.wait(60)
     pass
 selectTimeThread = threading.Thread(target=selectTime)
@@ -337,6 +350,8 @@ def on_message(ws, message):
         wid = jsonObj["id"]
         ws.send("{\"type\":\"deviceID\",\"name\":\"" +
                 deviceID+"\",\"id\":"+str(wid)+"}")
+        ws.send("{\"type\":\"sampleType\",\"name\":\"" +
+                sampleType+"\",\"id\":"+str(wid)+"}")
 
 def on_error(ws, error):
     Logger.log("网络状态", "网络异常", str(error), 3600)

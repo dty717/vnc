@@ -1,114 +1,95 @@
 from tkinter import *
 from tkinter import ttk
+from tkinter import messagebox
 from components.groupLabelButton import GroupLabelButton
 from components.labelButton import LabelTextButton, SwitchLabelButton
 from PIL import Image
-from tool.bytesConvert import floatToRegister
 from config.config import *
-from service.device import write_single_register, write_multiple_registers, DeviceAddr, deviceInfo, deviceController
+from service.device import deviceController
 
 class SettingBoard(Frame):
     def __init__(self, master, imgDicts, **kargs):
         super().__init__(master, kargs)
         #
-        #calibrateTimeGroup
+        #fiveParametersSettingGroup
         #
-        calibrateTimeGroup = GroupLabelButton(self, title="标定时间")
-        calibrateTimeGroup.pack(pady=20)
-        self.calibrateDayLabelText = LabelTextButton(calibrateTimeGroup, text="标定日",
-                                                command=lambda content: write_single_register(DeviceAddr.calibrateDayAddr.value, int(float(content)),
-                                                                                              lambda rec: setattr(deviceController, 'calibrateDay', int(float(content))), repeatTimes=0, needMesBox=True)
-                                                )
-        self.calibrateDayLabelText.setText(deviceController.calibrateDay)
-        self.calibrateDayLabelText.pack(anchor=W, pady=5)
-        self.calibrateHourLabelText = LabelTextButton(calibrateTimeGroup, text="标定时",
-                                                 command=lambda content: write_single_register(DeviceAddr.calibrateHourAddr.value, int(float(content)),
-                                                                                               lambda rec: setattr(deviceController, 'calibrateHour', int(float(content))), repeatTimes=0, needMesBox=True)
-                                                 )
-        self.calibrateHourLabelText.setText(deviceController.calibrateHour)
-        self.calibrateHourLabelText.pack(anchor=W, pady=5)
-        self.calibrateMinuteLabelText = LabelTextButton(calibrateTimeGroup, text="标定分",
-                                                   command=lambda content: write_single_register(DeviceAddr.calibrateMinuteAddr.value, int(float(content)),
-                                                                                                 lambda rec: setattr(deviceController, 'calibrateMinute', int(float(content))), repeatTimes=0, needMesBox=True)
-                                                   )
-        self.calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
-        self.calibrateMinuteLabelText.pack(anchor=W, pady=5)
-        self.switchImmediateCalibrate = SwitchLabelButton(calibrateTimeGroup, imgDicts, text="立即标定",
-                                                     textYES="开始", clickYES=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 1, lambda rec: setattr(deviceController, 'immediateCalibrate', 1) or self.switchImmediateCalibrate.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="取消", clickNO=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 0, lambda rec: setattr(deviceController, 'immediateCalibrate', 0) or self.switchImmediateCalibrate.close(), repeatTimes=0, needMesBox=True),
-                                                     )
-        if deviceController.immediateCalibrate == 1:
-            self.switchImmediateCalibrate.open()
-        else:
-            self.switchImmediateCalibrate.close()
-        self.switchImmediateCalibrate.pack(anchor=W, pady=5)
-        #
-        #concentrationSettingValueGroup
-        #
-        concentrationSettingValueGroup = GroupLabelButton(self, title="标定浓度")
-        concentrationSettingValueGroup.pack(pady=10)
-        self.concentration1SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标一浓度",
-                                                              command=lambda content: write_multiple_registers(DeviceAddr.concentration1SettingValueAddr.value, floatToRegister(content),
-                                                                                                               lambda rec: setattr(deviceController, 'concentration1SettingValue', float(content)), repeatTimes=0, needMesBox=True)
-                                                              )
-        self.concentration1SettingValueLabelText.setText(
-            deviceController.concentration1SettingValue)
-        self.concentration1SettingValueLabelText.pack(anchor=W, pady=5)
-        self.concentration2SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标二浓度",
-                                                              command=lambda content: write_multiple_registers(DeviceAddr.concentration2SettingValueAddr.value, floatToRegister(content),
-                                                                                                               lambda rec: setattr(deviceController, 'concentration2SettingValue', float(content)), repeatTimes=0, needMesBox=True)
-                                                              )
-        self.concentration2SettingValueLabelText.setText(
-            deviceController.concentration2SettingValue)
-        self.concentration2SettingValueLabelText.pack(anchor=W, pady=5)
-        self.concentration3SettingValueLabelText = LabelTextButton(concentrationSettingValueGroup, text="标三浓度",
-                                                              command=lambda content: write_multiple_registers(DeviceAddr.concentration3SettingValueAddr.value, floatToRegister(content),
-                                                                                                               lambda rec: setattr(deviceController, 'concentration3SettingValue', float(content)), repeatTimes=0, needMesBox=True)
-                                                              )
-        self.concentration3SettingValueLabelText.setText(
-            deviceController.concentration3SettingValue)
-        self.concentration3SettingValueLabelText.pack(anchor=W, pady=5)
-        #
-        #sampleTimeGroup
-        #
-        sampleTimeGroup = GroupLabelButton(self, title="做样时间")
-        sampleTimeGroup.pack(pady=20)
-        self.measurementIntervalLabelText = LabelTextButton(sampleTimeGroup, text="间隔时间",
-                                                       command=lambda content: write_single_register(DeviceAddr.measurementIntervalAddr.value, int(float(content)),
-                                                                                                     lambda rec: setattr(deviceController, 'measurementInterval', int(float(content))), repeatTimes=0, needMesBox=True)
-                                                       )
-        self.measurementIntervalLabelText.setText(
-            deviceController.measurementInterval)
-        self.measurementIntervalLabelText.pack(anchor=W, pady=5)
-        # self.pack()
-        # self.entrythingy = Entry()
-        # self.entrythingy.pack()
-        # # Create the application variable.
-        # self.contents = StringVar()
-        # # Set it to some value.
-        # self.contents.set("this is a variable")
-        # # Tell the entry widget to watch this variable.
-        # self.entrythingy["textvariable"] = self.contents
-        # # Define a callback for when the user hits return.
-        # # It prints the current value of the variable.
-        # self.entrythingy.bind('<Key-Return>',
-        #                      self.print_contents)
+        fiveParametersSettingGroup = GroupLabelButton(self, title="参数设置")
+        fiveParametersSettingGroup.pack(pady=20)
+        self.pumpWaterOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="排空清水速度",
+                                                          command=lambda content: self.setControllerValue("pumpWaterOutSpeed", content))
+        self.pumpWaterOutSpeedLabelText.setText(
+            deviceController.pumpWaterOutSpeed)
+        self.pumpWaterOutSpeedLabelText.pack(anchor=W, pady=5)
+        self.pumpWaterOutTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="排空清水时间",
+                                                         command=lambda content: self.setControllerValue("pumpWaterOutTime", content))
+        self.pumpWaterOutTimeLabelText.setText(
+            deviceController.pumpWaterOutTime)
+        self.pumpWaterOutTimeLabelText.pack(anchor=W, pady=5)
+        self.pumpSampleInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="取水样速度",
+                                                          command=lambda content: self.setControllerValue("pumpSampleInSpeed", content))
+        self.pumpSampleInSpeedLabelText.setText(
+            deviceController.pumpSampleInSpeed)
+        self.pumpSampleInSpeedLabelText.pack(anchor=W, pady=5)
+        self.pumpSampleInTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="取水样时间",
+                                                         command=lambda content: self.setControllerValue("pumpSampleInTime", content))
+        self.pumpSampleInTimeLabelText.setText(
+            deviceController.pumpSampleInTime)
+        self.pumpSampleInTimeLabelText.pack(anchor=W, pady=5)
+        self.probeWaitingTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="等待读取时间",
+                                                         command=lambda content: self.setControllerValue("probeWaitingTime", content))
+        self.probeWaitingTimeLabelText.setText(
+            deviceController.probeWaitingTime)
+        self.probeWaitingTimeLabelText.pack(anchor=W, pady=5)
+        self.pumpSampleOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="排水样速度",
+                                                           command=lambda content: self.setControllerValue("pumpSampleOutSpeed", content))
+        self.pumpSampleOutSpeedLabelText.setText(
+            deviceController.pumpSampleOutSpeed)
+        self.pumpSampleOutSpeedLabelText.pack(anchor=W, pady=5)
+        self.pumpSampleOutTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="排水样时间",
+                                                          command=lambda content: self.setControllerValue("pumpSampleOutTime", content))
+        self.pumpSampleOutTimeLabelText.setText(
+            deviceController.pumpSampleOutTime)
+        self.pumpSampleOutTimeLabelText.pack(anchor=W, pady=5)
+        self.pumpWaterInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="填充清水速度",
+                                                         command=lambda content: self.setControllerValue("pumpWaterInSpeed", content))
+        self.pumpWaterInSpeedLabelText.setText(
+            deviceController.pumpWaterInSpeed)
+        self.pumpWaterInSpeedLabelText.pack(anchor=W, pady=5)
+        self.pumpWaterInTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="填充清水时间",
+                                                        command=lambda content: self.setControllerValue("pumpWaterInTime", content))
+        self.pumpWaterInTimeLabelText.setText(deviceController.pumpWaterInTime)
+        self.pumpWaterInTimeLabelText.pack(anchor=W, pady=5)
+        self.cleanTubeInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜进水速度",
+                                                         command=lambda content: self.setControllerValue("cleanTubeInSpeed", content))
+        self.cleanTubeInSpeedLabelText.setText(
+            deviceController.cleanTubeInSpeed)
+        self.cleanTubeInSpeedLabelText.pack(anchor=W, pady=5)
+        self.cleanTubeOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜出水速度",
+                                                          command=lambda content: self.setControllerValue("cleanTubeOutSpeed", content))
+        self.cleanTubeOutSpeedLabelText.setText(
+            deviceController.cleanTubeOutSpeed)
+        self.cleanTubeOutSpeedLabelText.pack(anchor=W, pady=5)
+        self.cleanTubeTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜时间",
+                                                      command=lambda content: self.setControllerValue("cleanTubeTime", content))
+        self.cleanTubeTimeLabelText.setText(deviceController.cleanTubeTime)
+        self.cleanTubeTimeLabelText.pack(anchor=W, pady=5)
+    def setControllerValue(self, attr, content):
+        setattr(deviceController, attr, float(content))
+        messagebox.showinfo("设置", "设置成功")
+        return
     def refreshPage(self):
-        self.calibrateDayLabelText.setText(deviceController.calibrateDay)
-        self.calibrateHourLabelText.setText(deviceController.calibrateHour)
-        self.calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
-        if deviceController.immediateCalibrate == 1:
-            self.switchImmediateCalibrate.open()
-        else:
-            self.switchImmediateCalibrate.close()
-        self.concentration1SettingValueLabelText.setText(
-            deviceController.concentration1SettingValue)
-        self.concentration2SettingValueLabelText.setText(
-            deviceController.concentration2SettingValue)
-        self.concentration3SettingValueLabelText.setText(
-            deviceController.concentration3SettingValue)
-        self.measurementIntervalLabelText.setText(
-            deviceController.measurementInterval)
+        self.pumpWaterOutSpeedLabelText.setText(deviceController.pumpWaterOutSpeed)
+        self.pumpWaterOutTimeLabelText.setText(deviceController.pumpWaterOutTime)
+        self.pumpSampleInSpeedLabelText.setText(deviceController.pumpSampleInSpeed)
+        self.pumpSampleInTimeLabelText.setText(deviceController.pumpSampleInTime)
+        self.probeWaitingTimeLabelText.setText(deviceController.probeWaitingTime)
+        self.pumpSampleOutSpeedLabelText.setText(deviceController.pumpSampleOutSpeed)
+        self.pumpSampleOutTimeLabelText.setText(deviceController.pumpSampleOutTime)
+        self.pumpWaterInSpeedLabelText.setText(deviceController.pumpWaterInSpeed)
+        self.pumpWaterInTimeLabelText.setText(deviceController.pumpWaterInTime)
+        self.cleanTubeInSpeedLabelText.setText(deviceController.cleanTubeInSpeed)
+        self.cleanTubeOutSpeedLabelText.setText(deviceController.cleanTubeOutSpeed)
+        self.cleanTubeTimeLabelText.setText(deviceController.cleanTubeTime)
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",

@@ -1,144 +1,204 @@
+import time
 from tkinter import *
 from tkinter import ttk
+import threading
+from datetime import datetime
+from tkinter import messagebox
+from PIL import Image
+
 from components.groupLabelButton import GroupLabelButton
 from components.labelButton import SwitchLabelButton
-from PIL import Image
 from config.config import *
-from service.device import write_single_register, DeviceAddr, deviceInfo, deviceController
-
+from service.device import write_single_register, DeviceAddr, deviceController, \
+    probeRelay, ultravioletLedRelay, valveRelay, pumpSampleMotor, cleanWaterInMotor, cleanWaterOutMotor,\
+    pumpWaterOut, pumpWaterOutCancel, pumpSampleIn, pumpSampleInCancel, readProbe, readProbeCancel, \
+    pumpSampleOut, pumpSampleOutCancel, pumpWaterIn, pumpWaterInCancel, cleanTube, cleanTubeCancel
 class ControllingBoard(Frame):
     def __init__(self, master, imgDicts, **kargs):
         super().__init__(master, kargs)
         global deviceController
+        # self.thread.is_alive = False
         #
-        #pumpLabelGroup
+        #modelSelectGroup
         #
-        pumpLabelGroup = GroupLabelButton(self, title="手动进样")
-        pumpLabelGroup.pack(pady=30)
-        self.switchSamplePump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进水样",
-                                             textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.samplePumpAddr.value, 1, lambda rec: setattr(deviceController, 'samplePump', 1) or self.switchSamplePump.open(), repeatTimes=0, needMesBox=True),
-                                             textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.samplePumpAddr.value, 0, lambda rec: setattr(deviceController, 'samplePump', 0) or self.switchSamplePump.close(), repeatTimes=0, needMesBox=True),
-                                             )
-        if deviceController.samplePump == 1:
-            self.switchSamplePump.open()
-        else:
-            self.switchSamplePump.close()
-        self.switchSamplePump.pack(pady=5)
-        self.switchConcentration1Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标一",
-                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.concentration1PumpAddr.value, 1, lambda rec: setattr(deviceController, 'concentration1Pump', 1) or self.switchConcentration1Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.concentration1PumpAddr.value, 0, lambda rec: setattr(deviceController, 'concentration1Pump', 0) or self.switchConcentration1Pump.close(), repeatTimes=0, needMesBox=True),
-                                                     )
-        if deviceController.concentration1Pump == 1:
-            self.switchConcentration1Pump.open()
-        else:
-            self.switchConcentration1Pump.close()
-        self.switchConcentration1Pump.pack(pady=5)
-        self.switchConcentration2Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标二",
-                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.concentration2PumpAddr.value, 1, lambda rec: setattr(deviceController, 'concentration2Pump', 1) or self.switchConcentration2Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.concentration2PumpAddr.value, 0, lambda rec: setattr(deviceController, 'concentration2Pump', 0) or self.switchConcentration2Pump.close(), repeatTimes=0, needMesBox=True),
-                                                     )
-        if deviceController.concentration2Pump == 1:
-            self.switchConcentration2Pump.open()
-        else:
-            self.switchConcentration2Pump.close()
-        self.switchConcentration2Pump.pack(pady=5)
-        self.switchConcentration3Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标三",
-                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.concentration3PumpAddr.value, 1, lambda rec: setattr(deviceController, 'concentration3Pump', 1) or self.switchConcentration3Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.concentration3PumpAddr.value, 0, lambda rec: setattr(deviceController, 'concentration3Pump', 0) or self.switchConcentration3Pump.close(), repeatTimes=0, needMesBox=True),
-                                                     )
-        if deviceController.concentration3Pump == 1:
-            self.switchConcentration3Pump.open()
-        else:
-            self.switchConcentration3Pump.close()
-        self.switchConcentration3Pump.pack(pady=5)
-        self.switchChemical1Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂一",
-                                                textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.chemical1PumpAddr.value, 1, lambda rec: setattr(deviceController, 'chemical1Pump', 1) or self.switchChemical1Pump.open(), repeatTimes=0, needMesBox=True),
-                                                textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.chemical1PumpAddr.value, 0, lambda rec: setattr(deviceController, 'chemical1Pump', 0) or self.switchChemical1Pump.close(), repeatTimes=0, needMesBox=True),
-                                                )
-        if deviceController.chemical1Pump == 1:
-            self.switchChemical1Pump.open()
-        else:
-            self.switchChemical1Pump.close()
-        self.switchChemical1Pump.pack(pady=5)
-        self.switchChemical2Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂二",
-                                                textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.chemical2PumpAddr.value, 1, lambda rec: setattr(deviceController, 'chemical2Pump', 1) or self.switchChemical2Pump.open(), repeatTimes=0, needMesBox=True),
-                                                textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.chemical2PumpAddr.value, 0, lambda rec: setattr(deviceController, 'chemical2Pump', 0) or self.switchChemical2Pump.close(), repeatTimes=0, needMesBox=True),
-                                                )
-        if deviceController.chemical2Pump == 1:
-            self.switchChemical2Pump.open()
-        else:
-            self.switchChemical2Pump.close()
-        self.switchChemical2Pump.pack(pady=5)
-        self.switchChemical3Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂三",
-                                                textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.chemical3PumpAddr.value, 1, lambda rec: setattr(deviceController, 'chemical3Pump', 1) or self.switchChemical3Pump.open(), repeatTimes=0, needMesBox=True),
-                                                textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.chemical3PumpAddr.value, 0, lambda rec: setattr(deviceController, 'chemical3Pump', 0) or self.switchChemical3Pump.close(), repeatTimes=0, needMesBox=True),
-                                                )
-        if deviceController.chemical3Pump == 1:
-            self.switchChemical3Pump.open()
-        else:
-            self.switchChemical3Pump.close()
-        self.switchChemical3Pump.pack(pady=5)
+        modelSelectGroup = GroupLabelButton(self, title="手动步骤")
+        modelSelectGroup.pack(pady=30)
+        # Line1
+        modelSelectGroupLine1 = Frame(modelSelectGroup, bg=primaryColor)
+        # self.selectOperateButton = Button(
+        #     modelSelectGroupLine1, text="排空清水", command=self.testFun, font=(None, 12))
+        # self.selectOperateButton.pack(side="left", padx=10, pady=10)
+        self.selectOperateButton = Button(
+            modelSelectGroupLine1, text="排空清水", command=lambda: self.handleThread(pumpWaterOut, pumpWaterOutCancel,self.selectOperateButton,"排空清水","停止排空"), font=(None, 12))
+        self.selectOperateButton.pack(side="left", padx=10, pady=10)
+        self.selectIntervalButton = Button(
+            modelSelectGroupLine1, text="采集水样", command=lambda: self.handleThread(pumpSampleIn, pumpSampleInCancel,self.selectIntervalButton,"采集水样","停止采集"), font=(None, 12))
+        self.selectIntervalButton.pack(side="left", padx=10, pady=10)
+        self.selectHourButton = Button(
+            modelSelectGroupLine1, text="读取数据", command=lambda: self.handleThread(readProbe, readProbeCancel,self.selectHourButton,"读取数据","停止读取"), font=(None, 12))
+        self.selectHourButton.pack(side="left", padx=10, pady=10)
+        modelSelectGroupLine1.pack(fill=X)
+        # Line2
+        modelSelectGroupLine2 = Frame(modelSelectGroup, bg=primaryColor)
+        self.selectCalibrateButton = Button(
+            modelSelectGroupLine2, text="排空水样", command=lambda: self.handleThread(pumpSampleOut, pumpSampleOutCancel,self.selectCalibrateButton,"排空水样","停止排空"), font=(None, 12))
+        self.selectCalibrateButton.pack(side="left", padx=10, pady=10)
+        self.selectPumpButton = Button(
+            modelSelectGroupLine2, text="填充清水", command=lambda: self.handleThread(pumpWaterIn, pumpWaterInCancel,self.selectPumpButton,"填充清水","停止填充"), font=(None, 12))
+        self.selectPumpButton.pack(side="left", padx=10, pady=10)
+        self.selectIdleButton = Button(
+            modelSelectGroupLine2, text="清洗滤膜", command=lambda: self.handleThread(cleanTube, cleanTubeCancel,self.selectIdleButton,"清洗滤膜","停止清洗"), font=(None, 12))
+        self.selectIdleButton.pack(side="left", padx=10, pady=10)
+        modelSelectGroupLine2.pack(fill=X)
         #
         #cleanLabelGroup
         #
-        cleanLabelGroup = GroupLabelButton(self, title="手动清洗")
+        cleanLabelGroup = GroupLabelButton(self, title="手动控制")
         cleanLabelGroup.pack(pady=10)
-        self.switchReactionTubeClean = SwitchLabelButton(cleanLabelGroup, imgDicts, text="清洗消解池",
-                                                    textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.reactionTubeCleanAddr.value, 1, lambda rec: setattr(deviceController, 'reactionTubeClean', 1) or self.switchReactionTubeClean.open(), repeatTimes=0, needMesBox=True),
-                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.reactionTubeCleanAddr.value, 0, lambda rec: setattr(deviceController, 'reactionTubeClean', 0) or self.switchReactionTubeClean.close(), repeatTimes=0, needMesBox=True),
+        self.switchPumpSampleIn = SwitchLabelButton(cleanLabelGroup, imgDicts, text="取水样",
+                                                    textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (pumpSampleMotor.forward(deviceController.pumpSampleInSpeed) or self.switchPumpSampleIn.open() or self.switchPumpSampleOut.close()),
+                                                    textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (pumpSampleMotor.stop() or self.switchPumpSampleIn.close()  or self.switchPumpSampleOut.close()),
                                                     )
-        if deviceController.reactionTubeClean == 1:
-            self.switchReactionTubeClean.open()
+        if pumpSampleMotor.value > 0:
+            self.switchPumpSampleIn.open()
         else:
-            self.switchReactionTubeClean.close()
-        self.switchReactionTubeClean.pack(pady=5)
-        self.switchSuctionClean = SwitchLabelButton(cleanLabelGroup, imgDicts, text="清洗储液环",
-                                               textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.suctionCleanAddr.value, 1, lambda rec: setattr(deviceController, 'suctionClean', 1) or self.switchSuctionClean.open(), repeatTimes=0, needMesBox=True),
-                                               textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.suctionCleanAddr.value, 0, lambda rec: setattr(deviceController, 'suctionClean', 0) or self.switchSuctionClean.close(), repeatTimes=0, needMesBox=True),
+            self.switchPumpSampleIn.close()
+        self.switchPumpSampleIn.pack(pady=5)
+        self.switchPumpSampleOut = SwitchLabelButton(cleanLabelGroup, imgDicts, text="排水样",
+                                               textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (pumpSampleMotor.backward(deviceController.pumpSampleOutSpeed) or self.switchPumpSampleOut.open() or self.switchPumpSampleIn.close()),
+                                               textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (pumpSampleMotor.stop() or self.switchPumpSampleOut.close()  or self.switchPumpSampleIn.close()),
                                                )
-        if deviceController.suctionClean == 1:
-            self.switchSuctionClean.open()
+        if pumpSampleMotor.value < 0:
+            self.switchPumpSampleOut.open()
         else:
-            self.switchSuctionClean.close()
-        self.switchSuctionClean.pack(pady=5)
+            self.switchPumpSampleOut.close()
+        self.switchPumpSampleOut.pack(pady=5)
+        self.switchPumpWaterIn = SwitchLabelButton(cleanLabelGroup, imgDicts, text="取清水",
+                                             textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (cleanWaterInMotor.forward(deviceController.pumpWaterInSpeed) or self.switchPumpWaterIn.open()),
+                                             textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (cleanWaterInMotor.stop() or self.switchPumpWaterIn.close()),
+                                             )
+        if cleanWaterInMotor.value > 0 :
+            self.switchPumpWaterIn.open()
+        else:
+            self.switchPumpWaterIn.close()
+        self.switchPumpWaterIn.pack(pady=5)
+        self.switchPumpWaterOut = SwitchLabelButton(cleanLabelGroup, imgDicts, text="排清水",
+                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (cleanWaterOutMotor.forward(deviceController.pumpWaterOutSpeed) or self.switchPumpWaterOut.open()),
+                                                     textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (cleanWaterOutMotor.stop() or self.switchPumpWaterOut.close()),
+                                                     )
+        if cleanWaterOutMotor.value > 0:
+            self.switchPumpWaterOut.open()
+        else:
+            self.switchPumpWaterOut.close()
+        self.switchPumpWaterOut.pack(pady=5)
+        self.switchFiveParametersProbe = SwitchLabelButton(cleanLabelGroup, imgDicts, text="五参探头",
+                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (probeRelay.on() or self.switchFiveParametersProbe.open()),
+                                                     textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (probeRelay.off() or self.switchFiveParametersProbe.close()),
+                                                     )
+        if probeRelay.value == 1:
+            self.switchFiveParametersProbe.open()
+        else:
+            self.switchFiveParametersProbe.close()
+        self.switchFiveParametersProbe.pack(pady=5)
+        self.switchUltravioletLed = SwitchLabelButton(cleanLabelGroup, imgDicts, text="紫外灯",
+                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (ultravioletLedRelay.on() or self.switchUltravioletLed.open()),
+                                                     textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (ultravioletLedRelay.off() or self.switchUltravioletLed.close()),
+                                                     )
+        if ultravioletLedRelay.value == 1:
+            self.switchUltravioletLed.open()
+        else:
+            self.switchUltravioletLed.close()
+        self.switchUltravioletLed.pack(pady=5)
+        self.switchValve = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电磁阀",
+                                                textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (valveRelay.on() or self.switchValve.open()),
+                                                textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (valveRelay.off() or self.switchValve.close()),
+                                                )
+        if valveRelay.value == 1:
+            self.switchValve.open()
+        else:
+            self.switchValve.close()
+        self.switchValve.pack(pady=5)
+    def checkIfAutoRun(self):
+        if deviceController.deviceAutoRun:
+            messagebox.showerror("设备繁忙","设备正在自动做样,请等待做样结束或者停止自动做样,否则无法手动控制")
+            return False
+        else:
+            if deviceController.deviceStep:
+                messagebox.showerror("设备繁忙","设备正在手动做样,请等待做样结束或者停止手动做样,否则无法手动控制")
+                return False
+            else:
+                return True
+    def handleThread(self, func, funcCancel,slectItem,slectItemText,cancelItemText):
+        global lastSelectItem, deviceController
+        if deviceController.deviceAutoRun:
+            messagebox.showerror("设备繁忙","设备正在自动做样,请等待做样结束或者停止自动做样,否则无法手动做样")
+            return
+        # if power.value == 0:
+        #     power.on()
+        #     if power.value == 1:
+        #         lastClickStartTime = datetime.now()
+        #         self.powerButton.configure(
+        #             background="green", text="关闭设备", activebackground="darkgreen")
+        # else:
+        #     power.off()
+        #     if power.value == 0:
+        #         lastClickStartTime = lastSelectTime
+        #         self.powerButton.configure(
+        #             background="red", text="开启设备", activebackground="darkred")
+        # return
+        if hasattr(self, 'thread') and self.thread and self.thread.is_alive():
+            if funcCancel == self.funcCancel:
+                # self.thread.raise_exception()
+                time.sleep(0.2)
+                self.funcCancel()
+                self.thread = None
+                # print("stop thread")
+                slectItem.configure(background="#d9d9d9", text=slectItemText, fg="black", activebackground="#ececec")
+                # slectItem.configure(background="", text=slectItemText)
+                return
+            else:
+                if messagebox.askokcancel("更换步骤", "确定终止未完成步骤,并开始新的步骤吗?"):
+                    return
+                else:
+                    return
+        slectItem.configure(background="green", text=cancelItemText, fg="white", activebackground="darkgreen")
+        deviceController.threadDate = datetime.now()
+        self.thread = threading.Thread(target=lambda date: func(date) or setattr(deviceController, 'deviceAutoRun', 0) or setattr(deviceController, 'deviceStep', 0) 
+            or slectItem.configure(background="#d9d9d9", text=slectItemText, fg="black", activebackground="#ececec") , args=(deviceController.threadDate,))
+        self.thread.start()
+        self.funcCancel = funcCancel
+        return
     def refreshPage(self):
         global deviceController
-        if deviceController.samplePump == 1:
-            self.switchSamplePump.open()
+        if pumpSampleMotor.value > 0:
+            self.switchPumpSampleIn.open()
         else:
-            self.switchSamplePump.close()
-        if deviceController.concentration1Pump == 1:
-            self.switchConcentration1Pump.open()
+            self.switchPumpSampleIn.close()
+        if pumpSampleMotor.value < 0:
+            self.switchPumpSampleOut.open()
         else:
-            self.switchConcentration1Pump.close()
-        if deviceController.concentration2Pump == 1:
-            self.switchConcentration2Pump.open()
+            self.switchPumpSampleOut.close()
+        if cleanWaterInMotor.value > 0 :
+            self.switchPumpWaterIn.open()
         else:
-            self.switchConcentration2Pump.close()
-        if deviceController.concentration3Pump == 1:
-            self.switchConcentration3Pump.open()
+            self.switchPumpWaterIn.close()
+        if cleanWaterOutMotor.value > 0:
+            self.switchPumpWaterOut.open()
         else:
-            self.switchConcentration3Pump.close()
-        if deviceController.chemical1Pump == 1:
-            self.switchChemical1Pump.open()
+            self.switchPumpWaterOut.close()
+        if probeRelay.value == 1:
+            self.switchFiveParametersProbe.open()
         else:
-            self.switchChemical1Pump.close()
-        if deviceController.chemical2Pump == 1:
-            self.switchChemical2Pump.open()
+            self.switchFiveParametersProbe.close()
+        if ultravioletLedRelay.value == 1:
+            self.switchUltravioletLed.open()
         else:
-            self.switchChemical2Pump.close()
-        if deviceController.chemical3Pump == 1:
-            self.switchChemical3Pump.open()
+            self.switchUltravioletLed.close()
+        if valveRelay.value == 1:
+            self.switchValve.open()
         else:
-            self.switchChemical3Pump.close()
-        if deviceController.reactionTubeClean == 1:
-            self.switchReactionTubeClean.open()
-        else:
-            self.switchReactionTubeClean.close()
-        if deviceController.suctionClean == 1:
-            self.switchSuctionClean.open()
-        else:
-            self.switchSuctionClean.close()
+            self.switchValve.close()
+    def testFun(self):
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",

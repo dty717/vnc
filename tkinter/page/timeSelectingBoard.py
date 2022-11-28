@@ -54,12 +54,13 @@ class TimeSelectingBoard(Frame):
             button_hour.pack(side="left")
             self.buttonHours.append(button_hour)
     def timeSelectCheck(self, index):
-        global deviceController
-        if deviceController.selectingHours[index] == 0 and (deviceController.selectingHours[(index+1) % 24] == 1 or deviceController.selectingHours[(index - 1) % 24] == 1):
-            messagebox.showerror("操作异常", "周期做样间隔大于一个小时")
-            return False
-        else:
-            return True
+        return True
+        # global deviceController
+        # if deviceController.selectingHours[index] == 0 and (deviceController.selectingHours[(index+1) % 24] == 1 or deviceController.selectingHours[(index - 1) % 24] == 1):
+        #     messagebox.showerror("操作异常", "周期做样间隔大于一个小时")
+        #     return False
+        # else:
+        #     return True
     #
     # timeSelectClick
     #
@@ -74,7 +75,7 @@ class TimeSelectingBoard(Frame):
                                                                                  or deviceController.selectingHours.__setitem__(index, int(not deviceController.selectingHours[index])), repeatTimes=0, needMesBox=True)
     def selectAll(self):
         if usingLocalTime:
-            for index in range(0, 24, 2):
+            for index in range(0, 24, 1):
                 self.buttonHours[index].configure(
                     background=backgroundColors[1])
                 deviceController.selectingHours[index] = 1

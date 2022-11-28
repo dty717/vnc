@@ -15,6 +15,8 @@ dbConcentration2History = dbSmartFloating.Concentration2Histories
 dbConcentration3History = dbSmartFloating.Concentration3Histories
 dbLocation = dbSmartFloating.location
 
+dbDeviceFiveParametersHistory = dbSmartFloating.SmartFloatFiveParametersHistories
+
 def dbLogging(currentTime, systemType, info, otherInfo):
     dbDeviceLog.insert_one({
         "time": currentTime,
@@ -31,6 +33,20 @@ def dbGetHistory(logQuery={}, page=0, nPerPage=30):
     deviceHistory = dbDeviceHistory.find(logQuery)
     return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
+def dbGetFiveParametersHistory(logQuery={}, page=0, nPerPage=30):
+    deviceHistory = dbDeviceFiveParametersHistory.find(logQuery)
+    return deviceHistory.skip(page * nPerPage).limit(nPerPage)
+
+def dbFiveParametersHistory(currentTime, PH, temp, ele, tur, O2):
+    dbDeviceFiveParametersHistory.insert_one({
+        "time": currentTime,
+        "PH": PH,
+        "temp": temp,
+        "ele": ele,
+        "tur": tur,
+        "O2": O2
+    })
+
 def dbSaveHistory(currentTime, value, maxValue, AValue, CValue):
     dbDeviceHistory.insert_one({
         "time": currentTime,
@@ -42,6 +58,9 @@ def dbSaveHistory(currentTime, value, maxValue, AValue, CValue):
 
 def dbGetLastHistory():
     return dbDeviceHistory.find({}).sort('time', -1).limit(1)
+
+def dbGetLastFiveParametersHistory():
+    return dbDeviceFiveParametersHistory.find({}).sort('time', -1).limit(1)
 
 def dbSaveConcentration1History(currentTime, value, maxValue, AValue, CValue):
     dbConcentration1History.insert_one({
