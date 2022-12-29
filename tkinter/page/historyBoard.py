@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from components.table import TreeTable
 from models.tableDatas import TableDatas
-from database.mongodb import dbGetFiveParametersHistory
+from database.mongodb import dbGetFloatNineParametersHistory
 
 class HistoryBoard(Frame):
     def __init__(self, master, **kargs):
@@ -15,15 +15,19 @@ class HistoryBoard(Frame):
         self.historyTableDatas = TableDatas()
         historyTableDatas = self.historyTableDatas
         historyTableDatas.setColumns(
-            'time', 'PH', 'temp', 'ele', 'tur', 'O2')
+            'time', 'PH', 'temp', 'ele', 'tur', 'O2', 'COD', 'NH3', 'NO3', 'chl')
         # column
         historyTableDatas.column("#0", width=50, minwidth=25)
-        historyTableDatas.column("time", anchor=CENTER, width=184)
-        historyTableDatas.column("PH", anchor=CENTER, width=91)
-        historyTableDatas.column("temp", anchor=CENTER, width=91)
-        historyTableDatas.column("ele", anchor=CENTER, width=91)
-        historyTableDatas.column("tur", anchor=CENTER, width=91)
-        historyTableDatas.column("O2", anchor=CENTER, width=91)
+        historyTableDatas.column("time", anchor=CENTER, width=145)
+        historyTableDatas.column("PH", anchor=CENTER, width=43)
+        historyTableDatas.column("temp", anchor=CENTER, width=43)
+        historyTableDatas.column("ele", anchor=CENTER, width=58)
+        historyTableDatas.column("tur", anchor=CENTER, width=58)
+        historyTableDatas.column("O2", anchor=CENTER, width=58)
+        historyTableDatas.column("COD", anchor=CENTER, width=58)
+        historyTableDatas.column("NH3", anchor=CENTER, width=58)
+        historyTableDatas.column("NO3", anchor=CENTER, width=58)
+        historyTableDatas.column("chl", anchor=CENTER, width=58)
         # headingConfigs
         historyTableDatas.heading("#0", text="序号", anchor=CENTER)
         historyTableDatas.heading("time", text="时间", anchor=CENTER)
@@ -32,8 +36,12 @@ class HistoryBoard(Frame):
         historyTableDatas.heading("ele", text="电导率", anchor=CENTER)
         historyTableDatas.heading("tur", text="浊度", anchor=CENTER)
         historyTableDatas.heading("O2", text="溶解氧", anchor=CENTER)
+        historyTableDatas.heading("COD", text="COD", anchor=CENTER)
+        historyTableDatas.heading("NH3", text="氨氮", anchor=CENTER)
+        historyTableDatas.heading("NO3", text="硝氮", anchor=CENTER)
+        historyTableDatas.heading("chl", text="叶绿素", anchor=CENTER)
         # data
-        histories = list(dbGetFiveParametersHistory(nPerPage=0))
+        histories = list(dbGetFloatNineParametersHistory(nPerPage=0))
         for index, history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             history['PH'] = round(history['PH'], 3)
@@ -41,6 +49,10 @@ class HistoryBoard(Frame):
             history['ele'] = round(history['ele'], 3)
             history['tur'] = round(history['tur'], 3)
             history['O2'] = round(history['O2'], 3)
+            history['COD'] = round(history['COD'], 3)
+            history['NH3'] = round(history['NH3'], 3)
+            history['NO3'] = round(history['NO3'], 3)
+            history['chl'] = round(history['chl'], 3)
             historyTableDatas.insert(parent='', index='end', iid=index, text=str(
                 index+1), values=tuple(history.values())[1:])
         historyTab = Frame(self)
@@ -62,7 +74,7 @@ class HistoryBoard(Frame):
         historyTableDatas = self.historyTableDatas
         historyTableDatas.clearDatas()
         # data
-        histories = list(dbGetFiveParametersHistory(nPerPage=0))
+        histories = list(dbGetFloatNineParametersHistory(nPerPage=0))
         for index, history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             history['PH'] = round(history['PH'], 3)
@@ -70,6 +82,10 @@ class HistoryBoard(Frame):
             history['ele'] = round(history['ele'], 3)
             history['tur'] = round(history['tur'], 3)
             history['O2'] = round(history['O2'], 3)
+            history['COD'] = round(history['COD'], 3)
+            history['NH3'] = round(history['NH3'], 3)
+            history['NO3'] = round(history['NO3'], 3)
+            history['chl'] = round(history['chl'], 3)
             historyTableDatas.insert(parent='', index='end', iid=index, text=str(
                 index+1), values=tuple(history.values())[1:])
         self.historyTreeTable.refreshDate(historyTableDatas)

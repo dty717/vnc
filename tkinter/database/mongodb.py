@@ -2,6 +2,7 @@ from pymongo import MongoClient
 # pprint library is used to make the output look more pretty
 from pprint import pprint
 from random import randint
+from config.config import lat_deg, lon_deg
 
 # connect to MongoDB, change the << MONGODB URL >> to reflect your own connection string
 dbClient = MongoClient("mongodb://admin:SUPERSECRETPASSWORD@localhost:27017/")
@@ -16,6 +17,7 @@ dbConcentration3History = dbSmartFloating.Concentration3Histories
 dbLocation = dbSmartFloating.location
 
 dbDeviceFiveParametersHistory = dbSmartFloating.SmartFloatFiveParametersHistories
+dbDeviceFloatNineParametersHistory = dbSmartFloating.SmartFloatFloatNineParametersHistories
 
 def dbLogging(currentTime, systemType, info, otherInfo):
     dbDeviceLog.insert_one({
@@ -29,15 +31,34 @@ def dbGetLogging(logQuery={}, page=0, nPerPage=30):
     deviceLog = dbDeviceLog.find(logQuery)
     return deviceLog.skip(page * nPerPage).limit(nPerPage)
 
-def dbGetHistory(logQuery={}, page=0, nPerPage=30):
-    deviceHistory = dbDeviceHistory.find(logQuery)
+def dbGetHistory(query={}, page=0, nPerPage=30):
+    deviceHistory = dbDeviceHistory.find(query)
     return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
-def dbGetFiveParametersHistory(logQuery={}, page=0, nPerPage=30):
-    deviceHistory = dbDeviceFiveParametersHistory.find(logQuery)
+def dbGetFloatNineParametersHistory(query={}, page=0, nPerPage=30):
+    deviceHistory = dbDeviceFloatNineParametersHistory.find(query)
     return deviceHistory.skip(page * nPerPage).limit(nPerPage)
 
-def dbFiveParametersHistory(currentTime, PH, temp, ele, tur, O2):
+def dbGetFiveParametersHistory(query={}, page=0, nPerPage=30):
+    deviceHistory = dbDeviceFiveParametersHistory.find(query)
+    return deviceHistory.skip(page * nPerPage).limit(nPerPage)
+
+def dbSaveFloatNineParametersHistory(currentTime, PH, temp, ele, tur, O2, COD, NH3, NO3, chl, dataInfo):
+    dbDeviceFloatNineParametersHistory.insert_one({
+        "time": currentTime,
+        "PH": PH,
+        "temp": temp,
+        "ele": ele,
+        "tur": tur,
+        "O2": O2,
+        "COD": COD,
+        "NH3": NH3,
+        "NO3": NO3,
+        "chl": chl,
+        "dataInfo": dataInfo
+    })
+
+def dbSaveFiveParametersHistory(currentTime, PH, temp, ele, tur, O2):
     dbDeviceFiveParametersHistory.insert_one({
         "time": currentTime,
         "PH": PH,
@@ -62,6 +83,9 @@ def dbGetLastHistory():
 def dbGetLastFiveParametersHistory():
     return dbDeviceFiveParametersHistory.find({}).sort('time', -1).limit(1)
 
+def dbGetLastFloatNineParametersHistory():
+    return dbDeviceFloatNineParametersHistory.find({}).sort('time', -1).limit(1)
+
 def dbSaveConcentration1History(currentTime, value, maxValue, AValue, CValue):
     dbConcentration1History.insert_one({
         "time": currentTime,
@@ -71,8 +95,8 @@ def dbSaveConcentration1History(currentTime, value, maxValue, AValue, CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration1History(logQuery={}, page=0, nPerPage=30):
-    concentration1History = dbConcentration1History.find(logQuery)
+def dbGetConcentration1History(query={}, page=0, nPerPage=30):
+    concentration1History = dbConcentration1History.find(query)
     return concentration1History.skip(page * nPerPage).limit(nPerPage)
 
 def dbSaveConcentration2History(currentTime, value, maxValue, AValue, CValue):
@@ -84,8 +108,8 @@ def dbSaveConcentration2History(currentTime, value, maxValue, AValue, CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration2History(logQuery={}, page=0, nPerPage=30):
-    concentration2History = dbConcentration2History.find(logQuery)
+def dbGetConcentration2History(query={}, page=0, nPerPage=30):
+    concentration2History = dbConcentration2History.find(query)
     return concentration2History.skip(page * nPerPage).limit(nPerPage)
 
 def dbSaveConcentration3History(currentTime, value, maxValue, AValue, CValue):
@@ -97,8 +121,8 @@ def dbSaveConcentration3History(currentTime, value, maxValue, AValue, CValue):
         "CValue": CValue
     })
 
-def dbGetConcentration3History(logQuery={}, page=0, nPerPage=30):
-    concentration3History = dbConcentration3History.find(logQuery)
+def dbGetConcentration3History(query={}, page=0, nPerPage=30):
+    concentration3History = dbConcentration3History.find(query)
     return concentration3History.skip(page * nPerPage).limit(nPerPage)
 
 def insertLocation(time, latitude, longitude):
@@ -114,6 +138,17 @@ def insertLocation(time, latitude, longitude):
 
 def getLastLocation():
     return dbLocation.find({}).sort('time', -1).limit(1)
+
+def getLastLocationData():
+    lastLocation = list(getLastLocation())
+    if len(lastLocation) == 1:
+        lastLocation = lastLocation[0]
+        latitude = lastLocation['latitude']
+        longitude = lastLocation['longitude']
+    else:
+        latitude = lat_deg
+        longitude = lon_deg
+    return (latitude, longitude)
 
 # insertPosition(1,2,3,4)
 

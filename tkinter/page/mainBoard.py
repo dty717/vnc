@@ -9,7 +9,7 @@ from service.thread import thread_with_exception
 from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, waterDetect, \
         lastClickStartTime, lastSelectTime, \
         operatingAllStep, operatingAllStepCancel
-from database.mongodb import dbGetLastFiveParametersHistory
+from database.mongodb import dbGetLastFloatNineParametersHistory
 from config.config import primaryColor,usingWaterDetect
 mainHistoryText = None
 backgroundColors = ["#ffffff", primaryColor]
@@ -33,20 +33,22 @@ def stepString(deviceAutoRun, deviceStep):
         stepStr = "自动流程"
     elif deviceStep:
         stepStr = "手动流程"
-    if deviceStep == 0:
+    if deviceStep == 0x00:
         stepStr += "系统空闲"
-    elif deviceStep == 1:
+    elif deviceStep == 0x01:
         stepStr += "(排空清水)"
-    elif deviceStep == 2:
+    elif deviceStep == 0x02:
         stepStr += "(采集水样)"
-    elif deviceStep == 3:
+    elif deviceStep == 0x03:
         stepStr += "(读取数据)"
-    elif deviceStep == 4:
+    elif deviceStep == 0x04:
         stepStr += "(排空水样)"
-    elif deviceStep == 5:
+    elif deviceStep == 0x05:
         stepStr += "(填充清水)"
-    elif deviceStep == 6:
+    elif deviceStep == 0x06:
         stepStr += "(清洗滤膜)"
+    elif deviceStep == 0x0A:
+        stepStr += "(读取GPS)"
     return stepStr
 
 class MainBoard(Frame):
@@ -57,7 +59,7 @@ class MainBoard(Frame):
         #     concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
         #     concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
         self.mainHistoryText = StringVar()
-        lastHistory = list(dbGetLastFiveParametersHistory())
+        lastHistory = list(dbGetLastFloatNineParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
@@ -66,16 +68,26 @@ class MainBoard(Frame):
                                      "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
                                      "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
                                      "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
+                                     "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
+                                     "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
+                                     "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
+                                     "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
+                                     "位置:"+lastHistory['dataInfo']+"\n" +
                                      "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                                      "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
-    PH:
-    温度:
-    电导率:
-    浊度:
-    溶解氧:
-    仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
+PH:
+温度:
+电导率:
+浊度:
+溶解氧:
+COD:
+氨氮:
+硝氮:
+叶绿素:
+位置:
+仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
     "报警状态:"+stateString(deviceInfo.warningInfo))
         #
         beforeHeaderFrame = Frame(self, bg=primaryColor)
@@ -90,7 +102,7 @@ class MainBoard(Frame):
         # stopButton.pack(side=LEFT, padx=10)
         self.operationButton = Button(headerFrame, text="开启设备", fg="white", bg="red", font=(
             None, 20), command=self.operating, activebackground="darkred", activeforeground="white")
-        self.operationButton.pack(side=LEFT, padx=30)
+        self.operationButton.pack(side=LEFT, padx=40)
         if deviceController.deviceAutoRun == 1:
             self.operationButton.configure(
                 background="green", text="关闭设备", activebackground="darkgreen")
@@ -148,7 +160,7 @@ class MainBoard(Frame):
         else:
             self.operationButton.configure(
                 background="green", text="关闭设备", activebackground="darkgreen")
-        lastHistory = list(dbGetLastFiveParametersHistory())
+        lastHistory = list(dbGetLastFloatNineParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
@@ -157,16 +169,26 @@ class MainBoard(Frame):
                                      "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
                                      "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
                                      "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
+                                     "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
+                                     "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
+                                     "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
+                                     "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
+                                     "位置:"+lastHistory['dataInfo']+"\n" +
                                      "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                                      "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
-    PH:
-    温度:
-    电导率:
-    浊度:
-    溶解氧:
-    仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
+PH:
+温度:
+电导率:
+浊度:
+溶解氧:
+COD:
+氨氮:
+硝氮:
+叶绿素:
+位置:
+仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
     "报警状态:"+stateString(deviceInfo.warningInfo))
         # self.lastSelectOperationButton = operationButton
         #

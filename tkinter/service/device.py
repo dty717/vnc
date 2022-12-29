@@ -17,15 +17,14 @@ from tool.bytesConvert import bytesToFloat
 if isUsingGPS:
     from service.gps import gpsData
 from service.logger import Logger
-from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History, dbFiveParametersHistory
+from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History, dbSaveFloatNineParametersHistory
 
-cleanWaterInMotor = Motor(11, 25)
-cleanWaterOutMotor = Motor(27, 17)
-pumpSampleMotor = Motor(10, 9)
 
 probeRelay = LED(24)
-ultravioletLedRelay = LED(23)
-valveRelay = LED(18)
+# ultravioletLedRelay = LED(23)
+# valveRelay = LED(18)
+
+gpsRelay = LED(11)
 
 power = LED(16)
 waterDetect = Button(22)
@@ -43,120 +42,35 @@ requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 
 
-bufQueryPH = [0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xCB]
-bufQueryTemp = [0x01, 0x03, 0x00, 0x04, 0x00, 0x02, 0x85, 0xCA]
 bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
 bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
 bufQueryO2 = [0x04, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0x9E]
+bufQueryPH = [0x05, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x4F]
+bufQueryNH3 = [0x05, 0x03, 0x00, 0x04, 0x00, 0x02, 0x84, 0x4E]
+bufQueryNO3 = [0x05, 0x03, 0x00, 0x08, 0x00, 0x02, 0x44, 0x4D]
+bufQueryTemp = [0x05, 0x03, 0x00, 0x0A, 0x00, 0x02, 0xE5, 0x8D]
+bufQueryCOD = [0x07, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xAD]
+bufQueryChl = [0x12, 0x03, 0x00, 0x02, 0x00, 0x02, 0x67,0x68]
 
+# bufControlling = bufQueryChl
+# bufControlling = bufControlling[0:6]
+# crcCheck = crc16(bufControlling, 0, len(bufControlling))
+# bufControlling.append(crcCheck >> 8)
+# bufControlling.append(crcCheck & 0xff)
+# _str = ''
+# for buf in bufControlling:
+#     _str += hex(buf)+","
 
-# step 1
-# cleanWaterOutMotor.forward(0.5)
-# time.sleep(143)
-# cleanWaterOutMotor.stop()
+# print(_str)
 
-# # step 2
-# pumpSampleMotor.forward(0.5)
-# time.sleep(150)
-# pumpSampleMotor.stop()
+def setPHData(buf):
+    global deviceInfo
+    deviceInfo.PH = bytesToFloat(buf[3:7])
 
-# # step 3
-# probeRelay.on()
+def setPHData(buf):
+    global deviceInfo
+    deviceInfo.PH = bytesToFloat(buf[3:7])
 
-# bufQueryPH = [0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xCB]
-# bufQueryTemp = [0x01, 0x03, 0x00, 0x04, 0x00, 0x02, 0x85, 0xCA]
-# bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
-# bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
-# bufQueryO2 = [0x04, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0x9E]
-
-
-# ser.write(bufQueryPH)
-# recBuf = ser.readall()
-# # recBuf = [0x01,0x03,0x04,0x86,0x4F,0x40,0xFA,0x53,0x2F]
-# bytesToFloat(recBuf[3:7])
-# # 8.657720565795898
-
-# ser.write(bufQueryTemp)
-# recBuf = ser.readall()
-# # recBuf = [0x01,0x03,0x04,0x04,0x38,0x41,0xAE,0xCB,0x22]
-# bytesToFloat(recBuf[3:7])
-# # 26.316884994506836
-
-# ser.write(bufQueryEle)
-# recBuf = ser.readall()
-# # recBuf = [0x01,0x03,0x04,0x04,0x38,0x41,0xAE,0xCB,0x22]
-# bytesToFloat(recBuf[3:7])
-# # 0.07257397472858429
-# ser.write(bufQueryTur)
-# recBuf = ser.readall()
-# # recBuf = [0x01,0x03,0x04,0x04,0x38,0x41,0xAE,0xCB,0x22]
-# bytesToFloat(recBuf[3:7])
-# # 0.02316952683031559
-# ser.write(bufQueryO2)
-# recBuf = ser.readall()
-# # recBuf = [0x01,0x03,0x04,0x04,0x38,0x41,0xAE,0xCB,0x22]
-# bytesToFloat(recBuf[3:7])
-# # 8.592945098876953
-
-# probeRelay.off()
-
-# # step 4
-# pumpSampleMotor.backward()
-# time.sleep(70)
-# pumpSampleMotor.stop()
-
-
-# # step 5
-# cleanWaterInMotor.forward(0.5)
-# time.sleep(143)
-# cleanWaterInMotor.stop()
-
-# # clean
-# valveRelay.on()
-# cleanWaterOutMotor.backward()
-# pumpSampleMotor.backward()
-
-# time.sleep(20)
-# cleanWaterOutMotor.stop()
-# pumpSampleMotor.stop()
-# valveRelay.off()
-
-
-def pumpWaterOut(date):
-    global deviceController
-    if(deviceController.threadDate > date):
-        return
-    deviceController.deviceStep = 0x01
-    cleanWaterOutMotor.forward(deviceController.pumpWaterOutSpeed)
-    time.sleep(deviceController.pumpWaterOutTime)
-    if(deviceController.threadDate > date):
-        return
-    cleanWaterOutMotor.stop()
-    return
-
-def pumpWaterOutCancel():
-    global deviceController
-    deviceController.deviceStep = 0x00
-    cleanWaterOutMotor.stop()
-    return
-
-def pumpSampleIn(date):
-    global deviceController
-    if(deviceController.threadDate > date):
-        return
-    deviceController.deviceStep = 0x02
-    pumpSampleMotor.forward(deviceController.pumpSampleInSpeed)
-    time.sleep(deviceController.pumpSampleInTime)
-    if(deviceController.threadDate > date):
-        return
-    pumpSampleMotor.stop()
-    return
-
-def pumpSampleInCancel():
-    global deviceController
-    deviceController.deviceStep = 0x00
-    pumpSampleMotor.stop()
-    return
 
 def readProbe(date):
     global deviceController
@@ -170,25 +84,17 @@ def readProbe(date):
         if(deviceController.threadDate > date):
             return
     ser.readall()
-    ser.write(bufQueryPH)
-    time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _PH = bytesToFloat(recBuf[3:7])
-    else:
-        _PH = -1
+    sendReq(bufQueryPH, setPHData, repeatTimes=3, needMesBox=False)
+    # ser.write(bufQueryPH)
+    time.sleep(0.2)
     # 8.657720565795898
-    ser.write(bufQueryTemp)
-    time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _temp = bytesToFloat(recBuf[3:7])
-    else:
-        _temp = -1
+    sendReq(bufQueryTemp, setPHData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    # 
     # 26.316884994506836
     ser.write(bufQueryEle)
     time.sleep(0.2)
@@ -220,107 +126,119 @@ def readProbe(date):
     else:
         _O2 = -1
     # 8.592945098876953
+    ser.write(bufQueryCOD)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    recBuf = ser.readall()
+    if len(recBuf) > 8:
+        _COD = bytesToFloat(recBuf[3:7])
+    else:
+        _COD = -1
+    # 8.592945098876953
+    ser.write(bufQueryNH3)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    recBuf = ser.readall()
+    if len(recBuf) > 8:
+        _NH3 = bytesToFloat(recBuf[3:7])
+    else:
+        _NH3 = -1
+    # 8.592945098876953
+    ser.write(bufQueryNO3)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    recBuf = ser.readall()
+    if len(recBuf) > 8:
+        _NO3 = bytesToFloat(recBuf[3:7])
+    else:
+        _NO3 = -1
+    # 8.592945098876953    
+    ser.write(bufQueryChl)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    recBuf = ser.readall()
+    if len(recBuf) > 8:
+        _chl = bytesToFloat(recBuf[3:7])
+    else:
+        _chl = -1
+    # 8.592945098876953    
     probeRelay.off()
-    deviceInfo.PH = _PH
-    deviceInfo.temp = _temp
+    # deviceInfo.temp = _temp
     deviceInfo.ele = _ele
     deviceInfo.tur = _tur
     deviceInfo.O2 = _O2
+    deviceInfo.COD = _COD
+    deviceInfo.NH3 = _NH3
+    deviceInfo.NO3 = _NO3
+    deviceInfo.chl = _chl
+
     currentTime = datetime.datetime.now()
     if(deviceController.threadDate > date):
         return
     #
-    uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
-                  'PH': _PH, "temp": _temp, "ele": _ele, "tur": _tur, "O2": _O2,
-                  "dataInfo": ""}
-    requests.post(uploadDataURL, json=uploadData)
-    dbFiveParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp,
-                            deviceInfo.ele, deviceInfo.tur, deviceInfo.O2)
+    dataInfo = ""
+    try:
+        if gpsData.active and isUsingGPS:
+            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
+            round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+        uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
+                      'PH': _PH, "temp": _temp, "ele": _ele, "tur": _tur, "O2": _O2, "COD": _COD, "NH3": _NH3, "NO3": _NO3, "chl": _chl,
+                      "dataInfo": dataInfo}
+        # requests.post(uploadDataURL, json=uploadData)
+    except Exception as err:
+        Logger.log("网络异常", "数据无法上传", str(err), 1200)
+    dbSaveFloatNineParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp, deviceInfo.ele, deviceInfo.tur, deviceInfo.O2,
+                                     deviceInfo.COD, deviceInfo.NH3, deviceInfo.NO3, deviceInfo.chl, dataInfo)
     # messagebox.showinfo("数据", "PH:"+str(_PH)+"\r\n温度:"+str(_temp)+"\r\n电导率:"+str(_ele)+"\r\n浊度:"+str(_tur)+"\r\n溶解氧:"+str(_O2))
     return
 
 def readProbeCancel():
     global deviceController
+    # 
     deviceController.deviceStep = 0x00
     probeRelay.off()
     return
 
-def pumpSampleOut(date):
-    global deviceController
+
+def readGPS(date):
+    global deviceController,gpsData
     if(deviceController.threadDate > date):
         return
-    deviceController.deviceStep = 0x04
-    pumpSampleMotor.backward(deviceController.pumpSampleOutSpeed)
-    time.sleep(deviceController.pumpSampleOutTime)
-    if(deviceController.threadDate > date):
-        return
-    pumpSampleMotor.stop()
+    deviceController.deviceStep = 0x0A
+    global deviceInfo
+    if not gpsRelay.value:
+        gpsRelay.on()
+        gpsData.isOepn = True
+        time.sleep(deviceController.gpsWaitingTime)
+        if(deviceController.threadDate > date):
+            return
     return
 
-def pumpSampleOutCancel():
-    global deviceController
+def readGPSCancel():
+    global deviceController, gpsData
+    #
     deviceController.deviceStep = 0x00
-    pumpSampleMotor.stop()
-    return
-
-def pumpWaterIn(date):
-    global deviceController
-    if(deviceController.threadDate > date):
-        return
-    deviceController.deviceStep = 0x05
-    cleanWaterInMotor.forward(deviceController.pumpWaterInSpeed)
-    time.sleep(deviceController.pumpWaterInTime)
-    if(deviceController.threadDate > date):
-        return
-    cleanWaterInMotor.stop()
-    return
-
-def pumpWaterInCancel():
-    global deviceController
-    deviceController.deviceStep = 0x00
-    cleanWaterInMotor.stop()
-    return
-
-def cleanTube(date):
-    # # clean
-    global deviceController
-    if(deviceController.threadDate > date):
-        return
-    deviceController.deviceStep = 0x06
-    valveRelay.on()
-    cleanWaterOutMotor.backward(deviceController.cleanTubeInSpeed)
-    pumpSampleMotor.backward(deviceController.cleanTubeOutSpeed)
-    time.sleep(deviceController.cleanTubeTime)
-    if(deviceController.threadDate > date):
-        return
-    cleanWaterOutMotor.stop()
-    pumpSampleMotor.stop()
-    valveRelay.off()
-
-def cleanTubeCancel():
-    global deviceController
-    deviceController.deviceStep = 0x00
-    cleanWaterOutMotor.stop()
-    pumpSampleMotor.stop()
+    gpsRelay.off()
+    gpsData.isOepn = False
     return
 
 def operatingAllStep(date):
-    global deviceController
+    global deviceController, gpsData
     deviceController.deviceAutoRun = 1
-    pumpWaterOut(date)
-    pumpSampleIn(date)
+    readGPS(date)
     readProbe(date)
-    pumpSampleOut(date)
-    pumpWaterIn(date)
+    gpsRelay.off()
+    gpsData.isOepn = False
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
     return
 
 def operatingAllStepCancel():
     global deviceController
-    cleanWaterOutMotor.stop()
-    pumpSampleMotor.stop()
-    cleanWaterInMotor.stop()
     probeRelay.off()
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
@@ -635,6 +553,7 @@ class DeviceController:
         self.suctionClean = 0
         self.measurementInterval = 0
         ### 
+        self.gpsWaitingTime = 40
         self.pumpSampleInSpeed = 0.5
         self.pumpSampleInTime = 200
         self.probeWaitingTime = 60
@@ -674,6 +593,7 @@ chemical3Pump = {}
 reactionTubeClean = {}
 suctionClean = {}
 measurementInterval = {}
+gpsWaitingTime = {}
 pumpSampleInSpeed = {}
 pumpSampleInTime = {}
 probeWaitingTime = {}
@@ -689,14 +609,14 @@ cleanTubeTime = {}
 deviceAutoRun = {}
 deviceStep = {}
 threadDate = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
-                                   self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
-                                   self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
-                                   self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
-                                   self.suctionClean, self.measurementInterval,
-                                   self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
-                                   self.pumpWaterInSpeed, self.pumpWaterInTime,self.pumpWaterOutSpeed, self.pumpWaterOutTime,
-                                   self.cleanTubeInSpeed, self.cleanTubeOutSpeed,self.cleanTubeTime,
-                                   self.deviceAutoRun,self.deviceStep,self.threadDate)
+                                self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
+                                self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
+                                self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
+                                self.suctionClean, self.measurementInterval,
+                                self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
+                                self.pumpWaterInSpeed, self.pumpWaterInTime, self.pumpWaterOutSpeed, self.pumpWaterOutTime,
+                                self.cleanTubeInSpeed, self.cleanTubeOutSpeed, self.cleanTubeTime,
+                                self.deviceAutoRun, self.deviceStep, self.threadDate)
 
 class DeviceInfo:
     def __init__(self):
@@ -733,6 +653,10 @@ class DeviceInfo:
         self.ele = 300
         self.tur = 0.5
         self.O2 = 8
+        self.COD = 8
+        self.NH3 = 8
+        self.NO3 = 8
+        self.chl = 8
     #
     def __str__(self):
         return """init = {}
@@ -768,13 +692,17 @@ temp = {}
 ele = {}
 tur = {}
 O2 = {}
+COD = {}
+NH3 = {}
+NO3 = {}
+chl = {}
 """.format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
                             self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
                             self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
                             self.sampleMaxValue, self.sampleAValue, self.sampleCValue, self.measureYear, self.measureMonth, self.measureDay, self.measureHour,
                             self.measureMinute, self.measureSecond, self.warningInfo, self.dataFlag, self.currentModelSelect,
                             self.currentOperationSelect, self.currentState,
-                            self.PH, self.temp, self.ele, self.tur, self.O2)
+                            self.PH, self.temp, self.ele, self.tur, self.O2,self.COD, self.NH3, self.NO3, self.chl)
 
 shiftAddr = 3
 

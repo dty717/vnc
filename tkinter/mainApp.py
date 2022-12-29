@@ -142,7 +142,7 @@ mainMenu.add(controllingBoard, text="设备调试")
 mainMenu.add(timeSelectingBoard, text="整点做样")
 mainMenu.add(settingBoard, text="参数设置")
 mainMenu.add(systemLogBoard, text="运行日志")
-mainMenu.add(cameraBoard, text="视频监控")
+# mainMenu.add(cameraBoard, text="视频监控")
 if isUsingGPS:
     mainMenu.add(locationBoard, text="位置监测")
 
@@ -280,8 +280,8 @@ if isUsingGPS:
 
 def saveGPS():
   global gpsData
-  while not saveGpsEvent.wait(5*60):
-    if gpsData.active == True:
+  while not saveGpsEvent.wait(1*60):
+    if gpsData.active == True and gpsData.isOepn:
         saveLocation(gpsData.year, gpsData.month, gpsData.date, gpsData.hour,
                      gpsData.minute, gpsData.second, gpsData.latitude, gpsData.longitude)
         pass

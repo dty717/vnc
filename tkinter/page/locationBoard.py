@@ -3,7 +3,7 @@ from tkinter import ttk
 import tkintermapview
 from components.groupLabelButton import GroupLabelButton
 from components.labelButton import SwitchLabelButton
-from database.mongodb import getLastLocation
+from database.mongodb import getLastLocationData
 from PIL import Image
 from config.config import lat_deg, lon_deg
 
@@ -16,14 +16,7 @@ class LocationBoard(Frame):
             self, width=1000, height=700, corner_radius=0)
         # self.map_widget.set_tile_server("https://mt0.google.com/vt/lyrs=s&hl=en&x={x}&y={y}&z={z}&s=Ga", max_zoom=22)  # google satellite
         self.map_widget.pack(fill="both", expand=True)
-        lastLocation = list(getLastLocation())
-        if len(lastLocation) == 1:
-            lastLocation = lastLocation[0]
-            latitude = lastLocation['latitude']
-            longitude = lastLocation['longitude']
-        else:
-            latitude = lat_deg
-            longitude = lon_deg
+        latitude, longitude = getLastLocationData()
         cityInfo = tkintermapview.convert_coordinates_to_city(
             latitude, longitude)
         if cityInfo != None:
@@ -46,14 +39,7 @@ class LocationBoard(Frame):
         print(
             f"marker clicked - text: {marker.text}  position: {marker.position}")
     def refreshPage(self):
-        lastLocation = list(getLastLocation())
-        if len(lastLocation) == 1:
-            lastLocation = lastLocation[0]
-            latitude = lastLocation['latitude']
-            longitude = lastLocation['longitude']
-        else:
-            latitude = lat_deg
-            longitude = lon_deg
+        latitude, longitude = getLastLocationData()
         self.marker.set_position(latitude, longitude)  # change position
         (lastLatitude, lastLongitude) = self.map_widget.get_position()
         distance = (lastLongitude - longitude)*(lastLongitude - longitude) + \

@@ -14,10 +14,10 @@ class SystemLogBoard(Frame):
         tableDatas.setColumns('time', 'systemType', 'info', 'otherInfo')
         # column
         tableDatas.column("#0", width=50, minwidth=25)
-        tableDatas.column("time", anchor=W, width=200)
+        tableDatas.column("time", anchor=W, width=150)
         tableDatas.column("systemType", anchor=CENTER, width=80)
-        tableDatas.column("info", anchor=W, width=180)
-        tableDatas.column("otherInfo", anchor=W, width=180)
+        tableDatas.column("info", anchor=W, width=135)
+        tableDatas.column("otherInfo", anchor=W, width=245)
         # headingConfigs
         tableDatas.heading("#0", text="序号", anchor=W)
         tableDatas.heading("time", text="时间", anchor=W)

@@ -32,6 +32,7 @@ class GpsData:
         self.latitudeFlag = ''
         self.longitude = lon_deg
         self.longitudeFlag = ''
+        self.isOepn = False
     #
     def __str__(self):
         return "{}-{}-{} {}:{}:{} active:{} {} {},{} {}".format(self.year, self.month, self.date, self.hour, self.minute, self.second, self.active,
