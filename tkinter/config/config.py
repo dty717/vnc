@@ -30,6 +30,38 @@ sampleType = "FloatNineParam"
 uploadDataURL = 'http://server.delinapi.top:3000/SaveFloatNineParametersHistory'
 uploadWarningURL = 'http://server.delinapi.top:3000/warning'
 
+addrsID = [0x99,0x41,0x81,0x20,0x88]
+
+socketUploadIP = "155.138.195.23"
+socketUploadPort = 2030
+
 usingLocalTime = True
 
 usingWaterDetect = True
+
+dataScale = {
+    "temp": 10,
+    "PH": 100,
+    "O2": 10,
+    "COD": 10,
+    "ele": 1,
+    "tur": 1,
+    "NH3": 100,
+    "N": 100,
+    "P": 100,
+    "chl": 10,
+}
+
+dataShiftScale = {
+    "temp": 1,
+    "PH": 1,
+    "O2": 1,
+    "COD": 0.35,
+    "ele": 0.23,
+    "tur": 1,
+    "NH3": 0.4,
+    "NO3": 0.1,
+    "P": 1,
+    "chl": 1,
+}
+

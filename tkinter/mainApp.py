@@ -7,13 +7,15 @@ import threading
 import asyncio
 import json
 import websocket
+import time
+import socket
 from config.labelString import titleLabel
 from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, url, sampleType,  deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, \
-        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect,\
-        operatingAllStep
+        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,\
+        operatingAllStep, loginSocket, soc, connect,checkSocketData
 
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
@@ -216,7 +218,6 @@ def updatePage():
 # detect water for danger:
 def waterDetectCallBack():
     Logger.log("设备异常", "设备进水", "请尽快处理", 60)
-    power.value = 0
     updatePage()
     waterDetectWarning()
 
@@ -293,7 +294,7 @@ if isUsingGPS:
 def checkLastSelectTime():
     global lastSelectTime, lastClickStartTime
     now = datetime.now()
-    if lastSelectTime > lastClickStartTime and now > lastSelectTime + timedelta(hours=1, minutes=40) and power.value == 1:
+    if lastSelectTime > lastClickStartTime and now > lastSelectTime + timedelta(hours=1, minutes=40) :
         lastHistory = list(dbGetLastHistory())
         if len(lastHistory) == 0:
             return False
@@ -325,8 +326,8 @@ def selectTime():
                 mainThread = threading.Thread(
                     target=operatingAllStep, args=(deviceController.threadDate,))
                 mainThread.start()
+                # operatingAllStep(deviceController.threadDate)
                 # start select time
-                # power.value = 1
                 # timeSelectEvent.wait(60)
                 # write_single_register(DeviceAddr.modelSelectAddr.value, 1,
                 #                       lambda rec: None, repeatTimes=3, needMesBox=False)
@@ -378,6 +379,58 @@ ws = websocket.WebSocketApp(url,
                             on_close=on_close)
 websocketThread = threading.Thread(target=runWebsocket)
 websocketThread.start()
+
+# import time
+# import socket
+# import threading
+
+# def connect():
+#     while True:
+#         try:
+#             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#             s.connect(("155.138.195.23", 2030))
+#             s.settimeout(60)
+#             return s
+#         except socket.error as e:
+#             Logger.log("网络状态", "网络异常", str(e), 3600)
+#             time.sleep(5)
+
+# soc = connect()
+
+def runSocket():
+    global soc
+    while True:
+        try:
+            recBuf = soc.recv(64)
+            if recBuf == b'':
+                soc.close()
+                soc = connect()
+            else:
+                checkSocketData(recBuf)
+        except socket.timeout:
+            continue
+            # print("Timeout")
+        except Exception as e:
+            Logger.log("网络状态", "网络异常", str(e), 3600)
+            soc.close()
+            soc = connect()
+
+socketThread = threading.Thread(target=runSocket)
+socketThread.start()
+
+def runSocketLogin():
+    global soc,deviceController
+    while True:
+        try:
+            deviceController.socketLoginReplyed = False
+            soc.send(loginSocket())
+        except Exception as e:
+            Logger.log("网络状态", "网络异常", str(e), 3600)
+        time.sleep(5*60)
+
+socketLoginThread = threading.Thread(target=runSocketLogin)
+socketLoginThread.start()
+
 
 # asyncio.run(connectWebsocket())
 

@@ -1,6 +1,7 @@
 import serial
 import time
 import threading
+import socket
 import jsonpickle
 import os
 import datetime
@@ -11,8 +12,9 @@ from enum import Enum
 from gpiozero import LED, Button, Motor
 
 from config.config import sysPath, deviceSerName, __unitIdentifier, uploadDataURL, uploadWarningURL, \
-    deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift, isUsingGPS
-from tool.crc import checkLen, checkCrc, crc16
+    deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift, isUsingGPS, addrsID, socketUploadIP, socketUploadPort, \
+    dataScale, dataShiftScale
+from tool.crc import checkLen, checkCrc, crc16,crc8
 from tool.bytesConvert import bytesToFloat
 if isUsingGPS:
     from service.gps import gpsData
@@ -20,13 +22,11 @@ from service.logger import Logger
 from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History, dbSaveFloatNineParametersHistory
 
 
-probeRelay = LED(24)
+probeRelay = LED(17)
 # ultravioletLedRelay = LED(23)
 # valveRelay = LED(18)
 
-gpsRelay = LED(11)
-
-power = LED(16)
+gpsRelay = LED(27)
 waterDetect = Button(22)
 
 lastClickStartTime = datetime.datetime.now()
@@ -41,6 +41,19 @@ isBlocking = False
 requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 
+
+def connect():
+    while True:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.connect((socketUploadIP, socketUploadPort))
+            s.settimeout(60)
+            return s
+        except socket.error as e:
+            Logger.log("网络状态", "网络异常", str(e), 3600)
+            time.sleep(5)
+
+soc = connect()
 
 bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
 bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
@@ -65,15 +78,43 @@ bufQueryChl = [0x12, 0x03, 0x00, 0x02, 0x00, 0x02, 0x67,0x68]
 
 def setPHData(buf):
     global deviceInfo
-    deviceInfo.PH = bytesToFloat(buf[3:7])
+    deviceInfo.PH = bytesToFloat(buf[3:7])*dataShiftScale["PH"]
 
-def setPHData(buf):
+def setTempData(buf):
     global deviceInfo
-    deviceInfo.PH = bytesToFloat(buf[3:7])
+    deviceInfo.temp = bytesToFloat(buf[3:7])*dataShiftScale["temp"]
+
+def setEleData(buf):
+    global deviceInfo
+    deviceInfo.ele = bytesToFloat(buf[3:7])*dataShiftScale["ele"]
+
+def setTurData(buf):
+    global deviceInfo
+    deviceInfo.tur = bytesToFloat(buf[3:7])*dataShiftScale["tur"]
+
+def setO2Data(buf):
+    global deviceInfo
+    deviceInfo.O2 = bytesToFloat(buf[3:7])*dataShiftScale["O2"]
+
+def setNH3Data(buf):
+    global deviceInfo
+    deviceInfo.NH3 = bytesToFloat(buf[3:7])*dataShiftScale["NH3"]
+
+def setNO3Data(buf):
+    global deviceInfo
+    deviceInfo.NO3 = bytesToFloat(buf[3:7])*dataShiftScale["NO3"]
+
+def setCODData(buf):
+    global deviceInfo
+    deviceInfo.COD = bytesToFloat(buf[3:7])*dataShiftScale["COD"]
+
+def setChlData(buf):
+    global deviceInfo
+    deviceInfo.chl = bytesToFloat(buf[3:7])*dataShiftScale["chl"]
 
 
 def readProbe(date):
-    global deviceController
+    global deviceController, soc
     if(deviceController.threadDate > date):
         return
     deviceController.deviceStep = 0x03
@@ -87,110 +128,77 @@ def readProbe(date):
     if(deviceController.threadDate > date):
         return
     sendReq(bufQueryPH, setPHData, repeatTimes=3, needMesBox=False)
-    # ser.write(bufQueryPH)
-    time.sleep(0.2)
-    # 8.657720565795898
-    if(deviceController.threadDate > date):
-        return
-    sendReq(bufQueryTemp, setPHData, repeatTimes=3, needMesBox=False)
-    time.sleep(0.2)
-    # 
-    # 26.316884994506836
-    ser.write(bufQueryEle)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _ele = bytesToFloat(recBuf[3:7])
-    else:
-        _ele = -1
-    # 0.07257397472858429
-    ser.write(bufQueryTur)
+    sendReq(bufQueryTemp, setTempData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _tur = bytesToFloat(recBuf[3:7])
-    else:
-        _tur = -1
-    # 0.02316952683031559
-    ser.write(bufQueryO2)
+    sendReq(bufQueryEle, setEleData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _O2 = bytesToFloat(recBuf[3:7])
-    else:
-        _O2 = -1
-    # 8.592945098876953
-    ser.write(bufQueryCOD)
+    sendReq(bufQueryTur, setTurData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _COD = bytesToFloat(recBuf[3:7])
-    else:
-        _COD = -1
-    # 8.592945098876953
-    ser.write(bufQueryNH3)
+    sendReq(bufQueryO2, setO2Data, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _NH3 = bytesToFloat(recBuf[3:7])
-    else:
-        _NH3 = -1
-    # 8.592945098876953
-    ser.write(bufQueryNO3)
+    sendReq(bufQueryCOD, setCODData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _NO3 = bytesToFloat(recBuf[3:7])
-    else:
-        _NO3 = -1
-    # 8.592945098876953    
-    ser.write(bufQueryChl)
+    sendReq(bufQueryNH3, setNH3Data, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    recBuf = ser.readall()
-    if len(recBuf) > 8:
-        _chl = bytesToFloat(recBuf[3:7])
-    else:
-        _chl = -1
-    # 8.592945098876953    
+    sendReq(bufQueryNO3, setNO3Data, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryChl, setChlData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
     probeRelay.off()
-    # deviceInfo.temp = _temp
-    deviceInfo.ele = _ele
-    deviceInfo.tur = _tur
-    deviceInfo.O2 = _O2
-    deviceInfo.COD = _COD
-    deviceInfo.NH3 = _NH3
-    deviceInfo.NO3 = _NO3
-    deviceInfo.chl = _chl
-
     currentTime = datetime.datetime.now()
     if(deviceController.threadDate > date):
         return
     #
     dataInfo = ""
-    try:
-        if gpsData.active and isUsingGPS:
-            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
+    if gpsData.active and isUsingGPS:
+        dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
             round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+    try:
         uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
-                      'PH': _PH, "temp": _temp, "ele": _ele, "tur": _tur, "O2": _O2, "COD": _COD, "NH3": _NH3, "NO3": _NO3, "chl": _chl,
+                      'PH': deviceInfo.PH, "temp": deviceInfo.temp, "ele": deviceInfo.ele, "tur": deviceInfo.tur, "O2": deviceInfo.O2, "COD": deviceInfo.COD, "NH3": deviceInfo.NH3, "NO3": deviceInfo.NO3, "chl": deviceInfo.chl,
                       "dataInfo": dataInfo}
-        # requests.post(uploadDataURL, json=uploadData)
+        requests.post(uploadDataURL, json=uploadData)
     except Exception as err:
         Logger.log("网络异常", "数据无法上传", str(err), 1200)
+    FCB = 0b11
+    while FCB >= 0:
+        deviceController.socketUploadReplyed = False
+        uploadData = uploadDataSocket(FCB, deviceInfo.temp, deviceInfo.PH, deviceInfo.O2, deviceInfo.COD, deviceInfo.ele, deviceInfo.tur, deviceInfo.NH3,
+                                      (deviceInfo.NH3+deviceInfo.NO3), 0.03 + 0.02 * random.random(), deviceInfo.chl)
+        try:
+            soc.send(uploadData)
+        except Exception as err:
+            Logger.log("网络异常", "数据无法上传", str(err), 1200)
+            soc.close()
+            soc = connect()
+        index = 6
+        while index > 0:
+            index -= 1
+            if deviceController.socketUploadReplyed == True:
+                break
+            time.sleep(10)
+        if deviceController.socketUploadReplyed == True:
+            break
+        else:
+            FCB -= 1
+        # requests.post(uploadDataURL, json=uploadData)
     dbSaveFloatNineParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp, deviceInfo.ele, deviceInfo.tur, deviceInfo.O2,
                                      deviceInfo.COD, deviceInfo.NH3, deviceInfo.NO3, deviceInfo.chl, dataInfo)
     # messagebox.showinfo("数据", "PH:"+str(_PH)+"\r\n温度:"+str(_temp)+"\r\n电导率:"+str(_ele)+"\r\n浊度:"+str(_tur)+"\r\n溶解氧:"+str(_O2))
@@ -249,6 +257,99 @@ def waterDetectWarning():
     requests.post(uploadWarningURL, json=uploadData)
     return
 
+loginAFN = 0x02
+keepLoginConnected = 0xF2
+uploadDataAFN = 0xC0
+
+def createSocketStruct(C, A, data):
+    buf = []
+    buf.append(0x68)
+    buf.append(1+len(A)+len(data))
+    buf.append(0x68)
+    buf.append(C)
+    buf = buf + A + data
+    buf.append(crc8(buf[3:]))
+    buf.append(0x16)
+    return buf
+
+def loginSocket():
+    return bytes(createSocketStruct(0b10110000,addrsID,[loginAFN,keepLoginConnected]))
+
+def dataFormat(value, scale):
+    dataValue = value*scale
+    dataBuf = []
+    firstByte =  int(dataValue) % 10+(int(dataValue % 100/10) << 4)
+    secByte = int(dataValue % 1000/100)+(int(dataValue % 10000/1000) << 4)
+    thirdByte = int(dataValue % 100000/10000)+(int(dataValue % 1000000/100000) << 4)
+    forthByte = int(dataValue % 10000000/1000000)+(int(dataValue % 100000000/10000000) << 4)
+    dataBuf.append(firstByte)
+    dataBuf.append(secByte)
+    dataBuf.append(thirdByte)
+    dataBuf.append(forthByte)
+    return dataBuf
+
+
+def uploadDataSocket(FCB, temp, PH, O2, COD, ele, tur, NH3, N, P, chl):
+    dataBuf = [uploadDataAFN, 0x5F, 0x06, 0x00, 0x00, 0x18]
+    dataBuf += dataFormat(temp, dataScale["temp"])
+    dataBuf += dataFormat(PH, dataScale["PH"])
+    dataBuf += dataFormat(O2, dataScale["O2"])
+    dataBuf += dataFormat(COD, dataScale["COD"])
+    dataBuf += dataFormat(ele, dataScale["ele"])
+    dataBuf += dataFormat(tur, dataScale["tur"])
+    dataBuf += dataFormat(NH3, dataScale["NH3"])
+    dataBuf += dataFormat(N, dataScale["N"])
+    dataBuf += dataFormat(P, dataScale["P"])
+    dataBuf += dataFormat(chl, dataScale["chl"])
+    dataBuf += [0x00, 0x00, 0x30, 0x00]
+    #
+    currentTime = datetime.datetime.now()
+    dataBuf.append(currentTime.second %
+                   10 + (int(currentTime.second / 10) << 4))
+    dataBuf.append(currentTime.minute %
+                   10 + (int(currentTime.minute / 10) << 4))
+    dataBuf.append(currentTime.hour % 10 + (int(currentTime.hour / 10) << 4))
+    dataBuf.append(currentTime.day % 10 + (int(currentTime.day / 10) << 4))
+    dataBuf.append(currentTime.month % 10 + (int(currentTime.month / 10) << 4))
+    return bytes(createSocketStruct(0b10001010 + (FCB << 4), addrsID, dataBuf))
+
+def checkSocketData(buf):
+    global deviceController
+    if len(buf) < 12:
+        Logger.log("通讯异常", "socket 回复长度过短", str(buf), 1200)
+        return
+    if buf[0] != 0x68 or buf[2] != 0x68 or buf[-1] != 0x16:
+        Logger.log("通讯异常", "socket格式错误", str(buf), 1200)
+        return
+    if buf[1] != len(buf) - 5:
+        Logger.log("通讯异常", "socket长度错误", str(buf), 1200)
+        return
+    if crc8(buf[3:-2]) != buf[-2]:
+        Logger.log("通讯异常", "socket校验错误", str(buf), 1200)
+        return
+    if buf[4:9] != bytes(addrsID):
+        Logger.log("通讯异常", "socket地址错误", str(buf), 1200)
+        return
+    c = buf[3]
+    if 1 & (c >> 7) == 1:
+        Logger.log("通讯异常", "socket方向错误", str(buf), 1200)
+        return
+    FCB = (c & 0b110000) >> 4
+    FunctionCode = c & 0b1111
+    AFN = buf[9]
+    if AFN == loginAFN:
+        deviceController.socketLoginReplyed = True
+        deviceController.socketLoginState = buf[10]
+        deviceController.socketLoginFCB = FCB
+        return
+    elif AFN == uploadDataAFN:
+        deviceController.socketUploadReplyed = True
+        deviceController.socketUploadState = buf[10]
+        deviceController.socketUploadFCB = FCB
+        return
+    # print("check right "+str(buf))
+    # print("FCB "+bin(FCB)+bin(FunctionCode))
+    return
 
 # var { deviceID = "SmartDetect_A_00003",deviceType="SmartDetect",title="hello",body="body"} = req.body;
 #     var phones = await sendPhonesByDeviceType({deviceID,title,body,deviceType})
@@ -309,7 +410,7 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
 def request(sendReqBuf, callBack, needMesBox):
     global isSending, isBlocking, lastTime
     isSending = True
-    if power.value == 0:
+    if probeRelay.value == 0:
         if needMesBox:
             messagebox.showerror("设备异常", "仪器未开启")
         return
@@ -570,6 +671,13 @@ class DeviceController:
         self.deviceAutoRun = 0
         self.deviceStep = 0
         self.threadDate = datetime.datetime.now()
+        self.socketFunctionCode = 0
+        self.socketUploadReplyed = False
+        self.socketUploadState = 0
+        self.socketUploadFCB = 0
+        self.socketLoginReplyed = False
+        self.socketLoginState = 0
+        self.socketLoginFCB = 0
     #
     def __str__(self):
         return """init = {}
@@ -608,7 +716,15 @@ cleanTubeOutSpeed = {}
 cleanTubeTime = {}
 deviceAutoRun = {}
 deviceStep = {}
-threadDate = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
+threadDate = {}
+socketFunctionCode = {}
+socketUploadReplyed = {}
+socketUploadState = {}
+socketUploadFCB = {}
+socketLoginReplyed = {}
+socketLoginState = {}
+socketLoginFCB = {}
+""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
                                 self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
                                 self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
                                 self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
@@ -616,7 +732,8 @@ threadDate = {}""".format(self.init, self.modelSelect, self.operationSelect, sel
                                 self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
                                 self.pumpWaterInSpeed, self.pumpWaterInTime, self.pumpWaterOutSpeed, self.pumpWaterOutTime,
                                 self.cleanTubeInSpeed, self.cleanTubeOutSpeed, self.cleanTubeTime,
-                                self.deviceAutoRun, self.deviceStep, self.threadDate)
+                                self.deviceAutoRun, self.deviceStep, self.threadDate,
+                                self.socketFunctionCode, self.socketUploadReplyed, self.socketUploadState, self.socketUploadFCB, self.socketLoginReplyed, self.socketLoginState, self.socketLoginFCB)
 
 class DeviceInfo:
     def __init__(self):
@@ -1076,7 +1193,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     time.sleep(60)
-                    power.value = 0
+                    # power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
