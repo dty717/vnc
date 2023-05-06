@@ -18,6 +18,7 @@
   },
   "homepage": "https://github.com/bgaff/vnc.js#readme",
   "dependencies": {
+    "serialport": "^10.5.0",
     "socket.io": "^4.5.1"
   }
 }

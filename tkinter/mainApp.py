@@ -11,6 +11,7 @@ from config.labelString import titleLabel
 from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, url, sampleType,  deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
+from service.HuaweiWifi import checkHuaWeiWIFIConnection,resetHuaWeiWIFI
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, \
         requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect,\
         operatingAllStep
@@ -318,6 +319,9 @@ def selectTime():
         now = datetime.now()
         # print(datetime.now())
         hour = now.hour
+        if not checkHuaWeiWIFIConnection():
+            if resetHuaWeiWIFI():
+                Logger.log("网络状态", "网络重置", "重置时间"+str(now), 3600)
         if deviceController.selectingHours[hour]:
             if (deviceController.deviceAutoRun == 0 and deviceController.deviceStep == 0 ) and (not usingWaterDetect or waterDetect.value):
                 lastSelectTime = now

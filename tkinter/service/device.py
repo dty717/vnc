@@ -233,7 +233,16 @@ def readProbe(date):
     uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
                   'PH': _PH, "temp": _temp, "ele": _ele, "tur": _tur, "O2": _O2,
                   "dataInfo": ""}
-    requests.post(uploadDataURL, json=uploadData)
+    tryTimes = 3
+    while tryTimes > 0:
+        tryTimes -= 1
+        try:
+            requests.post(uploadDataURL, json=uploadData)
+            break
+        except Exception as err:
+            Logger.log("网络异常", "数据无法上传", str(err), 1200)
+        time.sleep(5)
+    # requests.post(uploadDataURL, json=uploadData)
     dbFiveParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp,
                             deviceInfo.ele, deviceInfo.tur, deviceInfo.O2)
     # messagebox.showinfo("数据", "PH:"+str(_PH)+"\r\n温度:"+str(_temp)+"\r\n电导率:"+str(_ele)+"\r\n浊度:"+str(_tur)+"\r\n溶解氧:"+str(_O2))
