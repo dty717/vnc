@@ -52,7 +52,7 @@ def stepString(deviceAutoRun, deviceStep):
     return stepStr
 
 def intToHex(a):
-  return hex(a)[2:]
+  return ('0'+str(hex(a)[2:]))[0:2]
 
 class MainBoard(Frame):
     def __init__(self, master, header, data, **kargs):
