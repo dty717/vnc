@@ -10,7 +10,7 @@ from service.device import write_single_register, write_single_coil, DeviceAddr,
         lastClickStartTime, lastSelectTime, \
         operatingAllStep, operatingAllStepCancel
 from database.mongodb import dbGetLastFloatNineParametersHistory
-from config.config import primaryColor,usingWaterDetect
+from config.config import primaryColor, usingWaterDetect, deviceName, addrsID
 mainHistoryText = None
 backgroundColors = ["#ffffff", primaryColor]
 
@@ -51,6 +51,9 @@ def stepString(deviceAutoRun, deviceStep):
         stepStr += "(读取GPS)"
     return stepStr
 
+def intToHex(a):
+  return hex(a)[2:]
+
 class MainBoard(Frame):
     def __init__(self, master, header, data, **kargs):
         super().__init__(master, kargs)
@@ -62,7 +65,9 @@ class MainBoard(Frame):
         lastHistory = list(dbGetLastFloatNineParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
-            self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
+            self.mainHistoryText.set("设备名称:"+deviceName+"\n" +
+                                    "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
+                                    "做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
                                      "PH:"+str(round(lastHistory['PH'], 3))+"\n" +
                                      "温度:"+str(round(lastHistory['temp'], 2))+"°C\n" +
                                      "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
@@ -76,7 +81,10 @@ class MainBoard(Frame):
                                      "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                                      "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
-            self.mainHistoryText.set("""做样时间:
+            self.mainHistoryText.set(
+                "设备名称:"+deviceName+"\n" +
+                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
+                """做样时间:
 PH:
 温度:
 电导率:
@@ -88,7 +96,7 @@ COD:
 叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-    "报警状态:"+stateString(deviceInfo.warningInfo))
+                "报警状态:"+stateString(deviceInfo.warningInfo))
         #
         beforeHeaderFrame = Frame(self, bg=primaryColor)
         beforeHeaderFrame.pack(side=TOP, fill=X, pady=30)
@@ -163,21 +171,27 @@ COD:
         lastHistory = list(dbGetLastFloatNineParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
-            self.mainHistoryText.set("做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
-                                     "PH:"+str(round(lastHistory['PH'], 3))+"\n" +
-                                     "温度:"+str(round(lastHistory['temp'], 2))+"°C\n" +
-                                     "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
-                                     "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
-                                     "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
-                                     "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
-                                     "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
-                                     "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
-                                     "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
-                                     "位置:"+lastHistory['dataInfo']+"\n" +
-                                     "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-                                     "报警状态:"+stateString(deviceInfo.warningInfo))
+            self.mainHistoryText.set(
+                "设备名称:"+deviceName+"\n" +
+                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
+                "做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
+                "PH:"+str(round(lastHistory['PH'], 3))+"\n" +
+                "温度:"+str(round(lastHistory['temp'], 2))+"°C\n" +
+                "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
+                "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
+                "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
+                "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
+                "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
+                "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
+                "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
+                "位置:"+lastHistory['dataInfo']+"\n" +
+                "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
+                "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
-            self.mainHistoryText.set("""做样时间:
+            self.mainHistoryText.set(
+                "设备名称:"+deviceName+"\n" +
+                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
+                """做样时间:
 PH:
 温度:
 电导率:
@@ -189,7 +203,7 @@ COD:
 叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-    "报警状态:"+stateString(deviceInfo.warningInfo))
+                "报警状态:"+stateString(deviceInfo.warningInfo))
         # self.lastSelectOperationButton = operationButton
         #
         return

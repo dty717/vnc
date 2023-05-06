@@ -31,6 +31,7 @@ uploadDataURL = 'http://server.delinapi.top:3000/SaveFloatNineParametersHistory'
 uploadWarningURL = 'http://server.delinapi.top:3000/warning'
 
 addrsID = [0x99,0x41,0x81,0x20,0x88]
+deviceName = "三角水库"
 
 socketUploadIP = "155.138.195.23"
 socketUploadPort = 2030
