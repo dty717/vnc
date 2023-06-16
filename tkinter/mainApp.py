@@ -247,7 +247,7 @@ def RequestDevice():
   global deviceController, deviceInfo
   while not requestDeviceEvent.wait(5):
     sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
-    sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
+    # sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
     # print(deviceInfo.measureMinute)
     # ser.write(bufQuery)
     # queryRecv = ser.read(1000)
