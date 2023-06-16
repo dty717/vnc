@@ -114,9 +114,11 @@ class MainBoard(Frame):
         self.selectOperateButton = Button(
             modelSelectGroupLine1, text="手动做样", command=self.selectOperate, font=(None, 12))
         self.selectOperateButton.pack(side="left", padx=10, pady=10)
-        self.selectIntervalButton = Button(
+        self.selectAutoButton = Button(
             modelSelectGroupLine1, text="自动做样", command=self.selectAuto, font=(None, 12))
-        self.selectIntervalButton.pack(side="left", padx=10, pady=10)
+        self.selectAutoButton.pack(side="left", padx=10, pady=10)
+        modelSelectGroupLine1.pack(fill=X)
+        modelSelectGroup.pack(side=LEFT, anchor=N, padx=40)
         #
         #operationSelectGroup
         #
@@ -155,17 +157,9 @@ class MainBoard(Frame):
                 background=backgroundColors[1])
     def selectModelButton(self, value):
         if value == 0:
-            return self.selectIdleButton
-        elif value == 1:
             return self.selectOperateButton
-        elif value == 2:
-            return self.selectIntervalButton
-        elif value == 3:
-            return self.selectHourButton
-        elif value == 4:
-            return self.selectCalibrateButton
-        elif value == 5:
-            return self.selectPumpButton
+        elif value == 1:
+            return self.selectAutoButton
     def getcurrentModelSelect(self, value):
         if value == 0:
             return "空闲模式"
@@ -236,29 +230,13 @@ class MainBoard(Frame):
             return "抽反应液"
         elif value == 21:
             return "推反应液"
-    def selectIdle(self):
+    def selectOperate(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
                          0, self.selectModelButton(0))
         return
-    def selectOperate(self):
-        self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         0, self.selectModelButton(1))
-        return
     def selectAuto(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         2, self.selectModelButton(2))
-        return
-    def selectHour(self):
-        self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         3, self.selectModelButton(3))
-        return
-    def selectCalibrate(self):
-        self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         4, self.selectModelButton(4))
-        return
-    def selectPump(self):
-        self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         5, self.selectModelButton(5))
+                         1, self.selectModelButton(1))
         return
     def selectModel(self, addr, value, button):
         write_single_register(addr, value,
@@ -269,29 +247,29 @@ class MainBoard(Frame):
                               or setattr(deviceController, 'modelSelect', value), repeatTimes=0, needMesBox=True)
         return
     def selectOperationButton(self, value):
-        if value == 1:
+        if value == 4:
             return self.operateSampleButton
-        elif value == 2:
+        elif value == 1:
             return self.operateConcentration1Button
-        elif value == 3:
+        elif value == 2:
             return self.operateConcentration2Button
-        elif value == 4:
+        elif value == 3:
             return self.operateConcentration3Button
     def operateSample(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 1, self.selectOperationButton(1))
+            DeviceAddr.operationSelectAddr.value, 4, self.selectOperationButton(4))
         return
     def operateConcentration1(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 2, self.selectOperationButton(2))
+            DeviceAddr.operationSelectAddr.value, 1, self.selectOperationButton(1))
         return
     def operateConcentration2(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 3, self.selectOperationButton(3))
+            DeviceAddr.operationSelectAddr.value, 2, self.selectOperationButton(2))
         return
     def operateConcentration3(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 4, self.selectOperationButton(4))
+            DeviceAddr.operationSelectAddr.value, 3, self.selectOperationButton(3))
         return
     def selectOperation(self, addr, value, button):
         write_single_register(addr, value,

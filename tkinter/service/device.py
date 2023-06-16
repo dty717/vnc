@@ -268,6 +268,9 @@ class DeviceAddr(Enum):
     # DeviceController Addr
     modelSelectAddr = 0x00
     operationSelectAddr = 0x01
+    pumpSelectAddr = 0x02
+    # 
+    # 
     selectingHoursAddr = 0x02
     calibrateDayAddr = 0x1a
     calibrateHourAddr = 0x1b
@@ -276,16 +279,18 @@ class DeviceAddr(Enum):
     concentration1SettingValueAddr = 0x1e
     concentration2SettingValueAddr = 0x20
     concentration3SettingValueAddr = 0x22
-    samplePumpAddr = 0x24
-    concentration1PumpAddr = 0x25
-    concentration2PumpAddr = 0x26
-    concentration3PumpAddr = 0x27
-    chemical1PumpAddr = 0x28
-    chemical2PumpAddr = 0x29
-    chemical3PumpAddr = 0x2a
-    reactionTubeCleanAddr = 0x2b
-    suctionCleanAddr = 0x2c
-    measurementIntervalAddr = 0x2d
+    # 
+    chemical1PumpAddr = 0x01
+    chemical2PumpAddr = 0x02
+    chemical3PumpAddr = 0x03
+    samplePumpAddr = 0x04
+    concentration1PumpAddr = 0x05
+    concentration2PumpAddr = 0x06
+    concentration3PumpAddr = 0x07
+    reactionTubeEmptyAddr = 0x08
+    pumpInWaterAddr = 0x09
+    pumpOutWasteAddr = 0x0a
+    suctionCleanAddr = 0x0c
     # DeviceInfo Addr
     concentration1ValueAddr = 0x81
     concentration1MaxValueAddr = 0x82
@@ -337,9 +342,10 @@ class DeviceController:
         self.chemical1Pump = 0
         self.chemical2Pump = 0
         self.chemical3Pump = 0
-        self.reactionTubeClean = 0
+        self.reactionTubeEmpty = 0
+        self.pumpInWater = 0
+        self.pumpOutWaste = 0
         self.suctionClean = 0
-        self.measurementInterval = 0
     #
     def __str__(self):
         return """init = {}
@@ -360,13 +366,14 @@ concentration3Pump = {}
 chemical1Pump = {}
 chemical2Pump = {}
 chemical3Pump = {}
-reactionTubeClean = {}
-suctionClean = {}
-measurementInterval = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
+reactionTubeEmpty = {}
+pumpInWater = {}
+pumpOutWaste = {}
+suctionClean = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
                                    self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
                                    self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
-                                   self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
-                                   self.suctionClean, self.measurementInterval)
+                                   self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeEmpty,
+                                   self.pumpInWater, self.pumpOutWaste, self.suctionClean)
 
 class DeviceInfo:
     def __init__(self):
@@ -475,12 +482,12 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
                                           << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical2PumpAddr.value + 1]
         deviceController.chemical3Pump = (buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value]
                                           << 8) | buffer[shiftAddr + 2 * DeviceAddr.chemical3PumpAddr.value + 1]
-        deviceController.reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value]
-                                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
+        deviceController.reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeEmptyAddr.value]
+                                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeEmptyAddr.value + 1]
         deviceController.suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value]
                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
-        deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
-                                                << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
+        # deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
+        #                                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
         if lastMenuName == ".!notebook.!controllingboard" or lastMenuName == ".!notebook.!timeselectingboard" or lastMenuName == ".!notebook.!settingboard" or lastMenuName == ".!notebook.!mainboard":
             updateFlag = True
     else:
@@ -588,8 +595,8 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
             deviceController.chemical3Pump = _chemical3Pump
             if lastMenuName == ".!notebook.!controllingboard":
                 updateFlag = True
-        _reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value]
-                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeCleanAddr.value + 1]
+        _reactionTubeClean = (buffer[shiftAddr + 2 * DeviceAddr.reactionTubeEmptyAddr.value]
+                              << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeEmptyAddr.value + 1]
         if _reactionTubeClean != deviceController.reactionTubeClean:
             deviceController.reactionTubeClean = _reactionTubeClean
             if lastMenuName == ".!notebook.!controllingboard":
@@ -600,12 +607,12 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
             deviceController.suctionClean = _suctionClean
             if lastMenuName == ".!notebook.!controllingboard":
                 updateFlag = True
-        _measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
-                                << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
-        if _measurementInterval != deviceController.measurementInterval:
-            deviceController.measurementInterval = _measurementInterval
-            if lastMenuName == ".!notebook.!settingboard":
-                updateFlag = True
+        # _measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
+        #                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
+        # if _measurementInterval != deviceController.measurementInterval:
+        #     deviceController.measurementInterval = _measurementInterval
+        #     if lastMenuName == ".!notebook.!settingboard":
+        #         updateFlag = True
         # print(deviceController)
     return updateFlag
 

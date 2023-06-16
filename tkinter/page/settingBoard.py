@@ -68,18 +68,6 @@ class SettingBoard(Frame):
         self.concentration3SettingValueLabelText.setText(
             deviceController.concentration3SettingValue)
         self.concentration3SettingValueLabelText.pack(anchor=W, pady=5)
-        #
-        #sampleTimeGroup
-        #
-        sampleTimeGroup = GroupLabelButton(self, title="做样时间")
-        sampleTimeGroup.pack(pady=20)
-        self.measurementIntervalLabelText = LabelTextButton(sampleTimeGroup, text="间隔时间",
-                                                       command=lambda content: write_single_register(DeviceAddr.measurementIntervalAddr.value, int(float(content)),
-                                                                                                     lambda rec: setattr(deviceController, 'measurementInterval', int(float(content))), repeatTimes=0, needMesBox=True)
-                                                       )
-        self.measurementIntervalLabelText.setText(
-            deviceController.measurementInterval)
-        self.measurementIntervalLabelText.pack(anchor=W, pady=5)
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()
