@@ -16,6 +16,7 @@ def test():
     messagebox.showinfo("信息", str(deviceInfo))
     # updateMainDate(2022,12,12,1,1,32,121.2112,0)
 
+
 def stateString(state):
     if state == 0:
         if waterDetect.value or not usingWaterDetect:
@@ -23,10 +24,31 @@ def stateString(state):
         else:
             return "设备进水"
     else:
+        errorInfo = ''
+        if state == 1:
+            errorInfo = "缺试剂一"
+        elif state == 2:
+            errorInfo = "缺试剂二"
+        elif state == 3:
+            errorInfo = "缺试剂三"
+        elif state == 4:
+            errorInfo = "缺水样"
+        elif state == 5:
+            errorInfo = "缺蒸馏水"
+        elif state == 6:
+            errorInfo = "超温度上限"
+        elif state == 7:
+            errorInfo = "超量程上限"
+        elif state == 8:
+            errorInfo = "断电异常"
+        elif state == 10:
+            errorInfo = "电机异常"
+        elif state == 13:
+            errorInfo = "加热异常"
         if waterDetect.value or not usingWaterDetect:
-            return "异常"
+            return errorInfo
         else:
-            return "异常且进水"
+            return errorInfo+"且进水"
 
 def updateMainDate(year, month, day, hour, minitue, second, value, state):
     global mainHistoryText
@@ -79,20 +101,19 @@ class MainBoard(Frame):
         stateLabel = Label(stateFrame, text="当前状态:", fg="black",
                            bg=primaryColor, font=(None, 16), justify="left")
         stateLabel.pack(side=LEFT)
-        self.currentModelSelectText = StringVar()
-        self.currentModelSelectText.set(
-            self.getcurrentModelSelect(deviceInfo.currentModelSelect))
-        currentModelSelectButton = Button(stateFrame, textvariable=self.currentModelSelectText,
+        self.currentTemperatureText = StringVar()
+        self.currentTemperatureText.set(str(deviceInfo.currentTemperature)+"℃")
+        currentTemperatureButton = Button(stateFrame, textvariable=self.currentTemperatureText,
                                           relief=FLAT, fg="black", disabledforeground="black", bg=primaryColor, font=(None, 16))
-        currentModelSelectButton.pack(side=LEFT, padx=10)
-        currentModelSelectButton["state"] = DISABLED
-        self.currentOperationSelectText = StringVar()
-        self.currentOperationSelectText.set(
-            self.getCurrentOperationSelect(deviceInfo.currentOperationSelect))
-        currentOperationSelectButton = Button(stateFrame, textvariable=self.currentOperationSelectText,
+        currentTemperatureButton.pack(side=LEFT, padx=10)
+        currentTemperatureButton["state"] = DISABLED
+        self.currentDataFlagText = StringVar()
+        self.currentDataFlagText.set(
+            self.getCurrentDataFlag(deviceInfo.currentDataFlag))
+        currentDataFlagButton = Button(stateFrame, textvariable=self.currentDataFlagText,
                                               relief=FLAT, fg="black", disabledforeground="black", bg=primaryColor, font=(None, 16))
-        currentOperationSelectButton.pack(side=LEFT, padx=0)
-        currentOperationSelectButton["state"] = DISABLED
+        currentDataFlagButton.pack(side=LEFT, padx=0)
+        currentDataFlagButton["state"] = DISABLED
         self.currentStateText = StringVar()
         self.currentStateText.set(
             self.getCurrentState(deviceInfo.currentState))
@@ -160,76 +181,101 @@ class MainBoard(Frame):
             return self.selectOperateButton
         elif value == 1:
             return self.selectAutoButton
-    def getcurrentModelSelect(self, value):
-        if value == 0:
-            return "空闲模式"
-        elif value == 1:
-            return "手动做样"
-        elif value == 2:
-            return "间隔做样"
-        elif value == 3:
-            return "整点做样"
-        elif value == 4:
-            return "标定模式"
-        elif value == 5:
-            return "手动进样"
-    def getCurrentOperationSelect(self, value):
+    def getCurrentDataFlag(self, value):
         if value == 0:
             return "空闲"
-        elif value == 1:
-            return "水样"
-        elif value == 2:
-            return "标一"
-        elif value == 3:
-            return "标二"
         elif value == 4:
+            return "水样"
+        elif value == 1:
+            return "标一"
+        elif value == 2:
+            return "标二"
+        elif value == 3:
             return "标三"
+        return ""
 
     def getCurrentState(self, value):
         if value == 0:
             return "仪器空闲"
         elif value == 1:
-            return "做样前准备"
+            return "做样前排废液"
         elif value == 2:
-            return "抽废液"
+            return "做样前进清洗液"
         elif value == 3:
-            return "排废液"
+            return "清洗空气混合"
         elif value == 4:
-            return "抽蒸馏水"
+            return "做样前排清洗液"
         elif value == 5:
-            return "进蒸馏水"
+            return "取试剂一"
         elif value == 6:
-            return "抽空气"
+            return "取试剂二"
         elif value == 7:
-            return "进空气"
+            return "取试剂三"
         elif value == 8:
-            return "抽水样"
+            return "取水样"
         elif value == 9:
-            return "进水样"
+            return "排试剂一多余"
         elif value == 10:
-            return "抽试剂一"
+            return "排试剂二多余"
         elif value == 11:
-            return "进试剂一"
+            return "排试剂三多余"
         elif value == 12:
-            return "抽试剂二"
+            return "排水样多余"
         elif value == 13:
-            return "进试剂二"
+            return "试剂一进消解池"
         elif value == 14:
-            return "抽试剂三"
+            return "试剂二进消解池"
         elif value == 15:
-            return "进试剂三"
+            return "试剂三进消解池"
         elif value == 16:
-            return "加热"
+            return "水样进消解池"
         elif value == 17:
-            return "冷却"
+            return "进样后空气混合"
         elif value == 18:
-            return "找基值"
+            return "加热消解"
         elif value == 19:
-            return "找峰值"
+            return "冷却"
         elif value == 20:
-            return "抽反应液"
+            return "找基值进清洗液"
         elif value == 21:
-            return "推反应液"
+            return "静止找基值"
+        elif value == 22:
+            return "找基值排清洗液"
+        elif value == 23:
+            return "静止找峰值"
+        elif value == 24:
+            return "清洗储液环"
+        elif value == 25:
+            return "做样前预填充水样"
+        elif value == 26:
+            return "做样后排废液"
+        elif value == 27:
+            return "做样后进清洗液"
+        elif value == 28:
+            return "做样后清洗曝气"
+        elif value == 29:
+            return "做样后排清洗液"
+        elif value == 30:
+            return "排废液"
+        elif value == 32:
+            return "取标一"                
+        elif value == 33:
+            return "取标二"
+        elif value == 34:
+            return "取标三"   
+        elif value == 39:
+            return "排多余标一"
+        elif value == 40:
+            return "排多余标二" 
+        elif value == 41:
+            return "排多余标三"
+        elif value == 45:
+            return "标一进消解池"
+        elif value == 46:
+            return "标二进消解池" 
+        elif value == 47:
+            return "标三进消解池"
+
     def selectOperate(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
                          0, self.selectModelButton(0))
@@ -316,10 +362,7 @@ class MainBoard(Frame):
             self.mainHistoryText.set("""做样时间:
     做样数据:
     报警状态:"""+stateString(deviceInfo.warningInfo))
-        self.currentModelSelectText.set(
-            self.getcurrentModelSelect(deviceInfo.currentModelSelect))
-        self.currentOperationSelectText.set(
-            self.getCurrentOperationSelect(deviceInfo.currentOperationSelect))
+        self.currentTemperatureText.set(str(deviceInfo.currentTemperature)+"℃")
         self.currentStateText.set(
             self.getCurrentState(deviceInfo.currentState))
         self.lastSelectModelButton.configure(background=backgroundColors[0])

@@ -388,6 +388,8 @@ class DeviceInfo:
         self.sampleMaxValue = 0
         self.sampleAValue = 0
         self.sampleCValue = 0
+        self.currentTemperature = 0
+        self.currentLightVoltage = 0
         self.warningInfo = 0
         self.dataFlag = 0
         self.currentDataFlag = 0
@@ -411,13 +413,15 @@ sampleValue = {}
 sampleMaxValue = {}
 sampleAValue = {}
 sampleCValue = {}
+currentTemperature = {}
+currentLightVoltage = {}
 warningInfo = {}
 dataFlag = {}
 currentDataFlag = {}
 currentState = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
                             self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
                             self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
-                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue,
+                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue,self.currentTemperature,self.currentLightVoltage,
                             self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState)
 
 shiftAddr = 3
@@ -635,16 +639,10 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
             deviceInfo.warningInfo = _warningInfo
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
-        _currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value]
-                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
-        if _currentModelSelect != deviceInfo.currentModelSelect:
-            deviceInfo.currentModelSelect = _currentModelSelect
-            if lastMenuName == ".!notebook.!mainboard":
-                updateFlag = True
-        _currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value]
-                                   << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
-        if _currentOperationSelect != deviceInfo.currentOperationSelect:
-            deviceInfo.currentOperationSelect = _currentOperationSelect
+        _currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
+        if _currentDataFlag != deviceInfo.currentDataFlag:
+            deviceInfo.currentDataFlag = _currentDataFlag
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
         _currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value]
@@ -760,7 +758,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 # currentTime = datetime.datetime(deviceInfo.measureYear,deviceInfo.measureMonth,deviceInfo.measureDay,
                 #         deviceInfo.measureHour,deviceInfo.measureMinute,deviceInfo.measureSecond)
                 currentTime = datetime.datetime.now()
-                if _dataFlag == 1:
+                if _dataFlag == 4:
                     __sampleCValue = deviceInfo.sampleCValue
                     # if deviceInfo.sampleAValue < 0.0846:
                     #     __sampleCValue = 0.01 + 5 * random.random()/1000
@@ -777,13 +775,13 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                         requests.post(uploadDataURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)
-                elif _dataFlag == 2:
+                elif _dataFlag == 1:
                     dbSaveConcentration1History(currentTime, deviceInfo.concentration1Value,
                                                 deviceInfo.concentration1MaxValue, deviceInfo.concentration1AValue, deviceInfo.concentration1CValue)
-                elif _dataFlag == 3:
+                elif _dataFlag == 2:
                     dbSaveConcentration2History(currentTime, deviceInfo.concentration2Value,
                                                 deviceInfo.concentration2MaxValue, deviceInfo.concentration2AValue, deviceInfo.concentration2CValue)
-                elif _dataFlag == 4:
+                elif _dataFlag == 3:
                     dbSaveConcentration3History(currentTime, deviceInfo.concentration3Value,
                                                 deviceInfo.concentration3MaxValue, deviceInfo.concentration3AValue, deviceInfo.concentration3CValue)
                 deviceInfo.dataFlag = _dataFlag
