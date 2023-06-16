@@ -4,7 +4,7 @@ from components.groupLabelButton import GroupLabelButton
 from components.labelButton import SwitchLabelButton
 from PIL import Image
 from config.config import *
-from service.device import write_single_register, DeviceAddr, deviceInfo, deviceController
+from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController
 
 
 class ControllingBoard(Frame):
@@ -18,7 +18,7 @@ class ControllingBoard(Frame):
         pumpLabelGroup.pack(pady=30)
         self.switchSamplePump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进水样",
                                                   textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.samplePumpAddr.value, lambda rec: setattr(deviceController, 'samplePump', 1) or self.switchSamplePump.open(), repeatTimes=0, needMesBox=True),
-                                                  textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'samplePump', 0) or self.switchSamplePump.close(), repeatTimes=0, needMesBox=True),
+                                                  textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'samplePump', 0) or self.switchSamplePump.close(), repeatTimes=0, needMesBox=True),
                                                   )
         if deviceController.samplePump == 1:
             self.switchSamplePump.open()
@@ -27,7 +27,7 @@ class ControllingBoard(Frame):
         self.switchSamplePump.pack(pady=5)
         self.switchConcentration1Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标一",
                                                           textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.concentration1PumpAddr.value, lambda rec: setattr(deviceController, 'concentration1Pump', 1) or self.switchConcentration1Pump.open(), repeatTimes=0, needMesBox=True),
-                                                          textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'concentration1Pump', 0) or self.switchConcentration1Pump.close(), repeatTimes=0, needMesBox=True),
+                                                          textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'concentration1Pump', 0) or self.switchConcentration1Pump.close(), repeatTimes=0, needMesBox=True),
                                                           )
         if deviceController.concentration1Pump == 1:
             self.switchConcentration1Pump.open()
@@ -36,7 +36,7 @@ class ControllingBoard(Frame):
         self.switchConcentration1Pump.pack(pady=5)
         self.switchConcentration2Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标二",
                                                           textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.concentration2PumpAddr.value, lambda rec: setattr(deviceController, 'concentration2Pump', 1) or self.switchConcentration2Pump.open(), repeatTimes=0, needMesBox=True),
-                                                          textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'concentration2Pump', 0) or self.switchConcentration2Pump.close(), repeatTimes=0, needMesBox=True),
+                                                          textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'concentration2Pump', 0) or self.switchConcentration2Pump.close(), repeatTimes=0, needMesBox=True),
                                                           )
         if deviceController.concentration2Pump == 1:
             self.switchConcentration2Pump.open()
@@ -45,7 +45,7 @@ class ControllingBoard(Frame):
         self.switchConcentration2Pump.pack(pady=5)
         self.switchConcentration3Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进标三",
                                                           textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.concentration3PumpAddr.value, lambda rec: setattr(deviceController, 'concentration3Pump', 1) or self.switchConcentration3Pump.open(), repeatTimes=0, needMesBox=True),
-                                                          textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'concentration3Pump', 0) or self.switchConcentration3Pump.close(), repeatTimes=0, needMesBox=True),
+                                                          textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'concentration3Pump', 0) or self.switchConcentration3Pump.close(), repeatTimes=0, needMesBox=True),
                                                           )
         if deviceController.concentration3Pump == 1:
             self.switchConcentration3Pump.open()
@@ -54,7 +54,7 @@ class ControllingBoard(Frame):
         self.switchConcentration3Pump.pack(pady=5)
         self.switchChemical1Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂一",
                                                      textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.chemical1PumpAddr.value, lambda rec: setattr(deviceController, 'chemical1Pump', 1) or self.switchChemical1Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'chemical1Pump', 0) or self.switchChemical1Pump.close(), repeatTimes=0, needMesBox=True),
+                                                     textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'chemical1Pump', 0) or self.switchChemical1Pump.close(), repeatTimes=0, needMesBox=True),
                                                      )
         if deviceController.chemical1Pump == 1:
             self.switchChemical1Pump.open()
@@ -63,7 +63,7 @@ class ControllingBoard(Frame):
         self.switchChemical1Pump.pack(pady=5)
         self.switchChemical2Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂二",
                                                      textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.chemical2PumpAddr.value, lambda rec: setattr(deviceController, 'chemical2Pump', 1) or self.switchChemical2Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'chemical2Pump', 0) or self.switchChemical2Pump.close(), repeatTimes=0, needMesBox=True),
+                                                     textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'chemical2Pump', 0) or self.switchChemical2Pump.close(), repeatTimes=0, needMesBox=True),
                                                      )
         if deviceController.chemical2Pump == 1:
             self.switchChemical2Pump.open()
@@ -72,7 +72,7 @@ class ControllingBoard(Frame):
         self.switchChemical2Pump.pack(pady=5)
         self.switchChemical3Pump = SwitchLabelButton(pumpLabelGroup, imgDicts, text="手动进试剂三",
                                                      textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.chemical3PumpAddr.value, lambda rec: setattr(deviceController, 'chemical3Pump', 1) or self.switchChemical3Pump.open(), repeatTimes=0, needMesBox=True),
-                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'chemical3Pump', 0) or self.switchChemical3Pump.close(), repeatTimes=0, needMesBox=True),
+                                                     textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'chemical3Pump', 0) or self.switchChemical3Pump.close(), repeatTimes=0, needMesBox=True),
                                                      )
         if deviceController.chemical3Pump == 1:
             self.switchChemical3Pump.open()
@@ -86,7 +86,7 @@ class ControllingBoard(Frame):
         cleanLabelGroup.pack(pady=10)
         self.switchReactionTubeEmpty = SwitchLabelButton(cleanLabelGroup, imgDicts, text="一键排空",
                                                          textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.reactionTubeEmptyAddr.value, lambda rec: setattr(deviceController, 'reactionTubeEmpty', 1) or self.switchReactionTubeEmpty.open(), repeatTimes=0, needMesBox=True),
-                                                         textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'reactionTubeEmpty', 0) or self.switchReactionTubeEmpty.close(), repeatTimes=0, needMesBox=True),
+                                                         textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'reactionTubeEmpty', 0) or self.switchReactionTubeEmpty.close(), repeatTimes=0, needMesBox=True),
                                                          )
         if deviceController.reactionTubeEmpty == 1:
             self.switchReactionTubeEmpty.open()
@@ -95,7 +95,7 @@ class ControllingBoard(Frame):
         self.switchReactionTubeEmpty.pack(pady=5)
         self.switchPumpInWater = SwitchLabelButton(cleanLabelGroup, imgDicts, text="手动进蒸馏水",
                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.pumpInWaterAddr.value, lambda rec: setattr(deviceController, 'pumpInWater', 1) or self.switchPumpInWater.open(), repeatTimes=0, needMesBox=True),
-                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'pumpInWater', 0) or self.switchPumpInWater.close(), repeatTimes=0, needMesBox=True),
+                                                    textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'pumpInWater', 0) or self.switchPumpInWater.close(), repeatTimes=0, needMesBox=True),
                                                     )
         if deviceController.pumpInWater == 1:
             self.switchPumpInWater.open()
@@ -104,7 +104,7 @@ class ControllingBoard(Frame):
         self.switchPumpInWater.pack(pady=5)
         self.switchPumpOutWaste = SwitchLabelButton(cleanLabelGroup, imgDicts, text="手动排废液",
                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.pumpOutWasteAddr.value, lambda rec: setattr(deviceController, 'pumpOutWaste', 1) or self.switchPumpOutWaste.open(), repeatTimes=0, needMesBox=True),
-                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'pumpOutWaste', 0) or self.switchPumpOutWaste.close(), repeatTimes=0, needMesBox=True),
+                                                    textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'pumpOutWaste', 0) or self.switchPumpOutWaste.close(), repeatTimes=0, needMesBox=True),
                                                     )
         if deviceController.pumpOutWaste == 1:
             self.switchPumpOutWaste.open()
@@ -113,7 +113,7 @@ class ControllingBoard(Frame):
         self.switchPumpOutWaste.pack(pady=5)
         self.switchSuctionClean = SwitchLabelButton(cleanLabelGroup, imgDicts, text="清洗储液环",
                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.suctionCleanAddr.value, lambda rec: setattr(deviceController, 'suctionClean', 1) or self.switchSuctionClean.open(), repeatTimes=0, needMesBox=True),
-                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'suctionClean', 0) or self.switchSuctionClean.close(), repeatTimes=0, needMesBox=True),
+                                                    textNO="停止", clickNO=lambda: write_single_coil(0, 1, lambda rec: setattr(deviceController, 'suctionClean', 0) or self.switchSuctionClean.close(), repeatTimes=0, needMesBox=True),
                                                     )
         if deviceController.suctionClean == 1:
             self.switchSuctionClean.open()

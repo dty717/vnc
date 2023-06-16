@@ -183,7 +183,7 @@ class MainBoard(Frame):
             return self.selectAutoButton
     def getCurrentDataFlag(self, value):
         if value == 0:
-            return "空闲"
+            return "未做样"
         elif value == 4:
             return "水样"
         elif value == 1:

@@ -470,8 +470,6 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
                                               << 8) | buffer[shiftAddr + 2 * DeviceAddr.reactionTubeEmptyAddr.value + 1]
         deviceController.suctionClean = (buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value]
                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.suctionCleanAddr.value + 1]
-        # deviceController.measurementInterval = (buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value]
-        #                                         << 8) | buffer[shiftAddr + 2 * DeviceAddr.measurementIntervalAddr.value + 1]
         if lastMenuName == ".!notebook.!controllingboard" or lastMenuName == ".!notebook.!timeselectingboard" or lastMenuName == ".!notebook.!settingboard" or lastMenuName == ".!notebook.!mainboard":
             updateFlag = True
     else:
@@ -609,26 +607,10 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
         deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         deviceInfo.currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
         deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
-        if deviceInfo.currentOperationSelect == 2:
-            deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
-            deviceInfo.concentration1MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1MaxValueAddr.value + 1]
-            deviceInfo.concentration1AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1AValueAddr.value + 4])
-            deviceInfo.concentration1CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration1CValueAddr.value + 4])
-        elif deviceInfo.currentOperationSelect == 3:
-            deviceInfo.concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
-            deviceInfo.concentration2MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2MaxValueAddr.value + 1]
-            deviceInfo.concentration2AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2AValueAddr.value + 4])
-            deviceInfo.concentration2CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration2CValueAddr.value + 4])
-        elif deviceInfo.currentOperationSelect == 4:
-            deviceInfo.concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
-            deviceInfo.concentration3MaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3MaxValueAddr.value + 1]
-            deviceInfo.concentration3AValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3AValueAddr.value + 4])
-            deviceInfo.concentration3CValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value:shiftAddr2 + 2 * DeviceAddr.concentration3CValueAddr.value + 4])
-        elif deviceInfo.currentOperationSelect == 1:
-            deviceInfo.sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
-            deviceInfo.sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
-            deviceInfo.sampleAValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
-            deviceInfo.sampleCValue = bytesToFloat( buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
+        deviceInfo.currentTemperature = bytesToFloat(
+            buffer[shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value:shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value + 4])
+        deviceInfo.currentLightVoltage = (buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
+        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if lastMenuName == ".!notebook.!mainboard":
             updateFlag = True
@@ -645,13 +627,25 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
             deviceInfo.currentDataFlag = _currentDataFlag
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
+        _currentLightVoltage = (buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
+        if _currentLightVoltage != deviceInfo.currentLightVoltage:
+            deviceInfo.currentLightVoltage = _currentLightVoltage
+            if lastMenuName == ".!notebook.!mainboard":
+                updateFlag = True
+        _currentTemperature = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value:
+                                                  shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value + 4])
+        if _currentTemperature != deviceInfo.currentTemperature:
+            deviceInfo.currentTemperature = _currentTemperature
+            if lastMenuName == ".!notebook.!mainboard":
+                updateFlag = True
         _currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value]
                          << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
         if _currentState != deviceInfo.currentState:
             deviceInfo.currentState = _currentState
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
-        if deviceInfo.currentOperationSelect == 2:
+        if deviceInfo.currentDataFlag == 1:
             _concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value]
                                     << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
             if _concentration1Value != deviceInfo.concentration1Value:
@@ -676,7 +670,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.concentration1CValue = _concentration1CValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        elif deviceInfo.currentOperationSelect == 3:
+        elif deviceInfo.currentDataFlag == 2:
             _concentration2Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value]
                                     << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration2ValueAddr.value + 1]
             if _concentration2Value != deviceInfo.concentration2Value:
@@ -701,7 +695,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.concentration2CValue = _concentration2CValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        elif deviceInfo.currentOperationSelect == 4:
+        elif deviceInfo.currentDataFlag == 3:
             _concentration3Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value]
                                     << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration3ValueAddr.value + 1]
             if _concentration3Value != deviceInfo.concentration3Value:
@@ -726,7 +720,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.concentration3CValue = _concentration3CValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        elif deviceInfo.currentOperationSelect == 1:
+        elif deviceInfo.currentDataFlag == 4:
             _sampleValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value]
                             << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleValueAddr.value + 1]
             if _sampleValue != deviceInfo.sampleValue:
