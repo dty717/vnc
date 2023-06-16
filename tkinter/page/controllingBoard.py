@@ -84,27 +84,33 @@ class ControllingBoard(Frame):
         #
         cleanLabelGroup = GroupLabelButton(self, title="手动清洗")
         cleanLabelGroup.pack(pady=10)
-        self.switchReactionTubeClean = SwitchLabelButton(cleanLabelGroup, imgDicts, text="一键排空",
-                                                         textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.reactionTubeEmptyAddr.value, lambda rec: setattr(deviceController, 'reactionTubeClean', 1) or self.switchReactionTubeClean.open(), repeatTimes=0, needMesBox=True),
-                                                         textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'reactionTubeClean', 0) or self.switchReactionTubeClean.close(), repeatTimes=0, needMesBox=True),
+        self.switchReactionTubeEmpty = SwitchLabelButton(cleanLabelGroup, imgDicts, text="一键排空",
+                                                         textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.reactionTubeEmptyAddr.value, lambda rec: setattr(deviceController, 'reactionTubeEmpty', 1) or self.switchReactionTubeEmpty.open(), repeatTimes=0, needMesBox=True),
+                                                         textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'reactionTubeEmpty', 0) or self.switchReactionTubeEmpty.close(), repeatTimes=0, needMesBox=True),
                                                          )
-        if deviceController.reactionTubeClean == 1:
-            self.switchReactionTubeClean.open()
+        if deviceController.reactionTubeEmpty == 1:
+            self.switchReactionTubeEmpty.open()
         else:
-            self.switchReactionTubeClean.close()
-        self.switchReactionTubeClean.pack(pady=5)
-
-
+            self.switchReactionTubeEmpty.close()
+        self.switchReactionTubeEmpty.pack(pady=5)
         self.switchPumpInWater = SwitchLabelButton(cleanLabelGroup, imgDicts, text="手动进蒸馏水",
                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.pumpInWaterAddr.value, lambda rec: setattr(deviceController, 'pumpInWater', 1) or self.switchPumpInWater.open(), repeatTimes=0, needMesBox=True),
-                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'pumpInWater', 0) or self.switchSuctionClean.close(), repeatTimes=0, needMesBox=True),
+                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'pumpInWater', 0) or self.switchPumpInWater.close(), repeatTimes=0, needMesBox=True),
                                                     )
         if deviceController.pumpInWater == 1:
             self.switchPumpInWater.open()
         else:
             self.switchPumpInWater.close()
         self.switchPumpInWater.pack(pady=5)
-
+        self.switchPumpOutWaste = SwitchLabelButton(cleanLabelGroup, imgDicts, text="手动排废液",
+                                                    textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.pumpOutWasteAddr.value, lambda rec: setattr(deviceController, 'pumpOutWaste', 1) or self.switchPumpOutWaste.open(), repeatTimes=0, needMesBox=True),
+                                                    textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'pumpOutWaste', 0) or self.switchPumpOutWaste.close(), repeatTimes=0, needMesBox=True),
+                                                    )
+        if deviceController.pumpOutWaste == 1:
+            self.switchPumpOutWaste.open()
+        else:
+            self.switchPumpOutWaste.close()
+        self.switchPumpOutWaste.pack(pady=5)
         self.switchSuctionClean = SwitchLabelButton(cleanLabelGroup, imgDicts, text="清洗储液环",
                                                     textYES="启动", clickYES=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, DeviceAddr.suctionCleanAddr.value, lambda rec: setattr(deviceController, 'suctionClean', 1) or self.switchSuctionClean.open(), repeatTimes=0, needMesBox=True),
                                                     textNO="停止", clickNO=lambda: write_single_register(DeviceAddr.pumpSelectAddr.value, 0, lambda rec: setattr(deviceController, 'suctionClean', 0) or self.switchSuctionClean.close(), repeatTimes=0, needMesBox=True),
@@ -145,10 +151,18 @@ class ControllingBoard(Frame):
             self.switchChemical3Pump.open()
         else:
             self.switchChemical3Pump.close()
-        if deviceController.reactionTubeClean == 1:
-            self.switchReactionTubeClean.open()
+        if deviceController.reactionTubeEmpty == 1:
+            self.switchReactionTubeEmpty.open()
         else:
-            self.switchReactionTubeClean.close()
+            self.switchReactionTubeEmpty.close()
+        if deviceController.pumpInWater == 1:
+            self.switchPumpInWater.open()
+        else:
+            self.switchPumpInWater.close()
+        if deviceController.pumpOutWaste == 1:
+            self.switchPumpOutWaste.open()
+        else:
+            self.switchPumpOutWaste.close()
         if deviceController.suctionClean == 1:
             self.switchSuctionClean.open()
         else:

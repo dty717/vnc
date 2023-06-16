@@ -308,18 +308,12 @@ class DeviceAddr(Enum):
     sampleMaxValueAddr = 0x94
     sampleAValueAddr = 0x95
     sampleCValueAddr = 0x97
-    # 
-    # measureYearAddr = 0x99
-    measureMonthAddr = 0x9a
-    measureDayAddr = 0x9b
-    measureHourAddr = 0x9c
-    measureMinuteAddr = 0x9d
-    measureSecondAddr = 0x9e
+    currentTemperatureAddr = 0x99    
+    currentLightVoltageAddr = 0x9b    
     warningInfoAddr = 0x9f
     dataFlagAddr = 0xa0
-    currentModelSelectAddr = 0xa1
-    currentOperationSelectAddr = 0xa2
-    currentStateAddr = 0xa3
+    currentDataFlagAddr = 0xa1
+    currentStateAddr = 0xa2
 
 class DeviceController:
     def __init__(self):
@@ -394,16 +388,9 @@ class DeviceInfo:
         self.sampleMaxValue = 0
         self.sampleAValue = 0
         self.sampleCValue = 0
-        self.measureYear = 0
-        self.measureMonth = 0
-        self.measureDay = 0
-        self.measureHour = 0
-        self.measureMinute = 0
-        self.measureSecond = 0
         self.warningInfo = 0
         self.dataFlag = 0
-        self.currentModelSelect = 0
-        self.currentOperationSelect = 0
+        self.currentDataFlag = 0
         self.currentState = 0
     #
     def __str__(self):
@@ -424,21 +411,14 @@ sampleValue = {}
 sampleMaxValue = {}
 sampleAValue = {}
 sampleCValue = {}
-measureYear = {}
-measureMonth = {}
-measureDay = {}
-measureHour = {}
-measureMinute = {}
-measureSecond = {}
 warningInfo = {}
 dataFlag = {}
-currentModelSelect = {}
-currentOperationSelect = {}
+currentDataFlag = {}
 currentState = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
                             self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
                             self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
-                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue, self.measureYear, self.measureMonth, self.measureDay, self.measureHour,
-                            self.measureMinute, self.measureSecond, self.warningInfo, self.dataFlag, self.currentModelSelect, self.currentOperationSelect, self.currentState)
+                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue,
+                            self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState)
 
 shiftAddr = 3
 
@@ -623,8 +603,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
     if not deviceInfo.init:
         deviceInfo.init = True
         deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
-        deviceInfo.currentModelSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentModelSelectAddr.value + 1]
-        deviceInfo.currentOperationSelect = (buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentOperationSelectAddr.value + 1]
+        deviceInfo.currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
         deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
         if deviceInfo.currentOperationSelect == 2:
             deviceInfo.concentration1Value = (buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.concentration1ValueAddr.value + 1]
@@ -646,12 +625,6 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
             deviceInfo.sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
             deviceInfo.sampleAValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
             deviceInfo.sampleCValue = bytesToFloat( buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
-        # deviceInfo.measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
-        deviceInfo.measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
-        deviceInfo.measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
-        deviceInfo.measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
-        deviceInfo.measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
-        deviceInfo.measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
         deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if lastMenuName == ".!notebook.!mainboard":
             updateFlag = True
@@ -780,24 +753,6 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.sampleCValue = _sampleCValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        # _measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
-        # if _measureYear != deviceInfo.measureYear:
-        #     deviceInfo.measureYear = _measureYear
-        _measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
-        if _measureMonth != deviceInfo.measureMonth:
-            deviceInfo.measureMonth = _measureMonth
-        _measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
-        if _measureDay != deviceInfo.measureDay:
-            deviceInfo.measureDay = _measureDay
-        _measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
-        if _measureHour != deviceInfo.measureHour:
-            deviceInfo.measureHour = _measureHour
-        _measureMinute = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMinuteAddr.value + 1]
-        if _measureMinute != deviceInfo.measureMinute:
-            deviceInfo.measureMinute = _measureMinute
-        _measureSecond = (buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureSecondAddr.value + 1]
-        if _measureSecond != deviceInfo.measureSecond:
-            deviceInfo.measureSecond = _measureSecond
         _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
