@@ -303,7 +303,8 @@ class DeviceAddr(Enum):
     sampleMaxValueAddr = 0x94
     sampleAValueAddr = 0x95
     sampleCValueAddr = 0x97
-    measureYearAddr = 0x99
+    # 
+    # measureYearAddr = 0x99
     measureMonthAddr = 0x9a
     measureDayAddr = 0x9b
     measureHourAddr = 0x9c
@@ -638,7 +639,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
             deviceInfo.sampleMaxValue = (buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.sampleMaxValueAddr.value + 1]
             deviceInfo.sampleAValue = bytesToFloat(buffer[shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleAValueAddr.value + 4])
             deviceInfo.sampleCValue = bytesToFloat( buffer[shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value:shiftAddr2 + 2 * DeviceAddr.sampleCValueAddr.value + 4])
-        deviceInfo.measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
+        # deviceInfo.measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
         deviceInfo.measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
         deviceInfo.measureDay = (buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureDayAddr.value + 1]
         deviceInfo.measureHour = (buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureHourAddr.value + 1]
@@ -772,9 +773,9 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.sampleCValue = _sampleCValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        _measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
-        if _measureYear != deviceInfo.measureYear:
-            deviceInfo.measureYear = _measureYear
+        # _measureYear = (buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureYearAddr.value + 1]
+        # if _measureYear != deviceInfo.measureYear:
+        #     deviceInfo.measureYear = _measureYear
         _measureMonth = (buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.measureMonthAddr.value + 1]
         if _measureMonth != deviceInfo.measureMonth:
             deviceInfo.measureMonth = _measureMonth

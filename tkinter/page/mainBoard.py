@@ -115,25 +115,8 @@ class MainBoard(Frame):
             modelSelectGroupLine1, text="手动做样", command=self.selectOperate, font=(None, 12))
         self.selectOperateButton.pack(side="left", padx=10, pady=10)
         self.selectIntervalButton = Button(
-            modelSelectGroupLine1, text="间隔做样", command=self.selectInterval, font=(None, 12))
+            modelSelectGroupLine1, text="自动做样", command=self.selectAuto, font=(None, 12))
         self.selectIntervalButton.pack(side="left", padx=10, pady=10)
-        self.selectHourButton = Button(
-            modelSelectGroupLine1, text="整点做样", command=self.selectHour, font=(None, 12))
-        self.selectHourButton.pack(side="left", padx=10, pady=10)
-        modelSelectGroupLine1.pack(fill=X)
-        # Line2
-        modelSelectGroupLine2 = Frame(modelSelectGroup, bg=primaryColor)
-        self.selectCalibrateButton = Button(
-            modelSelectGroupLine2, text="标定模式", command=self.selectCalibrate, font=(None, 12))
-        self.selectCalibrateButton.pack(side="left", padx=10, pady=10)
-        self.selectPumpButton = Button(
-            modelSelectGroupLine2, text="手动进样", command=self.selectPump, font=(None, 12))
-        self.selectPumpButton.pack(side="left", padx=10, pady=10)
-        self.selectIdleButton = Button(
-            modelSelectGroupLine2, text="空闲模式", command=self.selectIdle, font=(None, 12))
-        self.selectIdleButton.pack(side="left", padx=10, pady=10)
-        modelSelectGroupLine2.pack(fill=X)
-        modelSelectGroup.pack(side=LEFT, anchor=N, padx=40)
         #
         #operationSelectGroup
         #
@@ -259,9 +242,9 @@ class MainBoard(Frame):
         return
     def selectOperate(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
-                         1, self.selectModelButton(1))
+                         0, self.selectModelButton(1))
         return
-    def selectInterval(self):
+    def selectAuto(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
                          2, self.selectModelButton(2))
         return
