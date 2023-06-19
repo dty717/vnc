@@ -95,8 +95,6 @@ class SettingBoard(Frame):
             deviceController.concentration2SettingValue)
         self.concentration3SettingValueLabelText.setText(
             deviceController.concentration3SettingValue)
-        self.measurementIntervalLabelText.setText(
-            deviceController.measurementInterval)
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",

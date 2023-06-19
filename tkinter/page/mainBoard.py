@@ -72,8 +72,8 @@ class MainBoard(Frame):
                                      "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
-    做样数据:
-    报警状态:"""+stateString(deviceInfo.warningInfo))
+做样数据:
+报警状态:"""+stateString(deviceInfo.warningInfo))
         #
         beforeHeaderFrame = Frame(self, bg=primaryColor)
         beforeHeaderFrame.pack(side=TOP, fill=X, pady=30)
@@ -102,7 +102,7 @@ class MainBoard(Frame):
                            bg=primaryColor, font=(None, 16), justify="left")
         stateLabel.pack(side=LEFT)
         self.currentTemperatureText = StringVar()
-        self.currentTemperatureText.set(str(deviceInfo.currentTemperature)+"℃")
+        self.currentTemperatureText.set(str(round(deviceInfo.currentTemperature, 2))+"℃")
         currentTemperatureButton = Button(stateFrame, textvariable=self.currentTemperatureText,
                                           relief=FLAT, fg="black", disabledforeground="black", bg=primaryColor, font=(None, 16))
         currentTemperatureButton.pack(side=LEFT, padx=10)
@@ -360,9 +360,9 @@ class MainBoard(Frame):
                                      "报警状态:"+stateString(deviceInfo.warningInfo))
         else:
             self.mainHistoryText.set("""做样时间:
-    做样数据:
-    报警状态:"""+stateString(deviceInfo.warningInfo))
-        self.currentTemperatureText.set(str(deviceInfo.currentTemperature)+"℃")
+做样数据:
+报警状态:"""+stateString(deviceInfo.warningInfo))
+        self.currentTemperatureText.set(str(round(deviceInfo.currentTemperature, 2))+"℃")
         self.currentStateText.set(
             self.getCurrentState(deviceInfo.currentState))
         self.lastSelectModelButton.configure(background=backgroundColors[0])

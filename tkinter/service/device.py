@@ -272,10 +272,10 @@ class DeviceAddr(Enum):
     # 
     # 
     selectingHoursAddr = 0x02
+    immediateCalibrateAddr = 0x03 
     calibrateDayAddr = 0x1a
     calibrateHourAddr = 0x1b
     calibrateMinuteAddr = 0x1c
-    immediateCalibrateAddr = 0x1d
     concentration1SettingValueAddr = 0x1e
     concentration2SettingValueAddr = 0x20
     concentration3SettingValueAddr = 0x22
@@ -759,7 +759,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     time.sleep(60)
-                    power.value = 0
+                    # power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
