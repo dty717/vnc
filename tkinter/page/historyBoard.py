@@ -2,7 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from components.table import TreeTable
 from models.tableDatas import TableDatas
-from database.mongodb import dbGetHistory, dbGetConcentration1History, dbGetConcentration2History, dbGetConcentration3History
+from database.mongodb import dbGetHistory, dbGetConcentration1History, dbGetConcentration2History, dbGetTestHistory,dbGetConcentration3History
 
 class HistoryBoard(Frame):
     def __init__(self, master, **kargs):
@@ -181,6 +181,52 @@ class HistoryBoard(Frame):
         concentration3HistoryTableScrollBar.config(
             command=self.concentration3HistoryTreeTable.yview)
         concentration3HistoryTab.pack()
+        ##
+        ## testHistory
+        ##
+        self.testHistoryTableDatas = TableDatas()
+        testHistoryTableDatas = self.testHistoryTableDatas
+        testHistoryTableDatas.setColumns(
+            'time', 'value', 'maxValue', 'AValue', 'CValue')
+        # column
+        testHistoryTableDatas.column("#0", width=50, minwidth=25)
+        testHistoryTableDatas.column("time", anchor=W, width=200)
+        testHistoryTableDatas.column(
+            "value", anchor=CENTER, width=110)
+        testHistoryTableDatas.column("maxValue", anchor=W, width=110)
+        testHistoryTableDatas.column("AValue", anchor=W, width=110)
+        testHistoryTableDatas.column("CValue", anchor=W, width=110)
+        # headingConfigs
+        testHistoryTableDatas.heading("#0", text="序号", anchor=W)
+        testHistoryTableDatas.heading("time", text="时间", anchor=W)
+        testHistoryTableDatas.heading(
+            "value", text="基值", anchor=CENTER)
+        testHistoryTableDatas.heading(
+            "maxValue", text="峰值", anchor=W)
+        testHistoryTableDatas.heading("AValue", text="A值", anchor=W)
+        testHistoryTableDatas.heading("CValue", text="C值", anchor=W)
+        # data
+        concentration3Histories = list(dbGetTestHistory(nPerPage=0))
+        for index, testHistory in enumerate(concentration3Histories):
+            testHistory['time'] = testHistory['time'].strftime(
+                "%Y-%m-%d %H:%M:%S")
+            testHistory['AValue'] = round(
+                testHistory['AValue'], 4)
+            testHistory['CValue'] = round(
+                testHistory['CValue'], 4)
+            testHistoryTableDatas.insert(parent='', index='end', iid=index, text=str(
+                index+1), values=tuple(testHistory.values())[1:])
+        testHistoryTab = Frame(self)
+        testHistoryTableScrollBar = Scrollbar(
+            testHistoryTab)
+        testHistoryTableScrollBar.pack(side=RIGHT, fill=Y)
+        self.testHistoryTreeTable = TreeTable(testHistoryTab, testHistoryTableDatas,
+                                                        yscrollcommand=testHistoryTableScrollBar.set, height=20)
+        self.testHistoryTreeTable.pack()
+        testHistoryTableScrollBar.config(
+            command=self.testHistoryTreeTable.yview)
+        testHistoryTab.pack()
+
         #
         # historyTab = Frame(self,width=50, height=50, bg="red")
         # concentration1Tab = Frame(self, width=50, height=50, bg="yellow")
@@ -188,6 +234,7 @@ class HistoryBoard(Frame):
         historyTabs.add(concentration1HistoryTab, text="标一历史")
         historyTabs.add(concentration2HistoryTab, text="标二历史")
         historyTabs.add(concentration3HistoryTab, text="标三历史")
+        historyTabs.add(testHistoryTab, text="标核历史")
     def refreshPage(self):
         ##
         ## sampleHistory
@@ -264,5 +311,25 @@ class HistoryBoard(Frame):
                 index+1), values=tuple(concentration3History.values())[1:])
         self.concentration3HistoryTreeTable.refreshDate(
             concentration3HistoryTableDatas)
+        ##
+        ## testHistoryHistory
+        ##
+        self.testHistoryTreeTable.delete(
+            *self.testHistoryTreeTable.get_children())
+        testHistoryTableDatas = self.testHistoryTableDatas
+        testHistoryTableDatas.clearDatas()
+        # data
+        testHistoryHistories = list(dbGetTestHistory(nPerPage=0))
+        for index, testHistory in enumerate(testHistoryHistories):
+            testHistory['time'] = testHistory['time'].strftime(
+                "%Y-%m-%d %H:%M:%S")
+            testHistory['AValue'] = round(
+                testHistory['AValue'], 4)
+            testHistory['CValue'] = round(
+                testHistory['CValue'], 4)
+            testHistoryTableDatas.insert(parent='', index='end', iid=index, text=str(
+                index+1), values=tuple(testHistory.values())[1:])
+        self.testHistoryTreeTable.refreshDate(
+            testHistoryTableDatas)
 # mianBoard = Frame(tabNoteBook, width=100, height=100, bg="red")
 # mianBoard.pack(fill=BOTH, expand=1)

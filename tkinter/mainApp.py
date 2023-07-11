@@ -309,7 +309,7 @@ def selectTime():
         timeSelectEvent.wait(during)
         print(datetime.now())
         hour = datetime.now().hour
-        if deviceController.selectingHours[hour]:
+        if deviceController.selectingHours[hour] and hour >= 2:
             if checkLastSelectTime() and (not usingWaterDetect or waterDetect.value):
                 lastSelectTime = datetime.now()
                 # start select time
@@ -319,6 +319,16 @@ def selectTime():
                                       lambda rec: None, repeatTimes=3, needMesBox=False)
                 write_single_register(DeviceAddr.operationSelectAddr.value, 4,
                                       lambda rec: None, repeatTimes=3, needMesBox=False)
+        elif hour == 1:
+            lastSelectTime = datetime.now()
+            # start select time
+            power.value = 1
+            timeSelectEvent.wait(60)
+            write_single_register(DeviceAddr.modelSelectAddr.value, 0,
+                                  lambda rec: None, repeatTimes=3, needMesBox=False)
+            write_single_register(DeviceAddr.operationSelectAddr.value, 7,
+                                  lambda rec: None, repeatTimes=3, needMesBox=False)
+            pass
         timeSelectEvent.wait(60)
     pass
 selectTimeThread = threading.Thread(target=selectTime)

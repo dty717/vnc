@@ -16,7 +16,7 @@ from tool.bytesConvert import bytesToFloat
 if isUsingGPS:
     from service.gps import gpsData
 from service.logger import Logger
-from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History
+from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History,dbSaveTestHistory
 
 power = LED(18)
 waterDetect = Button(2)
@@ -757,6 +757,23 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     # if deviceInfo.sampleAValue < 0.0846:
                     #     __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
+                                  deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
+                    time.sleep(60)
+                    # power.value = 0
+                    dataInfo = ""
+                    try:
+                        if gpsData.active and isUsingGPS:
+                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+                        uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
+                                    'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}
+                        requests.post(uploadDataURL, json=uploadData)
+                    except Exception as err:
+                        Logger.log("网络异常", "数据无法上传", str(err), 1200)
+                elif _dataFlag == 7:
+                    __sampleCValue = deviceInfo.sampleCValue
+                    # if deviceInfo.sampleAValue < 0.0846:
+                    #     __sampleCValue = 0.01 + 5 * random.random()/1000
+                    dbSaveTestHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     time.sleep(60)
                     # power.value = 0

@@ -10,6 +10,7 @@ dbSmartFloating = dbClient.SmartFloating
 
 dbDeviceLog = dbSmartFloating.DeviceLog
 dbDeviceHistory = dbSmartFloating.SmartFloatingHistories
+dbTestHistory = dbSmartFloating.dbTestHistories
 dbConcentration1History = dbSmartFloating.Concentration1Histories
 dbConcentration2History = dbSmartFloating.Concentration2Histories
 dbConcentration3History = dbSmartFloating.Concentration3Histories
@@ -78,9 +79,23 @@ def dbSaveConcentration3History(currentTime, value, maxValue, AValue, CValue):
         "CValue": CValue
     })
 
+
+def dbSaveTestHistory(currentTime, value, maxValue, AValue, CValue):
+    dbTestHistory.insert_one({
+        "time": currentTime,
+        "value": value,
+        "maxValue": maxValue,
+        "AValue": AValue,
+        "CValue": CValue
+    })
+
 def dbGetConcentration3History(logQuery={}, page=0, nPerPage=30):
     concentration3History = dbConcentration3History.find(logQuery)
     return concentration3History.skip(page * nPerPage).limit(nPerPage)
+
+def dbGetTestHistory(logQuery={}, page=0, nPerPage=30):
+    testHistory = dbTestHistory.find(logQuery)
+    return testHistory.skip(page * nPerPage).limit(nPerPage)
 
 def insertLocation(time, latitude, longitude):
     location = dbLocation.find_one(
