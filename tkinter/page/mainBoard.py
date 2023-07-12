@@ -303,7 +303,7 @@ class MainBoard(Frame):
             return self.operateConcentration3Button
     def operateSample(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 4, self.selectOperationButton(4))
+            DeviceAddr.operationSelectAddr.value, 7, self.selectOperationButton(4))
         return
     def operateConcentration1(self):
         self.selectOperation(

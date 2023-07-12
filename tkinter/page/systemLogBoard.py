@@ -43,6 +43,7 @@ class SystemLogBoard(Frame):
         tableDatas = self.tableDatas
         tableDatas.clearDatas()
         loggings = list(dbGetLogging(nPerPage=0))
+        loggings.reverse()
         for index, logInfo in enumerate(loggings):
             logInfo['time'] = logInfo['time'].strftime("%Y-%m-%d %H:%M:%S")
             tableDatas.insert(parent='', index='end', iid=index, text=str(

@@ -32,6 +32,7 @@ class HistoryBoard(Frame):
         historyTableDatas.heading("CValue", text="C值", anchor=W)
         # data
         histories = list(dbGetHistory(nPerPage=0))
+        histories.reverse()
         for index, history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             history['AValue'] = round(history['AValue'], 4)
@@ -72,6 +73,7 @@ class HistoryBoard(Frame):
         concentration1HistoryTableDatas.heading("CValue", text="C值", anchor=W)
         # data
         concentration1Histories = list(dbGetConcentration1History(nPerPage=0))
+        concentration1Histories.reverse()
         for index, concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -117,6 +119,7 @@ class HistoryBoard(Frame):
         concentration2HistoryTableDatas.heading("CValue", text="C值", anchor=W)
         # data
         concentration2Histories = list(dbGetConcentration2History(nPerPage=0))
+        concentration2Histories.reverse()
         for index, concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -162,6 +165,7 @@ class HistoryBoard(Frame):
         concentration3HistoryTableDatas.heading("CValue", text="C值", anchor=W)
         # data
         concentration3Histories = list(dbGetConcentration3History(nPerPage=0))
+        concentration3Histories.reverse()
         for index, concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -206,8 +210,9 @@ class HistoryBoard(Frame):
         testHistoryTableDatas.heading("AValue", text="A值", anchor=W)
         testHistoryTableDatas.heading("CValue", text="C值", anchor=W)
         # data
-        concentration3Histories = list(dbGetTestHistory(nPerPage=0))
-        for index, testHistory in enumerate(concentration3Histories):
+        testHistories = list(dbGetTestHistory(nPerPage=0))
+        testHistories.reverse()
+        for index, testHistory in enumerate(testHistories):
             testHistory['time'] = testHistory['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
             testHistory['AValue'] = round(
@@ -244,6 +249,7 @@ class HistoryBoard(Frame):
         historyTableDatas.clearDatas()
         # data
         histories = list(dbGetHistory(nPerPage=0))
+        histories.reverse()
         for index, history in enumerate(histories):
             history['time'] = history['time'].strftime("%Y-%m-%d %H:%M:%S")
             history['AValue'] = round(history['AValue'], 4)
@@ -260,6 +266,7 @@ class HistoryBoard(Frame):
         concentration1HistoryTableDatas.clearDatas()
         # data
         concentration1Histories = list(dbGetConcentration1History(nPerPage=0))
+        concentration1Histories.reverse()
         for index, concentration1History in enumerate(concentration1Histories):
             concentration1History['time'] = concentration1History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -280,6 +287,7 @@ class HistoryBoard(Frame):
         concentration2HistoryTableDatas.clearDatas()
         # data
         concentration2Histories = list(dbGetConcentration2History(nPerPage=0))
+        concentration2Histories.reverse()
         for index, concentration2History in enumerate(concentration2Histories):
             concentration2History['time'] = concentration2History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -300,6 +308,7 @@ class HistoryBoard(Frame):
         concentration3HistoryTableDatas.clearDatas()
         # data
         concentration3Histories = list(dbGetConcentration3History(nPerPage=0))
+        concentration3Histories.reverse()
         for index, concentration3History in enumerate(concentration3Histories):
             concentration3History['time'] = concentration3History['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
@@ -319,8 +328,9 @@ class HistoryBoard(Frame):
         testHistoryTableDatas = self.testHistoryTableDatas
         testHistoryTableDatas.clearDatas()
         # data
-        testHistoryHistories = list(dbGetTestHistory(nPerPage=0))
-        for index, testHistory in enumerate(testHistoryHistories):
+        testHistories = list(dbGetTestHistory(nPerPage=0))
+        testHistories.reverse()
+        for index, testHistory in enumerate(testHistories):
             testHistory['time'] = testHistory['time'].strftime(
                 "%Y-%m-%d %H:%M:%S")
             testHistory['AValue'] = round(
