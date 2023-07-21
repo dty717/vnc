@@ -758,8 +758,8 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     #     __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
-                    time.sleep(60)
-                    # power.value = 0
+                    time.sleep(120)
+                    power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
@@ -775,8 +775,8 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     #     __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveTestHistory(currentTime, deviceInfo.sampleValue,
                                   deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
-                    time.sleep(60)
-                    # power.value = 0
+                    time.sleep(120)
+                    power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
