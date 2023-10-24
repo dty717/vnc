@@ -18,8 +18,8 @@ if isUsingGPS:
 from service.logger import Logger
 from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History,dbSaveTestHistory
 
-power = LED(18)
-waterDetect = Button(2)
+power = LED(25)
+waterDetect = Button(18)
 
 lastClickStartTime = datetime.datetime.now()
 lastSelectTime = datetime.datetime.now()
@@ -269,6 +269,7 @@ class DeviceAddr(Enum):
     modelSelectAddr = 0x00
     operationSelectAddr = 0x01
     pumpSelectAddr = 0x02
+    exchangeAddr = 0x04
     # 
     # 
     selectingHoursAddr = 0x02
@@ -394,6 +395,8 @@ class DeviceInfo:
         self.dataFlag = 0
         self.currentDataFlag = 0
         self.currentState = 0
+        self.stepsPerCircle = 1600
+        self.DELAY = 0.0006
     #
     def __str__(self):
         return """init = {}
@@ -418,11 +421,14 @@ currentLightVoltage = {}
 warningInfo = {}
 dataFlag = {}
 currentDataFlag = {}
-currentState = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
+currentState = {}
+stepsPerCircle = {}
+DELAY = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
                             self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
                             self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
                             self.sampleMaxValue, self.sampleAValue, self.sampleCValue,self.currentTemperature,self.currentLightVoltage,
-                            self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState)
+                            self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState,
+                            self.stepsPerCircle, self.DELAY)
 
 shiftAddr = 3
 

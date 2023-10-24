@@ -8,10 +8,13 @@ import asyncio
 import json
 import websocket
 from config.labelString import titleLabel
-from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID,usingWaterDetect,isUsingGPS
+from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, wsHostname, url, deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, power, waterDetect
+from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo,\
+    getBytesInfo, requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime,\
+    power, waterDetect
+from service.motor import opticalUpSwitch, opticalDownSwitch, magnetism, motorEvent, motorState, IDLE, FIXPOSITION, FASTEN, SEPARATE, fixPosition, fasten, separate
 
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
@@ -125,7 +128,7 @@ historyBoard = HistoryBoard(mainMenu, width=50, height=50, bg=primaryColor)
 controllingBoard = ControllingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 timeSelectingBoard = TimeSelectingBoard(
-    mainMenu, width=50, height=50, bg=primaryColor,padx = 20)
+    mainMenu, width=50, height=50, bg=primaryColor, padx=20)
 settingBoard = SettingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
@@ -142,6 +145,7 @@ mainMenu.add(cameraBoard, text="视频监控")
 mainMenu.add(locationBoard, text="位置监测")
 
 lastMenuName = ".!notebook.!mainboard"
+
 
 def getMenu(menuName):
     if menuName == ".!notebook.!mainboard":
@@ -160,6 +164,7 @@ def getMenu(menuName):
         return cameraBoard
     elif menuName == ".!notebook.!locationboard":
         return locationBoard
+
 
 def changeMenuTab(event):
     global lastMenuName
@@ -185,6 +190,7 @@ def changeMenuTab(event):
     elif currentMenuName == ".!notebook.!cameraboard":
         cameraBoard.continueLoop()
 
+
 mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
 
 bufControlling = [0x01, 0x03, 0x00, 0x00, 0x00, 0x2e]
@@ -196,6 +202,7 @@ bufQuery = [0x01, 0x03, 0x00, 0x81, 0x00, 0x23]
 crcCheck = crc16(bufQuery, 0, len(bufQuery))
 bufQuery.append(crcCheck >> 8)
 bufQuery.append(crcCheck & 0xff)
+
 
 def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
@@ -216,6 +223,8 @@ def updatePage():
         pass
 
 # detect water for danger:
+
+
 def waterDetectCallBack():
     Logger.log("设备异常", "设备进水", "请尽快处理", 60)
     power.value = 0
@@ -223,13 +232,25 @@ def waterDetectCallBack():
     waterDetectWarning()
 
 # detect water for danger:
+
+
 def waterDetectReleaseCallBack():
     Logger.log("设备异常", "设备未进水", "异常解除", 60)
     updatePage()
 
+# opticalUpSwitch, opticalDownSwitch, 
+
+
 if usingWaterDetect:
     waterDetect.when_pressed = waterDetectReleaseCallBack
     waterDetect.when_released = waterDetectCallBack
+
+opticalUpSwitch.when_pressed = updatePage
+opticalUpSwitch.when_released = updatePage
+opticalDownSwitch.when_pressed = updatePage
+opticalDownSwitch.when_released = updatePage
+magnetism.when_pressed = updatePage
+magnetism.when_released = updatePage
 
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
@@ -237,11 +258,13 @@ def queryHandle(queryRecv):
     Logger.logWithOutDuration(
         "系统测试", "dataFlag:"+str(deviceInfo.dataFlag), ' '.join([str(e) for e in queryRecv]))
 
+
 def controllingHandle(controllingRecv):
-    if getBytesControllingInfo(controllingRecv,deviceController,lastMenuName):
+    if getBytesControllingInfo(controllingRecv, deviceController, lastMenuName):
         updatePage()
     Logger.logWithOutDuration(
         "系统测试", "controlling rec", ' '.join([str(e) for e in controllingRecv]))
+
 
 def RequestDevice():
   global deviceController, deviceInfo
@@ -260,15 +283,39 @@ def RequestDevice():
     #     deviceController.init = True
     #     getBytesControllingInfo(controllingRecv,deviceController)
 
+
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
+
+def MotorRun():
+    global motorState
+    while not motorEvent.wait(0.1):
+        if motorState.command != IDLE:
+            updatePage()
+            if motorState.command == FIXPOSITION:
+                fixPosition()
+                motorState.command = IDLE
+            elif motorState.command == FASTEN:
+                fasten()
+                motorState.command = IDLE
+            elif motorState.command == SEPARATE:
+                separate()
+                motorState.command = IDLE
+            updatePage()
+        continue
+
+motorThread = threading.Thread(target=MotorRun)
+motorThread.start()
+
 def getGPS():
     while True:
         getGpsInfo()
 
+
 if isUsingGPS:
     getGpsThread = threading.Thread(target=getGPS)
     getGpsThread.start()
+
 
 def saveGPS():
   global gpsData
@@ -278,9 +325,11 @@ def saveGPS():
                      gpsData.minute, gpsData.second, gpsData.latitude, gpsData.longitude)
         pass
 
+
 if isUsingGPS:
     saveGpsThread = threading.Thread(target=saveGPS)
     saveGpsThread.start()
+
 
 def checkLastSelectTime():
     global lastSelectTime, lastClickStartTime
@@ -294,6 +343,7 @@ def checkLastSelectTime():
             if now > lastHistory['time'] + timedelta(hours=1, minutes=40):
                 return False
     return True
+
 
 def selectTime():
   global deviceController, lastSelectTime
@@ -326,12 +376,14 @@ def selectTime():
                 power.value = 1
                 timeSelectEvent.wait(60)
                 write_single_register(DeviceAddr.modelSelectAddr.value, 0,
-                                    lambda rec: None, repeatTimes=3, needMesBox=False)
+                                      lambda rec: None, repeatTimes=3, needMesBox=False)
                 write_single_register(DeviceAddr.operationSelectAddr.value, 7,
-                                    lambda rec: None, repeatTimes=3, needMesBox=False)
+                                      lambda rec: None, repeatTimes=3, needMesBox=False)
             pass
         timeSelectEvent.wait(60)
     pass
+
+
 selectTimeThread = threading.Thread(target=selectTime)
 selectTimeThread.start()
 
@@ -339,6 +391,7 @@ jsonDecoder = json.JSONDecoder()
 
 # wid = device's websocket id
 wid = None
+
 
 def on_message(ws, message):
     global wid
@@ -349,22 +402,27 @@ def on_message(ws, message):
         ws.send("{\"type\":\"deviceID\",\"name\":\"" +
                 deviceID+"\",\"id\":"+str(wid)+"}")
 
+
 def on_error(ws, error):
     Logger.log("网络状态", "网络异常", str(error), 3600)
+
 
 def on_close(ws, close_status_code, close_msg):
     Logger.log("网络状态", "网络异常", "网络关闭:"+str(close_msg), 3600)
     # print("### closed ###")
+
 
 def on_open(ws):
     # print("Opened connection")
     return
 # websocket.enableTrace(True)
 
+
 def runWebsocket():
     while True:
         ws.run_forever()
         ws.close()
+
 
 ws = websocket.WebSocketApp(url,
                             subprotocols=["json"],
@@ -383,10 +441,12 @@ websocketThread.start()
 # finally:
 #     connectWebsocketLoop.close()
 
+
 def on_closing():
     if messagebox.askokcancel("退出", "确定退出吗?"):
         saveSetting()
         root.destroy()
+
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 # Run forever!

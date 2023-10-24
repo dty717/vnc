@@ -68,6 +68,38 @@ class SettingBoard(Frame):
         self.concentration3SettingValueLabelText.setText(
             deviceController.concentration3SettingValue)
         self.concentration3SettingValueLabelText.pack(anchor=W, pady=5)
+        #
+        #motorGroup
+        #
+        motorGroup = GroupLabelButton(self, title="标定时间")
+        motorGroup.pack(pady=20)
+        self.calibrateDayLabelText = LabelTextButton(motorGroup, text="标定日",
+                                                command=lambda content: write_single_register(DeviceAddr.calibrateDayAddr.value, int(float(content)),
+                                                                                              lambda rec: setattr(deviceController, 'calibrateDay', int(float(content))), repeatTimes=0, needMesBox=True)
+                                                )
+        self.calibrateDayLabelText.setText(deviceController.calibrateDay)
+        self.calibrateDayLabelText.pack(anchor=W, pady=5)
+        self.calibrateHourLabelText = LabelTextButton(motorGroup, text="标定时",
+                                                 command=lambda content: write_single_register(DeviceAddr.calibrateHourAddr.value, int(float(content)),
+                                                                                               lambda rec: setattr(deviceController, 'calibrateHour', int(float(content))), repeatTimes=0, needMesBox=True)
+                                                 )
+        self.calibrateHourLabelText.setText(deviceController.calibrateHour)
+        self.calibrateHourLabelText.pack(anchor=W, pady=5)
+        self.calibrateMinuteLabelText = LabelTextButton(motorGroup, text="标定分",
+                                                   command=lambda content: write_single_register(DeviceAddr.calibrateMinuteAddr.value, int(float(content)),
+                                                                                                 lambda rec: setattr(deviceController, 'calibrateMinute', int(float(content))), repeatTimes=0, needMesBox=True)
+                                                   )
+        self.calibrateMinuteLabelText.setText(deviceController.calibrateMinute)
+        self.calibrateMinuteLabelText.pack(anchor=W, pady=5)
+        self.switchImmediateCalibrate = SwitchLabelButton(motorGroup, imgDicts, text="立即标定",
+                                                     textYES="开始", clickYES=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 1, lambda rec: setattr(deviceController, 'immediateCalibrate', 1) or self.switchImmediateCalibrate.open(), repeatTimes=0, needMesBox=True),
+                                                     textNO="取消", clickNO=lambda: write_single_register(DeviceAddr.immediateCalibrateAddr.value, 0, lambda rec: setattr(deviceController, 'immediateCalibrate', 0) or self.switchImmediateCalibrate.close(), repeatTimes=0, needMesBox=True),
+                                                     )
+        if deviceController.immediateCalibrate == 1:
+            self.switchImmediateCalibrate.open()
+        else:
+            self.switchImmediateCalibrate.close()
+        self.switchImmediateCalibrate.pack(anchor=W, pady=5)
         # self.pack()
         # self.entrythingy = Entry()
         # self.entrythingy.pack()
