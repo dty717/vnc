@@ -27,7 +27,7 @@ from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
 from page.cameraBoard import CameraBoard
 from page.locationBoard import LocationBoard
-from database.mongodb import dbGetLastHistory
+from database.mongodb import dbGetLastHistory,dbClient
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
@@ -208,13 +208,16 @@ def updatePage():
     if lastMenuName == ".!notebook.!mainboard":
         mainBoard.refreshPage()
     elif lastMenuName == ".!notebook.!historyboard":
-        historyBoard.refreshPage()
+        # historyBoard.refreshPage()
+        pass
     elif lastMenuName == ".!notebook.!controllingboard":
-        controllingBoard.refreshPage()
+        pass
+        # controllingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!timeSelectingboard":
         timeSelectingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!settingboard":
-        settingBoard.refreshPage()
+        pass
+        # settingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!systemLogboard":
         pass
     elif lastMenuName == ".!notebook.!cameraboard":
@@ -364,7 +367,7 @@ def selectTime():
                 lastSelectTime = datetime.now()
                 # start select time
                 power.value = 1
-                timeSelectEvent.wait(60)
+                timeSelectEvent.wait(60*3)
                 write_single_register(DeviceAddr.modelSelectAddr.value, 0,
                                       lambda rec: None, repeatTimes=3, needMesBox=False)
                 write_single_register(DeviceAddr.operationSelectAddr.value, 4,
@@ -374,7 +377,7 @@ def selectTime():
                 lastSelectTime = datetime.now()
                 # start select time
                 power.value = 1
-                timeSelectEvent.wait(60)
+                timeSelectEvent.wait(60*3)
                 write_single_register(DeviceAddr.modelSelectAddr.value, 0,
                                       lambda rec: None, repeatTimes=3, needMesBox=False)
                 write_single_register(DeviceAddr.operationSelectAddr.value, 7,
@@ -445,7 +448,10 @@ websocketThread.start()
 def on_closing():
     if messagebox.askokcancel("退出", "确定退出吗?"):
         saveSetting()
+        ws.close()
+        dbClient.close()
         root.destroy()
+        exit()
 
 
 root.protocol("WM_DELETE_WINDOW", on_closing)

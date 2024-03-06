@@ -1,7 +1,7 @@
 from gpiozero import LED, Button
 import time
 import threading
-from device import deviceInfo
+from service.device import deviceInfo
 
 motorEvent = threading.Event()
 
@@ -37,17 +37,17 @@ STOP = -1
 """Motor stop"""
 # MICROSTEP = 4
 
-stepsPerCircle = deviceInfo.stepsPerCircle
+# stepsPerCircle = deviceInfo.stepsPerCircle
 lastShowCount = 0
 
-DELAY = deviceInfo.DELAY
+# DELAY = deviceInfo.DELAY
 STEPS = 200
 DIRECTION = BACKWARD
 STYLE = SINGLE
 
 # 1/DELAY/2 /1600
 
-lastDelay = 0.0006
+lastDelay = deviceInfo.DELAY
 lastSteps = 200
 lastDirection = BACKWARD
 LAST_STYLE = SINGLE
@@ -169,7 +169,7 @@ def onestep(interrupt):
         return False
 
 
-def run(steps=STEPS, delay=DELAY, direction=DIRECTION, style=STYLE, interrupt=lambda arg1, arg2, arg3: False):
+def run(steps=STEPS, delay = deviceInfo.DELAY, direction=DIRECTION, style=STYLE, interrupt=lambda arg1, arg2, arg3: False):
     global lastDelay
     global lastDirection
     global lastSteps
@@ -406,13 +406,13 @@ def detectMagnetismDetectHoleAndLeave(magnetismValue, OpticalUpSwitchValue, Opti
             return False
 
 
-DetectHoleAndMoveSteps = stepsPerCircle*2
+# DetectHoleAndMoveSteps = deviceInfo.detectHoleAndMoveSteps * 2
 
 
 def detectMagnetismDetectHoleAndMove(magnetismValue, OpticalUpSwitchValue, OpticalDownSwitchValue):
     global motorState
     if motorState.onceMagnetismClosed:
-        if(motorState.steps > motorState.onceMagnetismClosedStep + DetectHoleAndMoveSteps) and (not isUsingPico and magnetismValue < magnetismThreshold) or (isUsingPico and magnetismValue > magnetismThreshold):
+        if(motorState.steps > motorState.onceMagnetismClosedStep + deviceInfo.detectHoleAndMoveSteps) and (not isUsingPico and magnetismValue < magnetismThreshold) or (isUsingPico and magnetismValue > magnetismThreshold):
             return True
         else:
             return False
@@ -445,7 +445,7 @@ def detectOpticalDownSwitchIn(magnetismValue, OpticalUpSwitchValue, OpticalDownS
 def detectOpticalDownSwitchInAndMove(magnetismValue, OpticalUpSwitchValue, OpticalDownSwitchValue):
     global motorState
     if motorState.onceOpticalDownSwitchIn:
-        if(motorState.steps > motorState.onceMagnetismClosedStep + 16*stepsPerCircle):
+        if(motorState.steps > motorState.onceMagnetismClosedStep + 16*deviceInfo.stepsPerCircle):
             return True
         else:
             return False
@@ -453,7 +453,7 @@ def detectOpticalDownSwitchInAndMove(magnetismValue, OpticalUpSwitchValue, Optic
 
 # ## enter sample
 def fixPosition():
-    redo(steps=3000000, interrupt=detectMagnetismDetectHoleAndMove, delay=DELAY)
+    redo(steps=3000000, interrupt=detectMagnetismDetectHoleAndMove, delay=deviceInfo.DELAY)
     resetMotorState()
 
 
@@ -473,7 +473,7 @@ s2 = fasten
 
 
 def separate():
-    redo(steps=300000, delay=DELAY/7, interrupt=detectOpticalDownSwitchInAndMove)
+    redo(steps=300000, delay=deviceInfo.separateDelay, interrupt=detectOpticalDownSwitchInAndMove)
     resetMotorState()
 
 

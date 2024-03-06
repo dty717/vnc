@@ -209,7 +209,7 @@ class MainBoard(Frame):
             exchangeOperationGroupLine1, text="固定转盘", command=self.fasten, font=(None, 12))
         self.fastenButton.pack(side="left", padx=10, pady=5)
         self.requestOrderButton = Button(
-            exchangeOperationGroupLine1, text="发送指令", command=self.requestOrder, font=(None, 12))
+            exchangeOperationGroupLine1, text="换液指令", command=self.requestOrder, font=(None, 12))
         self.requestOrderButton.pack(side="left", padx=10, pady=5)
         exchangeOperationGroupLine1.pack(fill=X)
         # Line2
@@ -336,6 +336,8 @@ class MainBoard(Frame):
             return "标二进消解池"
         elif value == 47:
             return "标三进消解池"
+        elif value == 50:
+            return "更换试剂"
 
     def selectOperate(self):
         self.selectModel(DeviceAddr.modelSelectAddr.value,
@@ -409,7 +411,7 @@ class MainBoard(Frame):
 
     def operateSample(self):
         self.selectOperation(
-            DeviceAddr.operationSelectAddr.value, 7, self.selectOperationButton(4))
+            DeviceAddr.operationSelectAddr.value, 4, self.selectOperationButton(4))
         return
 
     def operateConcentration1(self):

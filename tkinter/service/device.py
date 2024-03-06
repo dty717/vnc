@@ -16,7 +16,7 @@ from tool.bytesConvert import bytesToFloat
 if isUsingGPS:
     from service.gps import gpsData
 from service.logger import Logger
-from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History,dbSaveTestHistory
+from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History, dbSaveTestHistory
 
 power = LED(25)
 waterDetect = Button(18)
@@ -33,13 +33,16 @@ isBlocking = False
 requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 
+
 def waterDetectWarning():
-    uploadData = {'deviceID': deviceID,'deviceType': deviceType, 'title': "报警测试", 'body': "设备进水"}
+    uploadData = {'deviceID': deviceID, 'deviceType': deviceType,
+                  'title': "报警测试", 'body': "设备进水"}
     requests.post(uploadWarningURL, json=uploadData)
     return
 # var { deviceID = "SmartDetect_A_00003",deviceType="SmartDetect",title="hello",body="body"} = req.body;
 #     var phones = await sendPhonesByDeviceType({deviceID,title,body,deviceType})
 #     res.send(phones)
+
 
 class RequestData:
     def __init__(self, sendBuf, callBack, repeatTimes, needMesBox):
@@ -47,6 +50,7 @@ class RequestData:
         self.repeatTimes = repeatTimes
         self.callBack = callBack
         self.needMesBox = needMesBox
+
 
 def compare(arr1, arr2):
     if len(arr1) == len(arr2):
@@ -56,6 +60,7 @@ def compare(arr1, arr2):
         return True
     else:
         return False
+
 
 def sendReq(sendReqBuf, callBack, repeatTimes, needMesBox):
     global sendBusy, lastTime, isSending, serialQueues
@@ -73,6 +78,7 @@ def sendReq(sendReqBuf, callBack, repeatTimes, needMesBox):
         if len(serialQueues) > 5:
             serialQueues.clear()
             isSending = False
+
 
 def send(sendReqBuf, callBack, repeatTimes, needMesBox):
     global sendBusy, lastTime, isSending, serialQueues
@@ -92,6 +98,7 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
         requestData = serialQueues[0]
         send(requestData.sendBuf, requestData.callBack,
              requestData.repeatTimes, requestData.needMesBox)
+
 
 def request(sendReqBuf, callBack, needMesBox):
     global isSending, isBlocking, lastTime
@@ -130,6 +137,7 @@ def request(sendReqBuf, callBack, needMesBox):
         return False
     isSending = False
     return checkRecv(sendReqBuf, recBytes, callBack, needMesBox)
+
 
 def checkRecv(sendReqBuf, recBytes, callBack, needMesBox):
     if sendReqBuf[1] == 0x03:
@@ -201,6 +209,7 @@ def checkRecv(sendReqBuf, recBytes, callBack, needMesBox):
 
 lastSaveSetting = time.time()
 
+
 def saveSetting():
     global lastSaveSetting
     _now = time.time()
@@ -214,6 +223,7 @@ def saveSetting():
     f_deviceInfo.write(jsonpickle.encode(deviceInfo))
     f_deviceInfo.close()
     return
+
 
 def write_single_coil(starting_address, value, callBack, repeatTimes, needMesBox):
     function_code = 5
@@ -232,6 +242,7 @@ def write_single_coil(starting_address, value, callBack, repeatTimes, needMesBox
     data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
+
 def write_single_register(starting_address, value, callBack, repeatTimes, needMesBox):
     function_code = 6
     starting_address_lsb = (starting_address & 0xFF)
@@ -244,6 +255,7 @@ def write_single_register(starting_address, value, callBack, repeatTimes, needMe
     data.append(crcCheck >> 8)
     data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
+
 
 def write_multiple_registers(starting_address, values, callBack, repeatTimes, needMesBox):
     function_code = 16
@@ -264,23 +276,24 @@ def write_multiple_registers(starting_address, values, callBack, repeatTimes, ne
     data.append(crcCheck & 0xff)
     sendReq(data, callBack, repeatTimes, needMesBox)
 
+
 class DeviceAddr(Enum):
     # DeviceController Addr
     modelSelectAddr = 0x00
     operationSelectAddr = 0x01
     pumpSelectAddr = 0x02
     exchangeAddr = 0x04
-    # 
-    # 
+    #
+    #
     selectingHoursAddr = 0x02
-    immediateCalibrateAddr = 0x03 
+    immediateCalibrateAddr = 0x03
     calibrateDayAddr = 0x1a
     calibrateHourAddr = 0x1b
     calibrateMinuteAddr = 0x1c
     concentration1SettingValueAddr = 0x1e
     concentration2SettingValueAddr = 0x20
     concentration3SettingValueAddr = 0x22
-    # 
+    #
     chemical1PumpAddr = 0x01
     chemical2PumpAddr = 0x02
     chemical3PumpAddr = 0x03
@@ -309,12 +322,13 @@ class DeviceAddr(Enum):
     sampleMaxValueAddr = 0x94
     sampleAValueAddr = 0x95
     sampleCValueAddr = 0x97
-    currentTemperatureAddr = 0x99    
-    currentLightVoltageAddr = 0x9b    
+    currentTemperatureAddr = 0x99
+    currentLightVoltageAddr = 0x9b
     warningInfoAddr = 0x9f
     dataFlagAddr = 0xa0
     currentDataFlagAddr = 0xa1
     currentStateAddr = 0xa2
+
 
 class DeviceController:
     def __init__(self):
@@ -342,6 +356,7 @@ class DeviceController:
         self.pumpOutWaste = 0
         self.suctionClean = 0
     #
+
     def __str__(self):
         return """init = {}
 modelSelect = {}
@@ -365,10 +380,11 @@ reactionTubeEmpty = {}
 pumpInWater = {}
 pumpOutWaste = {}
 suctionClean = {}""".format(self.init, self.modelSelect, self.operationSelect, self.selectingHours, self.calibrateDay, self.calibrateHour, self.calibrateMinute,
-                                   self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
-                                   self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
-                                   self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeEmpty,
-                                   self.pumpInWater, self.pumpOutWaste, self.suctionClean)
+                            self.immediateCalibrate, self.concentration1SettingValue, self.concentration2SettingValue,
+                            self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
+                            self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeEmpty,
+                            self.pumpInWater, self.pumpOutWaste, self.suctionClean)
+
 
 class DeviceInfo:
     def __init__(self):
@@ -397,6 +413,8 @@ class DeviceInfo:
         self.currentState = 0
         self.stepsPerCircle = 1600
         self.DELAY = 0.0006
+        self.separateDelay = 0.0001
+        self.detectHoleAndMoveSteps = self.stepsPerCircle*3
     #
     def __str__(self):
         return """init = {}
@@ -423,14 +441,18 @@ dataFlag = {}
 currentDataFlag = {}
 currentState = {}
 stepsPerCircle = {}
-DELAY = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
-                            self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
-                            self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
-                            self.sampleMaxValue, self.sampleAValue, self.sampleCValue,self.currentTemperature,self.currentLightVoltage,
-                            self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState,
-                            self.stepsPerCircle, self.DELAY)
+DELAY = {}
+separateDelay = {}
+detectHoleAndMoveSteps = {}""".format(self.init, self.concentration1Value, self.concentration1MaxValue, self.concentration1AValue,
+                             self.concentration1CValue, self.concentration2Value, self.concentration2MaxValue, self.concentration2AValue, self.concentration2CValue,
+                             self.concentration3Value, self.concentration3MaxValue, self.concentration3AValue, self.concentration3CValue, self.sampleValue,
+                             self.sampleMaxValue, self.sampleAValue, self.sampleCValue, self.currentTemperature, self.currentLightVoltage,
+                             self.warningInfo, self.dataFlag, self.currentDataFlag, self.currentState,
+                             self.stepsPerCircle, self.DELAY, self.separateDelay,self.detectHoleAndMoveSteps)
+
 
 shiftAddr = 3
+
 
 def getBytesControllingInfo(buffer, deviceController, lastMenuName):
     updateFlag = False
@@ -443,7 +465,7 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
         if not usingLocalTime:
             for i in range(24):
                 deviceController.selectingHours[i] = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)]
-                                                    << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
+                                                      << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
         deviceController.calibrateDay = (buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value]
                                          << 8) | buffer[shiftAddr + 2 * DeviceAddr.calibrateDayAddr.value + 1]
         deviceController.calibrateHour = (buffer[shiftAddr + 2 * DeviceAddr.calibrateHourAddr.value]
@@ -494,7 +516,7 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
         if not usingLocalTime:
             for i in range(24):
                 _selectingHours = (buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i)]
-                                << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
+                                   << 8) | buffer[shiftAddr + 2 * (DeviceAddr.selectingHoursAddr.value+i) + 1]
                 if _selectingHours != deviceController.selectingHours[i]:
                     deviceController.selectingHours[i] = _selectingHours
                     if lastMenuName == ".!notebook.!timeselectingboard":
@@ -604,20 +626,28 @@ def getBytesControllingInfo(buffer, deviceController, lastMenuName):
         # print(deviceController)
     return updateFlag
 
+
 shiftAddr2 = 3 - 2 * DeviceAddr.concentration1ValueAddr.value
+
 
 def getBytesInfo(buffer, deviceInfo, lastMenuName):
     updateFlag = False
     if not deviceInfo.init:
         deviceInfo.init = True
-        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
-        deviceInfo.currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
-        deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
+        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        deviceInfo.currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value]
+                                      << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
+        deviceInfo.currentState = (buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value]
+                                   << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentStateAddr.value + 1]
         deviceInfo.currentTemperature = bytesToFloat(
             buffer[shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value:shiftAddr2 + 2 * DeviceAddr.currentTemperatureAddr.value + 4])
-        deviceInfo.currentLightVoltage = (buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
-        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
-        deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
+        deviceInfo.currentLightVoltage = (buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value]
+                                          << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
+        deviceInfo.dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value]
+                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        deviceInfo.warningInfo = (buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value]
+                                  << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.warningInfoAddr.value + 1]
         if lastMenuName == ".!notebook.!mainboard":
             updateFlag = True
     else:
@@ -628,13 +658,13 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
         _currentDataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value]
-                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
+                            << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentDataFlagAddr.value + 1]
         if _currentDataFlag != deviceInfo.currentDataFlag:
             deviceInfo.currentDataFlag = _currentDataFlag
             if lastMenuName == ".!notebook.!mainboard":
                 updateFlag = True
         _currentLightVoltage = (buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value]
-                               << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
+                                << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.currentLightVoltageAddr.value + 1]
         if _currentLightVoltage != deviceInfo.currentLightVoltage:
             deviceInfo.currentLightVoltage = _currentLightVoltage
             if lastMenuName == ".!notebook.!mainboard":
@@ -751,7 +781,8 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                 deviceInfo.sampleCValue = _sampleCValue
                 if lastMenuName == ".!notebook.!mainboard":
                     updateFlag = True
-        _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value] << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
+        _dataFlag = (buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value]
+                     << 8) | buffer[shiftAddr2 + 2 * DeviceAddr.dataFlagAddr.value + 1]
         if _dataFlag != deviceInfo.dataFlag:
             # save data
             if deviceInfo.dataFlag == 0:
@@ -769,9 +800,10 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
-                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
+                                round(gpsData.longitude, 4)) + gpsData.longitudeFlag
                         uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
-                                    'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}
+                                      'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)), dataInfo: dataInfo}
                         requests.post(uploadDataURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)
@@ -780,15 +812,16 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     # if deviceInfo.sampleAValue < 0.0846:
                     #     __sampleCValue = 0.01 + 5 * random.random()/1000
                     dbSaveTestHistory(currentTime, deviceInfo.sampleValue,
-                                  deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
+                                      deviceInfo.sampleMaxValue, deviceInfo.sampleAValue, __sampleCValue)
                     time.sleep(120)
                     power.value = 0
                     dataInfo = ""
                     try:
                         if gpsData.active and isUsingGPS:
-                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+                            dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
+                                round(gpsData.longitude, 4)) + gpsData.longitudeFlag
                         uploadData = {'deviceID': deviceID, 'sampleType': sampleType,
-                                    'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours = time_zone_shift)), dataInfo: dataInfo}
+                                      'value': __sampleCValue, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)), dataInfo: dataInfo}
                         requests.post(uploadDataURL, json=uploadData)
                     except Exception as err:
                         Logger.log("网络异常", "数据无法上传", str(err), 1200)
@@ -806,6 +839,7 @@ def getBytesInfo(buffer, deviceInfo, lastMenuName):
                     updateFlag = True
             deviceInfo.dataFlag = _dataFlag
     return updateFlag
+
 
 if os.path.exists(f"{sysPath}/deviceController.json"):
     f_deviceController = open(f"{sysPath}/deviceController.json", "r")
