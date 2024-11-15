@@ -1,4 +1,4 @@
-VNC.js
+Common Device
 ======
 VNC.js is a LinkedIn intern hackday 2011 2011 project, read the blog post about VNC.js: http://engineering.linkedin.com/javascript/vncjs-how-build-javascript-vnc-client-24-hour-hackday
 
