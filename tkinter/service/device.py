@@ -125,8 +125,8 @@ def request(sendReqBuf, callBack, needMesBox):
         if _now - lastTime < 1:
             requestDeviceEvent.wait(lastTime+1-_now)
         lastTime = time.time()
-        ser.flush()
         ser.write(sendReqBuf)
+        ser.flush()
     except:
         isSending = False
         return False
