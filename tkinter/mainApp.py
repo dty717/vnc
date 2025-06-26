@@ -29,6 +29,7 @@ from page.systemLogBoard import SystemLogBoard
 from page.cameraBoard import CameraBoard
 from page.locationBoard import LocationBoard
 from database.mongodb import dbGetLastHistory,dbClient
+from components.keyboard import on_click_keyboard,VirtualKeyboard
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
 # Create the main window
@@ -40,6 +41,10 @@ screenHeight = root.winfo_screenheight() - screenHeightShift
 root.geometry("%dx%d+0+0" % (screenWidth, screenHeight))
 root.title(titleLabel)
 root.configure(background=primaryDarkColor)
+firstAutoEntry = Entry(root)
+firstAutoEntry.pack()
+firstAutoEntry.forget()
+
 styleConfig = ttk.Style()
 # 'ne' as in compass direction
 styleConfig.configure('MainMenu', tabposition='wn',
@@ -457,4 +462,8 @@ def on_closing():
 
 root.protocol("WM_DELETE_WINDOW", on_closing)
 # Run forever!
+root_keyboard = VirtualKeyboard()
+
+root.bind("<Button-1>", lambda event:on_click_keyboard(root_keyboard,event))                    
+
 root.mainloop()

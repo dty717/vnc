@@ -2,7 +2,8 @@ from tkinter import *
 from tkinter import ttk
 from PIL import Image
 from config.config import primaryColor
-
+from components.keyboard import show_keyboard
+from mainApp import root_keyboard
 class SwitchLabelButton(Frame):
     def __init__(self, parent, imgDicts, text="", textYES="YES", textNO="NO", clickYES=lambda: 0, clickNO=lambda: 0, ):
         # use black background so it "peeks through" to
@@ -39,6 +40,7 @@ class LabelTextButton(Frame):
                       bg=primaryColor, width=12, font=("Helvetica", 12))
         label.pack(side="left", fill="x")
         self.text = Entry(self, width=15)
+        self.text.bind("<FocusIn>", lambda event:show_keyboard(root_keyboard,event))
         self.text .pack(side="left", fill="x")
         button_set = Button(self, text="设置", command=lambda: command(
             self.text.get()), font=("Helvetica", 12))
