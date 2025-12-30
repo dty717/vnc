@@ -10,7 +10,7 @@ import sys
 import io
 import sqlite3
 import pyperclip
-import geocoder
+# import geocoder
 from PIL import Image, ImageTk
 from typing import Callable, List, Dict, Union, Tuple
 from functools import partial

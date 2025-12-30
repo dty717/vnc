@@ -7,11 +7,13 @@ import os
 import datetime
 import requests
 import random
+import re
+import subprocess
 from tkinter import messagebox
 from enum import Enum
 from gpiozero import LED, Button, Motor
 
-from config.config import sysPath, deviceSerName, __unitIdentifier, uploadDataURL, uploadWarningURL, \
+from config.config import sysPath, deviceSerName,deviceSerEnable, __unitIdentifier, uploadDataURL, uploadWarningURL, \
     deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift, isUsingGPS, addrsID, socketUploadIP, socketUploadPort, \
     dataScale, dataShiftScale
 from tool.crc import checkLen, checkCrc, crc16,crc8
@@ -21,18 +23,65 @@ if isUsingGPS:
 from service.logger import Logger
 from database.mongodb import dbSaveHistory, dbSaveConcentration1History, dbSaveConcentration2History, dbSaveConcentration3History, dbSaveFloatNineParametersHistory
 
+def getWaterDetectVolt():
+    global waterDetect
+    # call vcgencmd and pass in a command
+    output = subprocess.check_output(['vcgencmd', 'measure_volts', 'usb_pd'])
+    # print the output of the command
+    match = re.search(r"volt=([-\d.]+)V", output.decode())
+    if match:
+        value = float(match.group(1))
+        return value
 
-probeRelay = LED(17)
+def getTemperature():
+    # call vcgencmd and pass in a command
+    output = subprocess.check_output(['vcgencmd', 'measure_temp'])
+    # print the output of the command
+    match = re.search(r"temp=([-\d.]+)'C", output.decode())
+    if match:
+        value = float(match.group(1))
+        return value  # Output: 0.01
+
+def getVoltageString():
+    # call vcgencmd and pass in a command
+    output = subprocess.check_output(['vcgencmd', 'measure_volts', 'ain1'])
+    # print the output of the command
+    match = re.search(r"volt=([-\d.]+)V", output.decode())
+    if match:
+        value = float(match.group(1))
+        if value != 0.01:
+            return str(round(value * 8.2 / 0.91,3)) + "V"  # Output: 0.01
+    return ""
+
+def getDiskVol():
+    # call vcgencmd and pass in a command
+    output = subprocess.check_output(['df', '-h'])
+    # print the output of the command
+    match = re.search(r"/dev/mmcblk0p2\s*[-\d.]+G\s*[-\d.]+G\s*[-\d.]+G\s*([-\d.]+)%", output.decode())
+    if match:
+        value = int(match.group(1))
+        return value  # Output: 0.01
+
+
+probeRelay = LED(18)
 # ultravioletLedRelay = LED(23)
 # valveRelay = LED(18)
 
-gpsRelay = LED(27)
-waterDetect = Button(22)
+waterRelay = LED(11)
+waterRelay.on()
+
+class WaterDetectData:
+    def __init__(self):
+        self.value = 1
+
+waterDetect = WaterDetectData()
 
 lastClickStartTime = datetime.datetime.now()
 lastSelectTime = datetime.datetime.now()
 
 ser = serial.Serial(deviceSerName, baudrate=9600, timeout=0.2)
+serEnable = LED(deviceSerEnable)
+
 serialQueues = []
 sendBusy = False
 isSending = False
@@ -41,6 +90,9 @@ isBlocking = False
 requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 
+delay_before_tx = 0.1
+enableWaitingTime = 0.01
+delay_before_rx = 0.0
 
 def connect():
     while True:
@@ -58,10 +110,12 @@ soc = connect()
 bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
 bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
 bufQueryO2 = [0x04, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0x9E]
-bufQueryPH = [0x05, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x4F]
+# bufQueryPH = [0x05, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x4F]
+bufQueryPH = [0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xCB]
 bufQueryNH3 = [0x05, 0x03, 0x00, 0x04, 0x00, 0x02, 0x84, 0x4E]
 bufQueryNO3 = [0x05, 0x03, 0x00, 0x08, 0x00, 0x02, 0x44, 0x4D]
-bufQueryTemp = [0x05, 0x03, 0x00, 0x0A, 0x00, 0x02, 0xE5, 0x8D]
+# bufQueryTemp = [0x05, 0x03, 0x00, 0x0A, 0x00, 0x02, 0xE5, 0x8D]
+bufQueryTemp = [0x02, 0x03, 0x00, 0x04, 0x00, 0x02, 0x85, 0xF9]
 bufQueryCOD = [0x07, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xAD]
 bufQueryChl = [0x12, 0x03, 0x00, 0x02, 0x00, 0x02, 0x67,0x68]
 
@@ -177,7 +231,8 @@ def readProbe(date):
         requests.post(uploadDataURL, json=uploadData)
     except Exception as err:
         Logger.log("网络异常", "数据无法上传", str(err), 1200)
-    FCB = 0b11
+    # FCB = 0b11
+    FCB = -1
     while FCB >= 0:
         deviceController.socketUploadReplyed = False
         uploadData = uploadDataSocket(FCB, deviceInfo.temp, deviceInfo.PH, deviceInfo.O2, deviceInfo.COD, deviceInfo.ele, deviceInfo.tur, deviceInfo.NH3,
@@ -218,29 +273,27 @@ def readGPS(date):
         return
     deviceController.deviceStep = 0x0A
     global deviceInfo
-    if not gpsRelay.value:
-        gpsRelay.on()
-        gpsData.isOepn = True
-        time.sleep(deviceController.gpsWaitingTime)
-        if(deviceController.threadDate > date):
-            return
+    gpsData.isOpening = True
+    time.sleep(deviceController.gpsWaitingTime)
+    if(deviceController.threadDate > date):
+        return
     return
 
 def readGPSCancel():
     global deviceController, gpsData
     #
     deviceController.deviceStep = 0x00
-    gpsRelay.off()
-    gpsData.isOepn = False
+    gpsData.isClosing = True
     return
 
 def operatingAllStep(date):
     global deviceController, gpsData
     deviceController.deviceAutoRun = 1
+    waterRelay.off()
     readGPS(date)
     readProbe(date)
-    gpsRelay.off()
-    gpsData.isOepn = False
+    waterRelay.on()
+    gpsData.isClosing = True
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
     return
@@ -248,14 +301,20 @@ def operatingAllStep(date):
 def operatingAllStepCancel():
     global deviceController
     probeRelay.off()
+    waterRelay.on()
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
     return
 
 def waterDetectWarning():
     uploadData = {'deviceID': deviceID,'deviceType': deviceType, 'title': "报警测试", 'body': "设备进水"}
-    requests.post(uploadWarningURL, json=uploadData)
-    return
+    return requests.post(uploadWarningURL, json=uploadData)
+
+
+_warning = waterDetectWarning()
+if len(_warning.json())==12:
+    print("abc")
+    LED(2)
 
 loginAFN = 0x02
 keepLoginConnected = 0xF2
@@ -432,13 +491,18 @@ def request(sendReqBuf, callBack, needMesBox):
         if _now - lastTime < 1:
             requestDeviceEvent.wait(lastTime+1-_now)
         lastTime = time.time()
-        ser.flush()
+        serEnable.value = 1
+        requestDeviceEvent.wait(delay_before_tx)
         ser.write(sendReqBuf)
+        # ser.flush()
+        requestDeviceEvent.wait(enableWaitingTime)
     except:
         isSending = False
         return False
     recBytes = None
     try:
+        serEnable.value = 0
+        requestDeviceEvent.wait(delay_before_rx)
         recBytes = ser.read(1024)
     except:
         return False

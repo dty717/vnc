@@ -1,4 +1,4 @@
-import geocoder
+# import geocoder
 import math
 from typing import Union
 

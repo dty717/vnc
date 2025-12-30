@@ -9,16 +9,17 @@ import json
 import websocket
 import time
 import socket
+
 from config.labelString import titleLabel
 from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, url, sampleType,  deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, \
         requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,\
-        operatingAllStep, loginSocket, soc, connect,checkSocketData
+        operatingAllStep, loginSocket, soc, connect,checkSocketData,getWaterDetectVolt
 
 if isUsingGPS:
-    from service.gps import gpsData, getGpsInfo, saveGpsEvent, saveLocation
+    from service.gps import gpsData, getGpsInfoUsingUSB, saveGpsEvent, saveLocation,openGPS,closeGPS
 
 from page.mainBoard import MainBoard
 from page.historyBoard import HistoryBoard
@@ -26,9 +27,9 @@ from page.controllingBoard import ControllingBoard
 from page.timeSelectingBoard import TimeSelectingBoard
 from page.settingBoard import SettingBoard
 from page.systemLogBoard import SystemLogBoard
-from page.cameraBoard import CameraBoard
-if isUsingGPS:
-    from page.locationBoard import LocationBoard
+# from page.cameraBoard import CameraBoard
+# if isUsingGPS:
+#     from page.locationBoard import LocationBoard
 from database.mongodb import dbGetLastHistory
 
 Logger.logWithOutDuration("系统状态", "程序打开", "")
@@ -134,9 +135,9 @@ timeSelectingBoard = TimeSelectingBoard(
 settingBoard = SettingBoard(
     mainMenu, imgDicts, width=50, height=50, bg=primaryColor)
 systemLogBoard = SystemLogBoard(mainMenu, width=50, height=50, bg=primaryColor)
-cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg=primaryColor)
-if isUsingGPS:
-    locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
+# cameraBoard = CameraBoard(mainMenu, width=50, height=50, bg=primaryColor)
+# if isUsingGPS:
+#     locationBoard = LocationBoard(mainMenu, width=50, height=50, bg=primaryColor)
 
 mainMenu.add(mainBoard, text="主显示面")
 mainMenu.add(historyBoard, text="历史数据")
@@ -145,8 +146,8 @@ mainMenu.add(timeSelectingBoard, text="整点做样")
 mainMenu.add(settingBoard, text="参数设置")
 mainMenu.add(systemLogBoard, text="运行日志")
 # mainMenu.add(cameraBoard, text="视频监控")
-if isUsingGPS:
-    mainMenu.add(locationBoard, text="位置监测")
+# if isUsingGPS:
+#     mainMenu.add(locationBoard, text="位置监测")
 
 lastMenuName = ".!notebook.!mainboard"
 
@@ -163,17 +164,17 @@ def getMenu(menuName):
         return settingBoard
     elif menuName == ".!notebook.!systemlogboard":
         return systemLogBoard
-    elif menuName == ".!notebook.!cameraboard":
-        return cameraBoard
-    elif menuName == ".!notebook.!locationboard" and isUsingGPS:
-        return locationBoard
+    # elif menuName == ".!notebook.!cameraboard":
+    #     return cameraBoard
+    # elif menuName == ".!notebook.!locationboard" and isUsingGPS:
+    #     return locationBoard
 
 def changeMenuTab(event):
     global lastMenuName
     currentMenuName = mainMenu.select()
     # currentMenu = getMenu(currentMenuName)
-    if lastMenuName == ".!notebook.!cameraboard" and currentMenuName != ".!notebook.!cameraboard":
-        cameraBoard.pauseLoop()
+    # if lastMenuName == ".!notebook.!cameraboard" and currentMenuName != ".!notebook.!cameraboard":
+    #     cameraBoard.pauseLoop()
     lastMenuName = currentMenuName
     if currentMenuName == ".!notebook.!systemlogboard":
         systemLogBoard.refreshPage()
@@ -187,10 +188,10 @@ def changeMenuTab(event):
         timeSelectingBoard.refreshPage()
     elif currentMenuName == ".!notebook.!settingboard":
         settingBoard.refreshPage()
-    elif currentMenuName == ".!notebook.!locationboard" and isUsingGPS:
-        locationBoard.refreshPage()
-    elif currentMenuName == ".!notebook.!cameraboard":
-        cameraBoard.continueLoop()
+    # elif currentMenuName == ".!notebook.!locationboard" and isUsingGPS:
+    #     locationBoard.refreshPage()
+    # elif currentMenuName == ".!notebook.!cameraboard":
+    #     cameraBoard.continueLoop()
 
 mainMenu.bind("<<NotebookTabChanged>>", changeMenuTab)
 
@@ -210,10 +211,20 @@ def updatePage():
         settingBoard.refreshPage()
     elif lastMenuName == ".!notebook.!systemLogboard":
         pass
-    elif lastMenuName == ".!notebook.!cameraboard":
-        pass
-    elif lastMenuName == ".!notebook.!locationboard" and isUsingGPS:
-        pass
+    # elif lastMenuName == ".!notebook.!cameraboard":
+    #     pass
+    # elif lastMenuName == ".!notebook.!locationboard" and isUsingGPS:
+    #     pass
+
+def checkWaterDetect():
+    value = getWaterDetectVolt()
+    if value != None:
+        if value > 0.5 and waterDetect.value == 1:
+            waterDetect.value = 0
+            waterDetectCallBack()
+        elif value <= 0.5 and waterDetect.value == 0:
+            waterDetect.value = 1
+            waterDetectReleaseCallBack()
 
 # detect water for danger:
 def waterDetectCallBack():
@@ -226,9 +237,9 @@ def waterDetectReleaseCallBack():
     Logger.log("设备异常", "设备未进水", "异常解除", 60)
     updatePage()
 
-if usingWaterDetect:
-    waterDetect.when_pressed = waterDetectReleaseCallBack
-    waterDetect.when_released = waterDetectCallBack
+# if usingWaterDetect:
+#     waterDetect.when_pressed = waterDetectReleaseCallBack
+#     waterDetect.when_released = waterDetectCallBack
 
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
@@ -272,8 +283,19 @@ def RequestDevice():
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
 def getGPS():
-    while True:
-        getGpsInfo()
+    global gpsData
+    while not saveGpsEvent.wait(1):
+        if gpsData.isOpening:
+            openGPS()
+            gpsData.isOpening = False
+            gpsData.isOpen = True
+            checkWaterDetect()
+        elif gpsData.isClosing:
+            closeGPS()
+            gpsData.isClosing = False
+            gpsData.isOpen = False
+        elif gpsData.isOpen:
+            getGpsInfoUsingUSB()
 
 if isUsingGPS:
     getGpsThread = threading.Thread(target=getGPS)
@@ -282,7 +304,7 @@ if isUsingGPS:
 def saveGPS():
   global gpsData
   while not saveGpsEvent.wait(1*60):
-    if gpsData.active == True and gpsData.isOepn:
+    if gpsData.active == True and gpsData.isOpen:
         saveLocation(gpsData.year, gpsData.month, gpsData.date, gpsData.hour,
                      gpsData.minute, gpsData.second, gpsData.latitude, gpsData.longitude)
         pass

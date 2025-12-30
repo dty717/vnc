@@ -2,3 +2,10 @@ jsonpickle
 pymongo
 websocket-client
 opencv-contrib-python
+
+
+# sudo apt-get install python3-pil.imagetk
+# sudo apt-get install python3-websocket
+# sudo apt-get install python3-pymongo
+# sudo apt-get install python3-jsonpickle
+# sudo apt-get install python3-pyperclip

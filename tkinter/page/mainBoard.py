@@ -8,7 +8,7 @@ from components.groupLabelButton import GroupLabelButton
 from service.thread import thread_with_exception
 from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, waterDetect, \
         lastClickStartTime, lastSelectTime, \
-        operatingAllStep, operatingAllStepCancel
+        operatingAllStep, operatingAllStepCancel,getTemperature,getVoltageString,getDiskVol
 from database.mongodb import dbGetLastFloatNineParametersHistory
 from config.config import primaryColor, usingWaterDetect, deviceName, addrsID
 mainHistoryText = None
@@ -79,7 +79,11 @@ class MainBoard(Frame):
                                      "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
                                      "位置:"+lastHistory['dataInfo']+"\n" +
                                      "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-                                     "报警状态:"+stateString(deviceInfo.warningInfo))
+                                     "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
+                                     "设备电压:"+getVoltageString() +"\n"+ 
+                                     "存储空间:"+str(getDiskVol()) +"%\n"+ 
+                                     "设备温度:"+ str(getTemperature()) + "°C")
+
         else:
             self.mainHistoryText.set(
                 "设备名称:"+deviceName+"\n" +
@@ -96,7 +100,10 @@ COD:
 叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-                "报警状态:"+stateString(deviceInfo.warningInfo))
+                 "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
+                 "设备电压:"+getVoltageString() +"\n"+ 
+                 "存储空间:"+str(getDiskVol()) +"%\n"+ 
+                 "设备温度:"+ str(getTemperature()) + "°C")
         #
         beforeHeaderFrame = Frame(self, bg=primaryColor)
         beforeHeaderFrame.pack(side=TOP, fill=X, pady=30)
@@ -186,7 +193,10 @@ COD:
                 "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
                 "位置:"+lastHistory['dataInfo']+"\n" +
                 "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-                "报警状态:"+stateString(deviceInfo.warningInfo))
+                "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
+                "设备电压:"+getVoltageString() +"\n"+ 
+                "存储空间:"+str(getDiskVol()) +"%\n"+ 
+                "设备温度:"+ str(getTemperature()) + "°C")
         else:
             self.mainHistoryText.set(
                 "设备名称:"+deviceName+"\n" +
@@ -203,7 +213,10 @@ COD:
 叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
-                "报警状态:"+stateString(deviceInfo.warningInfo))
+                "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
+                "设备电压:"+getVoltageString() +"\n"+ 
+                "存储空间:"+str(getDiskVol()) +"%\n"+ 
+                "设备温度:"+ str(getTemperature()) + "°C")
         # self.lastSelectOperationButton = operationButton
         #
         return

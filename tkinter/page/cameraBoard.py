@@ -4,7 +4,7 @@ import threading
 from config.config import srcIndex
 from PIL import Image, ImageTk
 from service.logger import Logger
-import cv2
+# import cv2
 
 class CameraBoard(Frame):
     cameraRunning = False

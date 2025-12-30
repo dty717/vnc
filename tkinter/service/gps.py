@@ -8,7 +8,7 @@ from config.config import gpsSerName, lat_deg, lon_deg, time_zone_shift
 
 saveGpsEvent = threading.Event()
 
-gpsSer = serial.Serial(gpsSerName)
+gpsSer = serial.Serial(gpsSerName,timeout=0.2)
 
 class GpsType(Enum):
     GPGSV = 0
@@ -32,13 +32,67 @@ class GpsData:
         self.latitudeFlag = ''
         self.longitude = lon_deg
         self.longitudeFlag = ''
-        self.isOepn = False
+        self.isOpen = False
+        self.isOpening = False
+        self.isClosing = False
     #
     def __str__(self):
         return "{}-{}-{} {}:{}:{} active:{} {} {},{} {}".format(self.year, self.month, self.date, self.hour, self.minute, self.second, self.active,
                                                                 self.latitude, self.latitudeFlag, self.longitude, self.longitudeFlag)
 
 gpsData = GpsData()
+
+def openGPS():
+    gpsSer.write(b"AT+QGPS=1\r\n")
+    try:
+        gpsRec= gpsSer.readall()
+        if gpsRec.find(b'OK') != -1:
+            return True
+    except:
+        return
+
+def closeGPS():
+    gpsSer.write(b"AT+QGPSEND\r\n")
+    try:
+        gpsRec= gpsSer.readall()
+        if gpsRec.find(b'OK') != -1:
+            return True
+    except:
+        return
+def getGpsInfoUsingUSB():
+    global gpsData
+    active = gpsData.active
+    gpsSer.write(b"AT+QGPSLOC?\r\n")
+    try:
+        gpsRec= gpsSer.readall()
+        if gpsRec == b'':
+            return
+    except:
+        return
+    # Decode bytes to string and split into lines
+    gpsText = gpsRec.decode()
+    for line in gpsText.splitlines():
+        if line.startswith("+QGPSLOC:"):
+            # Remove prefix and split by comma
+            fields = line.replace("+QGPSLOC: ", "").split(",")
+            (
+                utc_time, lat, lon, hdop, alt, fix, cog,
+                spkm, spkn, date, nsat
+            ) = fields
+            gpsData.hour = int(utc_time[0:2]) + time_zone_shift
+            gpsData.minute = int(utc_time[2:4])
+            gpsData.second = int(utc_time[4:6])
+            active = True
+            gpsData.latitude = float(lat[0:len(lat)-1])
+            gpsData.latitude = int(gpsData.latitude/100) + (gpsData.latitude % 100)/60
+            gpsData.latitudeFlag = lat[len(lat)-1]
+            gpsData.longitude = float(lon[0:len(lon)-1])
+            gpsData.longitude = int(gpsData.longitude/100) + (gpsData.longitude % 100)/60
+            gpsData.longitudeFlag = lon[len(lon)-1]
+            gpsData.date = int(date[0:2])
+            gpsData.month = int(date[2:4])
+            gpsData.year = int(date[4:6]) + 2000
+    gpsData.active = active
 
 def getGpsInfo():
     global gpsData
