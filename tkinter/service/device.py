@@ -94,18 +94,6 @@ delay_before_tx = 0.1
 enableWaitingTime = 0.01
 delay_before_rx = 0.0
 
-def connect():
-    while True:
-        try:
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.connect((socketUploadIP, socketUploadPort))
-            s.settimeout(60)
-            return s
-        except socket.error as e:
-            Logger.log("网络状态", "网络异常", str(e), 3600)
-            time.sleep(5)
-
-soc = connect()
 
 bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
 bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
