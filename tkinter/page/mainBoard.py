@@ -9,8 +9,8 @@ from service.thread import thread_with_exception
 from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, waterDetect, \
         lastClickStartTime, lastSelectTime, \
         operatingAllStep, operatingAllStepCancel,getTemperature,getVoltageString,getDiskVol
-from database.mongodb import dbGetLastFloatNineParametersHistory
-from config.config import primaryColor, usingWaterDetect, deviceName, addrsID
+from database.mongodb import dbGetLastFiveParametersHistory
+from config.config import primaryColor, usingWaterDetect, deviceName
 mainHistoryText = None
 backgroundColors = ["#ffffff", primaryColor]
 
@@ -20,7 +20,7 @@ def stateString(state):
         if waterDetect.value or not usingWaterDetect:
             return "正常"
         else:
-            return "设备进水"
+            return "设备有水"
     else:
         if waterDetect.value or not usingWaterDetect:
             return "异常"
@@ -62,21 +62,16 @@ class MainBoard(Frame):
         #     concentration2History['time'] = concentration2History['time'].strftime("%Y-%m-%d %H:%M:%S")
         #     concentration2HistoryTableDatas.insert(parent='',index='end',iid = index,text=str(index+1),values=tuple(concentration2History.values())[1:])
         self.mainHistoryText = StringVar()
-        lastHistory = list(dbGetLastFloatNineParametersHistory())
+        lastHistory = list(dbGetLastFiveParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set("设备名称:"+deviceName+"\n" +
-                                    "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
                                     "做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
                                      "PH:"+str(round(lastHistory['PH'], 3))+"\n" +
                                      "温度:"+str(round(lastHistory['temp'], 2))+"°C\n" +
                                      "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
                                      "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
                                      "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
-                                     "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
-                                     "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
-                                     "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
-                                     "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
                                      "位置:"+lastHistory['dataInfo']+"\n" +
                                      "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                                      "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
@@ -87,17 +82,12 @@ class MainBoard(Frame):
         else:
             self.mainHistoryText.set(
                 "设备名称:"+deviceName+"\n" +
-                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
                 """做样时间:
 PH:
 温度:
 电导率:
 浊度:
 溶解氧:
-COD:
-氨氮:
-硝氮:
-叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                  "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
@@ -112,20 +102,42 @@ COD:
                             fg="white", bg=primaryColor, font=(None, 16), justify="left")
         mainHistory.pack(side=LEFT, padx=40)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
-        # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
-        # # stopButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
-        # stopButton.pack(side=LEFT, padx=10)
-        self.operationButton = Button(headerFrame, text="开启设备", fg="white", bg="red", font=(
+        # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
+        # # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
+        # autoWaterDetectButton.pack(side=LEFT, padx=10)
+        # 1. Create a sub-frame to hold the buttons vertically
+        buttonGroupFrame = Frame(headerFrame, bg=primaryColor)
+        buttonGroupFrame.pack(side=LEFT, padx=40)
+        self.operationButton = Button(buttonGroupFrame, text="开启设备", fg="white", bg="red", font=(
             None, 20), command=self.operating, activebackground="darkred", activeforeground="white")
-        self.operationButton.pack(side=LEFT, padx=40)
+        self.operationButton.pack(side=TOP, pady=(0, 10), fill=X)
         if deviceController.deviceAutoRun == 1:
             self.operationButton.configure(
                 background="green", text="关闭设备", activebackground="darkgreen")
         else:
             self.operationButton.configure(
                 background="red", text="开启设备", activebackground="darkred")
+        self.autoWaterDetectButton = Button(buttonGroupFrame, text="自动检测", fg="white", bg="red", font=(
+            None, 20), command=self.autoWaterDetect, activebackground="darkred", activeforeground="white")
+        if deviceController.autoWaterDetect == 1:
+            self.autoWaterDetectButton.configure(
+                background="green", text="停止检测", activebackground="darkgreen")
+        else:
+            self.autoWaterDetectButton.configure(
+                background="red", text="自动检测", activebackground="darkred")
+        # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
+        self.autoWaterDetectButton.pack(side=TOP, fill=X)
         #
         headerFrame.pack(side=TOP, fill=X, pady=10)
+    def autoWaterDetect(self):
+        if deviceController.autoWaterDetect:
+            deviceController.autoWaterDetect = 0
+            self.autoWaterDetectButton.configure(
+                background="red", text="自动检测", activebackground="darkred")
+        else:
+            deviceController.autoWaterDetect = 1
+            self.autoWaterDetectButton.configure(
+                background="green", text="停止检测", activebackground="darkgreen")
     def operating(self):
         global lastClickStartTime, lastSelectTime,deviceController
         if deviceController.deviceAutoRun == 0:
@@ -175,22 +187,23 @@ COD:
         else:
             self.operationButton.configure(
                 background="green", text="关闭设备", activebackground="darkgreen")
-        lastHistory = list(dbGetLastFloatNineParametersHistory())
+        if deviceController.autoWaterDetect == 1:
+            self.autoWaterDetectButton.configure(
+                background="green", text="停止检测", activebackground="darkgreen")
+        else:
+            self.autoWaterDetectButton.configure(
+                background="red", text="自动检测", activebackground="darkred")
+        lastHistory = list(dbGetLastFiveParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
             self.mainHistoryText.set(
                 "设备名称:"+deviceName+"\n" +
-                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
                 "做样时间:"+lastHistory['time'].strftime("%Y-%m-%d %H:%M:%S")+"\n" +
                 "PH:"+str(round(lastHistory['PH'], 3))+"\n" +
                 "温度:"+str(round(lastHistory['temp'], 2))+"°C\n" +
                 "电导率:"+str(round(lastHistory['ele'], 3))+"uS/cm\n" +
                 "浊度:"+str(round(lastHistory['tur'], 3))+"NTU\n" +
                 "溶解氧:"+str(round(lastHistory['O2'], 3))+"mg/L\n" +
-                "COD:"+str(round(lastHistory['COD'], 3))+"mg/L\n" +
-                "氨氮:"+str(round(lastHistory['NH3'], 3))+"mg/L\n" +
-                "硝氮:"+str(round(lastHistory['NO3'], 3))+"mg/L\n" +
-                "叶绿素:"+str(round(lastHistory['chl'], 3))+"ug/L\n" +
                 "位置:"+lastHistory['dataInfo']+"\n" +
                 "仪器状态:"+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                 "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 
@@ -200,17 +213,12 @@ COD:
         else:
             self.mainHistoryText.set(
                 "设备名称:"+deviceName+"\n" +
-                "设备ID:"+''.join(map(intToHex, addrsID))+"\n" +
                 """做样时间:
 PH:
 温度:
 电导率:
 浊度:
 溶解氧:
-COD:
-氨氮:
-硝氮:
-叶绿素:
 位置:
 仪器状态:"""+stepString(deviceController.deviceAutoRun, deviceController.deviceStep)+"\n" +
                 "报警状态:"+stateString(deviceInfo.warningInfo) +"\n"+ 

@@ -58,14 +58,16 @@ def dbSaveFloatNineParametersHistory(currentTime, PH, temp, ele, tur, O2, COD, N
         "dataInfo": dataInfo
     })
 
-def dbSaveFiveParametersHistory(currentTime, PH, temp, ele, tur, O2):
+def dbSaveFiveParametersHistory(currentTime, PH, temp, ele, tur, O2, dataInfo):
     dbDeviceFiveParametersHistory.insert_one({
         "time": currentTime,
         "PH": PH,
         "temp": temp,
         "ele": ele,
         "tur": tur,
-        "O2": O2
+        "O2": O2,
+        "dataInfo": dataInfo
+
     })
 
 def dbSaveHistory(currentTime, value, maxValue, AValue, CValue):

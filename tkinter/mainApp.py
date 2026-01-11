@@ -14,9 +14,9 @@ from config.labelString import titleLabel
 from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightColor, url, sampleType,  deviceID, usingWaterDetect, isUsingGPS
 from tool.crc import crc16
 from service.logger import Logger
-from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, waterDetectWarning, getBytesControllingInfo, getBytesInfo, \
-        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,\
-        operatingAllStep, loginSocket, soc, connect,checkSocketData,getWaterDetectVolt
+from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, getBytesControllingInfo, getBytesInfo, \
+        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,checkWaterDetectEvent,\
+        operatingAllStep
 
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfoUsingUSB, saveGpsEvent, saveLocation,openGPS,closeGPS
@@ -216,30 +216,42 @@ def updatePage():
     # elif lastMenuName == ".!notebook.!locationboard" and isUsingGPS:
     #     pass
 
-def checkWaterDetect():
-    value = getWaterDetectVolt()
-    if value != None:
-        if value > 0.5 and waterDetect.value == 1:
-            waterDetect.value = 0
-            waterDetectCallBack()
-        elif value <= 0.5 and waterDetect.value == 0:
-            waterDetect.value = 1
-            waterDetectReleaseCallBack()
-
 # detect water for danger:
 def waterDetectCallBack():
-    Logger.log("设备异常", "设备进水", "请尽快处理", 60)
+    print("have water")
+    if deviceController.deviceAutoRun == 0:
+        mainBoard.operationButton.invoke()
+    # Logger.log("设备异常", "设备进水", "请尽快处理", 60)
     updatePage()
-    waterDetectWarning()
+    # waterDetectWarning()
 
 # detect water for danger:
 def waterDetectReleaseCallBack():
-    Logger.log("设备异常", "设备未进水", "异常解除", 60)
+    print("no water")
+    # Logger.log("设备异常", "设备未进水", "异常解除", 60)
     updatePage()
 
 # if usingWaterDetect:
 #     waterDetect.when_pressed = waterDetectReleaseCallBack
 #     waterDetect.when_released = waterDetectCallBack
+
+def checkWaterDetect():
+  lastWaterDetectValue = waterDetect.value
+  checkWaterDetectEvent.wait(10)
+  while not checkWaterDetectEvent.wait(0.2):
+    currentWaterDetectValue = waterDetect.value
+    if lastWaterDetectValue != currentWaterDetectValue:
+        if currentWaterDetectValue == waterDetect.value:
+            if currentWaterDetectValue == 0:
+                waterDetectCallBack()
+            else:
+                waterDetectReleaseCallBack()
+            lastWaterDetectValue = currentWaterDetectValue
+
+if usingWaterDetect:
+    checkWaterDetectThread = threading.Thread(target=checkWaterDetect)
+    checkWaterDetectThread.start()
+
 
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
@@ -289,7 +301,6 @@ def getGPS():
             openGPS()
             gpsData.isOpening = False
             gpsData.isOpen = True
-            checkWaterDetect()
         elif gpsData.isClosing:
             closeGPS()
             gpsData.isClosing = False
@@ -342,7 +353,7 @@ def selectTime():
         # print(datetime.now())
         hour = now.hour
         if deviceController.selectingHours[hour]:
-            if (deviceController.deviceAutoRun == 0 and deviceController.deviceStep == 0 ) and (not usingWaterDetect or waterDetect.value):
+            if (deviceController.deviceAutoRun == 0 and deviceController.deviceStep == 0 ):
                 lastSelectTime = now
                 deviceController.threadDate = now
                 mainThread = threading.Thread(
@@ -405,54 +416,6 @@ websocketThread.start()
 # import time
 # import socket
 # import threading
-
-# def connect():
-#     while True:
-#         try:
-#             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#             s.connect(("155.138.195.23", 2030))
-#             s.settimeout(60)
-#             return s
-#         except socket.error as e:
-#             Logger.log("网络状态", "网络异常", str(e), 3600)
-#             time.sleep(5)
-
-# soc = connect()
-
-def runSocket():
-    global soc
-    while True:
-        try:
-            recBuf = soc.recv(64)
-            if recBuf == b'':
-                soc.close()
-                soc = connect()
-            else:
-                checkSocketData(recBuf)
-        except socket.timeout:
-            continue
-            # print("Timeout")
-        except Exception as e:
-            Logger.log("网络状态", "网络异常", str(e), 3600)
-            soc.close()
-            soc = connect()
-
-socketThread = threading.Thread(target=runSocket)
-socketThread.start()
-
-def runSocketLogin():
-    global soc,deviceController
-    while True:
-        try:
-            deviceController.socketLoginReplyed = False
-            soc.send(loginSocket())
-        except Exception as e:
-            Logger.log("网络状态", "网络异常", str(e), 3600)
-        time.sleep(5*60)
-
-socketLoginThread = threading.Thread(target=runSocketLogin)
-socketLoginThread.start()
-
 
 # asyncio.run(connectWebsocket())
 
