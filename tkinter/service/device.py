@@ -11,7 +11,7 @@ import re
 import subprocess
 from tkinter import messagebox
 from enum import Enum
-from gpiozero import LED, Button, Motor
+from gpiozero import LED, Button, Motor,PWMOutputDevice
 
 from config.config import sysPath, deviceSerName,deviceSerEnable, __unitIdentifier, uploadDataURL, uploadWarningURL, \
     deviceID, deviceType, sampleType, usingLocalTime, time_zone_shift, isUsingGPS, \
@@ -57,9 +57,11 @@ probeRelay = LED(18)
 # ultravioletLedRelay = LED(23)
 # valveRelay = LED(18)
 
-waterRelay = LED(11)
-waterRelay.off()
+# waterRelay = LED(11)
+# waterRelay.off()
+motor_driver = PWMOutputDevice(pin=11, frequency=400)
 
+pumpRelay = LED(19)
 waterDetect = Button(3)
 
 lastClickStartTime = datetime.datetime.now()
@@ -193,6 +195,62 @@ def readProbe(date):
     # messagebox.showinfo("数据", "PH:"+str(_PH)+"\r\n温度:"+str(_temp)+"\r\n电导率:"+str(_ele)+"\r\n浊度:"+str(_tur)+"\r\n溶解氧:"+str(_O2))
     return
 
+
+def readProbeWithoutProbeOff(date):
+    global deviceController, soc
+    if(deviceController.threadDate > date):
+        return
+    deviceController.deviceStep = 0x03
+    global deviceInfo
+    if not probeRelay.value:
+        probeRelay.on()
+        time.sleep(deviceController.probeWaitingTime)
+        if(deviceController.threadDate > date):
+            return
+    ser.readall()
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryTur, setTurData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryTemp, setTempData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryEle, setEleData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryPH, setPHData, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    sendReq(bufQueryO2, setO2Data, repeatTimes=3, needMesBox=False)
+    time.sleep(0.2)
+    if(deviceController.threadDate > date):
+        return
+    serEnable.on()
+    currentTime = datetime.datetime.now()
+    if(deviceController.threadDate > date):
+        return
+    #
+    dataInfo = ""
+    if isUsingGPS and gpsData.active:
+        dataInfo = str(round(gpsData.latitude, 4)) + gpsData.latitudeFlag + ", " + str(
+            round(gpsData.longitude, 4)) + gpsData.longitudeFlag
+    try:
+        uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
+                      'PH': deviceInfo.PH, "temp": deviceInfo.temp, "ele": deviceInfo.ele, "tur": deviceInfo.tur, "O2": deviceInfo.O2,
+                      "dataInfo": dataInfo}
+        requests.post(uploadDataURL, json=uploadData)
+    except Exception as err:
+        Logger.log("网络异常", "数据无法上传", str(err), 1200)
+    dbSaveFiveParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp,
+                            deviceInfo.ele, deviceInfo.tur, deviceInfo.O2, dataInfo)
+    # messagebox.showinfo("数据", "PH:"+str(_PH)+"\r\n温度:"+str(_temp)+"\r\n电导率:"+str(_ele)+"\r\n浊度:"+str(_tur)+"\r\n溶解氧:"+str(_O2))
+    return
+
 def readProbeCancel():
     global deviceController
     # 
@@ -239,6 +297,54 @@ def operatingAllStepCancel():
     probeRelay.off()
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
+    return
+
+
+    # elif deviceStep == 0x0B:
+    #     stepStr += "(电机初始化)"
+    # elif deviceStep == 0x0C:
+    #     stepStr += "(向下投放)"
+    # elif deviceStep == 0x0D:
+    #     stepStr += "(蠕动泵抽)"
+    # elif deviceStep == 0x0E:
+    #     stepStr += "(向上回收)"
+
+def manualDetectAllStep(date):
+    deviceController.deviceStep = 0x0B
+    motor_driver.value = 0
+    time.sleep(0.2)
+    probeRelay.on()
+    time.sleep(0.5)
+    motor_driver.value = 0.55
+    time.sleep(0.2)
+    motor_driver.value = 0.5
+    time.sleep(0.1)
+    deviceController.deviceStep = 0x0C
+    motor_driver.value = 0.4
+    time.sleep(15)
+    motor_driver.value = 0.5
+    deviceController.deviceStep = 0x0D
+    pumpRelay.on()
+    time.sleep(15)
+    pumpRelay.off()
+    # deviceController.threadDate = datetime.datetime.now()
+    deviceController.deviceAutoRun = 1
+    if isUsingGPS:
+        readGPS(date)
+    readProbeWithoutProbeOff(date)
+    if isUsingGPS:
+        gpsData.isClosing = True
+    deviceController.deviceAutoRun = 0
+    deviceController.deviceStep = 0x0E
+    motor_driver.value = 0.6
+    time.sleep(15)
+    deviceController.deviceStep = 0
+    motor_driver.value = 1
+    probeRelay.off()
+    return
+
+def manualDetectAllStepCancel(date):
+    operatingAllStepCancel()
     return
 
 #_warning = waterDetectWarning()
@@ -607,7 +713,7 @@ class DeviceController:
         ### 
         self.deviceAutoRun = 0
         self.deviceStep = 0
-        self.autoWaterDetect = 0
+        self.manualDetect = 0
         self.threadDate = datetime.datetime.now()
         self.socketFunctionCode = 0
         self.socketUploadReplyed = False
@@ -654,7 +760,7 @@ cleanTubeOutSpeed = {}
 cleanTubeTime = {}
 deviceAutoRun = {}
 deviceStep = {}
-autoWaterDetect = {}
+manualDetect = {}
 threadDate = {}
 socketFunctionCode = {}
 socketUploadReplyed = {}
@@ -671,7 +777,7 @@ socketLoginFCB = {}
                                 self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
                                 self.pumpWaterInSpeed, self.pumpWaterInTime, self.pumpWaterOutSpeed, self.pumpWaterOutTime,
                                 self.cleanTubeInSpeed, self.cleanTubeOutSpeed, self.cleanTubeTime,
-                                self.deviceAutoRun, self.deviceStep, self.autoWaterDetect, self.threadDate,
+                                self.deviceAutoRun, self.deviceStep, self.manualDetect, self.threadDate,
                                 self.socketFunctionCode, self.socketUploadReplyed, self.socketUploadState, self.socketUploadFCB, self.socketLoginReplyed, self.socketLoginState, self.socketLoginFCB)
 
 class DeviceInfo:

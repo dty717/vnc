@@ -7,7 +7,7 @@ from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
 from service.thread import thread_with_exception
 from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, waterDetect, \
-        lastClickStartTime, lastSelectTime, \
+        lastClickStartTime, lastSelectTime, manualDetectAllStep,manualDetectAllStepCancel,\
         operatingAllStep, operatingAllStepCancel,getTemperature,getVoltageString,getDiskVol
 from database.mongodb import dbGetLastFiveParametersHistory
 from config.config import primaryColor, usingWaterDetect, deviceName
@@ -49,6 +49,14 @@ def stepString(deviceAutoRun, deviceStep):
         stepStr += "(清洗滤膜)"
     elif deviceStep == 0x0A:
         stepStr += "(读取GPS)"
+    elif deviceStep == 0x0B:
+        stepStr += "(电机初始化)"
+    elif deviceStep == 0x0C:
+        stepStr += "(向下投放)"
+    elif deviceStep == 0x0D:
+        stepStr += "(蠕动泵抽)"
+    elif deviceStep == 0x0E:
+        stepStr += "(向上回收)"
     return stepStr
 
 def intToHex(a):
@@ -102,9 +110,9 @@ PH:
                             fg="white", bg=primaryColor, font=(None, 16), justify="left")
         mainHistory.pack(side=LEFT, padx=40)
         #  -after, -anchor, -before, -expand, -fill, -in, -ipadx, -ipady, -padx, -pady, or -side
-        # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
-        # # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
-        # autoWaterDetectButton.pack(side=LEFT, padx=10)
+        # manualDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20),command = self.stop,activebackground="darkred",activeforeground = "white")
+        # # manualDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
+        # manualDetectButton.pack(side=LEFT, padx=10)
         # 1. Create a sub-frame to hold the buttons vertically
         buttonGroupFrame = Frame(headerFrame, bg=primaryColor)
         buttonGroupFrame.pack(side=LEFT, padx=40)
@@ -117,27 +125,33 @@ PH:
         else:
             self.operationButton.configure(
                 background="red", text="开启设备", activebackground="darkred")
-        self.autoWaterDetectButton = Button(buttonGroupFrame, text="自动检测", fg="white", bg="red", font=(
-            None, 20), command=self.autoWaterDetect, activebackground="darkred", activeforeground="white")
-        if deviceController.autoWaterDetect == 1:
-            self.autoWaterDetectButton.configure(
+        self.manualDetectButton = Button(buttonGroupFrame, text="手动检测", fg="white", bg="red", font=(
+            None, 20), command=self.manualDetect, activebackground="darkred", activeforeground="white")
+        if deviceController.manualDetect == 1:
+            self.manualDetectButton.configure(
                 background="green", text="停止检测", activebackground="darkgreen")
         else:
-            self.autoWaterDetectButton.configure(
-                background="red", text="自动检测", activebackground="darkred")
-        # autoWaterDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
-        self.autoWaterDetectButton.pack(side=TOP, fill=X)
+            self.manualDetectButton.configure(
+                background="red", text="手动检测", activebackground="darkred")
+        # manualDetectButton = Button(headerFrame, text="设备急停", fg="white", bg="red", font=(None, 20), command=test, activebackground="darkred", activeforeground="white")
+        self.manualDetectButton.pack(side=TOP, fill=X)
         #
         headerFrame.pack(side=TOP, fill=X, pady=10)
-    def autoWaterDetect(self):
-        if deviceController.autoWaterDetect:
-            deviceController.autoWaterDetect = 0
-            self.autoWaterDetectButton.configure(
-                background="red", text="自动检测", activebackground="darkred")
+    def manualDetect(self):
+        if deviceController.manualDetect == 0:
+            deviceController.manualDetect = 1
+            deviceController.threadDate = datetime.now()
+            self.manualDetectButton.configure(
+                background="red", text="停止检测", activebackground="darkgreen")
+            self.manualThread = threading.Thread(
+                target=manualDetectAllStep, args=(deviceController.threadDate,))
+            self.manualThread.start()
         else:
-            deviceController.autoWaterDetect = 1
-            self.autoWaterDetectButton.configure(
-                background="green", text="停止检测", activebackground="darkgreen")
+            deviceController.manualDetect = 0
+            deviceController.threadDate = datetime.now()
+            manualDetectAllStepCancel()
+            self.refreshPage()
+
     def operating(self):
         global lastClickStartTime, lastSelectTime,deviceController
         if deviceController.deviceAutoRun == 0:
@@ -187,12 +201,12 @@ PH:
         else:
             self.operationButton.configure(
                 background="green", text="关闭设备", activebackground="darkgreen")
-        if deviceController.autoWaterDetect == 1:
-            self.autoWaterDetectButton.configure(
+        if deviceController.manualDetect == 1:
+            self.manualDetectButton.configure(
                 background="green", text="停止检测", activebackground="darkgreen")
         else:
-            self.autoWaterDetectButton.configure(
-                background="red", text="自动检测", activebackground="darkred")
+            self.manualDetectButton.configure(
+                background="red", text="手动检测", activebackground="darkred")
         lastHistory = list(dbGetLastFiveParametersHistory())
         if len(lastHistory) == 1:
             lastHistory = lastHistory[0]
