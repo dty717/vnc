@@ -313,18 +313,18 @@ def manualDetectAllStep(date):
     deviceController.deviceStep = 0x0B
     motor_driver.value = 1
     probeRelay.on()
+    time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
+    motor_driver.value = deviceController.motorInitPWM
     time.sleep(2)
-    motor_driver.value = 0.5
-    time.sleep(5)
-    motor_driver.value = 0.5
+    motor_driver.value = deviceController.motorStopPWM
     time.sleep(0.1)
     deviceController.deviceStep = 0x0C
-    motor_driver.value = 0.3
-    time.sleep(15)
-    motor_driver.value = 0.5
+    motor_driver.value = deviceController.motorDownPWM
+    time.sleep(deviceController.motorDownTime)
+    motor_driver.value = deviceController.motorStopPWM
     deviceController.deviceStep = 0x0D
     pumpRelay.on()
-    time.sleep(15)
+    time.sleep(deviceController.pumpSampleInTime)
     pumpRelay.off()
     # deviceController.threadDate = datetime.datetime.now()
     deviceController.deviceAutoRun = 1
@@ -335,10 +335,10 @@ def manualDetectAllStep(date):
         gpsData.isClosing = True
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0x0E
-    motor_driver.value = 0.6
-    time.sleep(0.2)
-    motor_driver.value = 0.7
-    time.sleep(15)
+    # motor_driver.value = deviceController.motorUpPWM
+    # time.sleep(0.2)
+    motor_driver.value = deviceController.motorUpPWM
+    time.sleep(deviceController.motorUpTime)
     deviceController.deviceStep = 0
     motor_driver.value = 1
     probeRelay.off()
@@ -704,14 +704,22 @@ class DeviceController:
         ### 
         self.gpsWaitingTime = 40
         self.pumpSampleInSpeed = 0.5
-        self.pumpSampleInTime = 200
+        self.pumpSampleInTime = 15
         self.probeWaitingTime = 20
+        self.probePowerWaitingTime = 2
         self.pumpSampleOutSpeed = 1
         self.pumpSampleOutTime = 65
         self.pumpWaterInSpeed = 0.5
         self.pumpWaterInTime = 130
         self.pumpWaterOutSpeed = 1
         self.pumpWaterOutTime = 55
+        self.motorInitPWM = 0.5
+        self.motorInitTime = 2
+        self.motorStopPWM = 0.5
+        self.motorDownPWM = 0.3
+        self.motorUpPWM = 0.7
+        self.motorDownTime = 15
+        self.motorUpTime = 15
         self.cleanTubeInSpeed = 1
         self.cleanTubeOutSpeed = 1
         self.cleanTubeTime = 20
@@ -754,6 +762,7 @@ gpsWaitingTime = {}
 pumpSampleInSpeed = {}
 pumpSampleInTime = {}
 probeWaitingTime = {}
+probePowerWaitingTime = {}
 pumpSampleOutSpeed = {}
 pumpSampleOutTime = {}
 pumpWaterInSpeed = {}
@@ -761,6 +770,13 @@ pumpWaterInTime = {}
 pumpWaterOutSpeed = {}
 pumpWaterOutTime = {}
 cleanTubeInSpeed = {}
+motorInitPWM = {}
+motorInitTime = {}
+motorStopPWM = {}
+motorDownPWM = {}
+motorUpPWM = {}
+motorDownTime = {}
+motorUpTime = {}
 cleanTubeOutSpeed = {}
 cleanTubeTime = {}
 deviceAutoRun = {}
@@ -779,8 +795,9 @@ socketLoginFCB = {}
                                 self.concentration3SettingValue, self.samplePump, self.concentration1Pump, self.concentration2Pump,
                                 self.concentration3Pump, self.chemical1Pump, self.chemical2Pump, self.chemical3Pump, self.reactionTubeClean,
                                 self.suctionClean, self.measurementInterval,
-                                self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
+                                self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.probePowerWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
                                 self.pumpWaterInSpeed, self.pumpWaterInTime, self.pumpWaterOutSpeed, self.pumpWaterOutTime,
+                                self.motorInitPWM, self.motorInitTime, self.motorStopPWM, self.motorDownPWM, self.motorUpPWM, self.motorDownTime, self.motorUpTime,
                                 self.cleanTubeInSpeed, self.cleanTubeOutSpeed, self.cleanTubeTime,
                                 self.deviceAutoRun, self.deviceStep, self.manualDetect, self.threadDate,
                                 self.socketFunctionCode, self.socketUploadReplyed, self.socketUploadState, self.socketUploadFCB, self.socketLoginReplyed, self.socketLoginState, self.socketLoginFCB)

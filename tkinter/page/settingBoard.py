@@ -15,81 +15,69 @@ class SettingBoard(Frame):
         #
         fiveParametersSettingGroup = GroupLabelButton(self, title="参数设置")
         fiveParametersSettingGroup.pack(pady=20)
-        self.pumpWaterOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="排空清水速度",
-                                                          command=lambda content: self.setControllerValue("pumpWaterOutSpeed", content))
-        self.pumpWaterOutSpeedLabelText.setText(
-            deviceController.pumpWaterOutSpeed)
-        self.pumpWaterOutSpeedLabelText.pack(anchor=W, pady=5)
-        self.pumpWaterOutTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="排空清水时间",
-                                                         command=lambda content: self.setControllerValue("pumpWaterOutTime", content))
-        self.pumpWaterOutTimeLabelText.setText(
-            deviceController.pumpWaterOutTime)
-        self.pumpWaterOutTimeLabelText.pack(anchor=W, pady=5)
-        self.pumpSampleInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="取水样速度",
-                                                          command=lambda content: self.setControllerValue("pumpSampleInSpeed", content))
-        self.pumpSampleInSpeedLabelText.setText(
-            deviceController.pumpSampleInSpeed)
-        self.pumpSampleInSpeedLabelText.pack(anchor=W, pady=5)
+        self.motorInitPWMLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机初始PWM",
+                                                         command=lambda content: self.setControllerValue("motorInitPWM", content))
+        self.motorInitPWMLabelText.setText(
+            deviceController.motorInitPWM)
+        self.motorInitPWMLabelText.pack(anchor=W, pady=5)
+        self.motorDownPWMLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机向下PWM",
+                                                          command=lambda content: self.setControllerValue("motorDownPWM", content))
+        self.motorDownPWMLabelText.setText(
+            deviceController.motorDownPWM)
+        self.motorDownPWMLabelText.pack(anchor=W, pady=5)
+        self.motorStopPWMLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机静止PWM",
+                                                         command=lambda content: self.setControllerValue("motorStopPWM", content))
+        self.motorStopPWMLabelText.setText(
+            deviceController.motorStopPWM)
+        self.motorStopPWMLabelText.pack(anchor=W, pady=5)
+        self.motorUpPWMLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机向上PWM",
+                                                         command=lambda content: self.setControllerValue("motorUpPWM", content))
+        self.motorUpPWMLabelText.setText(
+            deviceController.motorUpPWM)
+        self.motorUpPWMLabelText.pack(anchor=W, pady=5)
+        self.probePowerWaitingTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机启动等待时间",
+                                                          command=lambda content: self.setControllerValue("probePowerWaitingTime", content))
+        self.probePowerWaitingTimeLabelText.setText(
+            deviceController.probePowerWaitingTime)
+        self.probePowerWaitingTimeLabelText.pack(anchor=W, pady=5)
+        self.motorInitTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机初始等待时间",
+                                                           command=lambda content: self.setControllerValue("motorInitTime", content))
+        self.motorInitTimeLabelText.setText(
+            deviceController.motorInitTime)
+        self.motorInitTimeLabelText.pack(anchor=W, pady=5)
         self.pumpSampleInTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="取水样时间",
-                                                         command=lambda content: self.setControllerValue("pumpSampleInTime", content))
+                                                          command=lambda content: self.setControllerValue("pumpSampleInTime", content))
         self.pumpSampleInTimeLabelText.setText(
             deviceController.pumpSampleInTime)
         self.pumpSampleInTimeLabelText.pack(anchor=W, pady=5)
+        self.motorDownTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="下降时间",
+                                                         command=lambda content: self.setControllerValue("motorDownTime", content))
+        self.motorDownTimeLabelText.setText(
+            deviceController.motorDownTime)
+        self.motorDownTimeLabelText.pack(anchor=W, pady=5)
+        self.motorUpTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="上拉时间",
+                                                        command=lambda content: self.setControllerValue("motorUpTime", content))
+        self.motorUpTimeLabelText.setText(deviceController.motorUpTime)
+        self.motorUpTimeLabelText.pack(anchor=W, pady=5)
         self.probeWaitingTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="等待读取时间",
-                                                         command=lambda content: self.setControllerValue("probeWaitingTime", content))
-        self.probeWaitingTimeLabelText.setText(
-            deviceController.probeWaitingTime)
+                                                      command=lambda content: self.setControllerValue("probeWaitingTime", content))
+        self.probeWaitingTimeLabelText.setText(deviceController.probeWaitingTime)
         self.probeWaitingTimeLabelText.pack(anchor=W, pady=5)
-        self.pumpSampleOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="排水样速度",
-                                                           command=lambda content: self.setControllerValue("pumpSampleOutSpeed", content))
-        self.pumpSampleOutSpeedLabelText.setText(
-            deviceController.pumpSampleOutSpeed)
-        self.pumpSampleOutSpeedLabelText.pack(anchor=W, pady=5)
-        self.pumpSampleOutTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="排水样时间",
-                                                          command=lambda content: self.setControllerValue("pumpSampleOutTime", content))
-        self.pumpSampleOutTimeLabelText.setText(
-            deviceController.pumpSampleOutTime)
-        self.pumpSampleOutTimeLabelText.pack(anchor=W, pady=5)
-        self.pumpWaterInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="填充清水速度",
-                                                         command=lambda content: self.setControllerValue("pumpWaterInSpeed", content))
-        self.pumpWaterInSpeedLabelText.setText(
-            deviceController.pumpWaterInSpeed)
-        self.pumpWaterInSpeedLabelText.pack(anchor=W, pady=5)
-        self.pumpWaterInTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="填充清水时间",
-                                                        command=lambda content: self.setControllerValue("pumpWaterInTime", content))
-        self.pumpWaterInTimeLabelText.setText(deviceController.pumpWaterInTime)
-        self.pumpWaterInTimeLabelText.pack(anchor=W, pady=5)
-        self.cleanTubeInSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜进水速度",
-                                                         command=lambda content: self.setControllerValue("cleanTubeInSpeed", content))
-        self.cleanTubeInSpeedLabelText.setText(
-            deviceController.cleanTubeInSpeed)
-        self.cleanTubeInSpeedLabelText.pack(anchor=W, pady=5)
-        self.cleanTubeOutSpeedLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜出水速度",
-                                                          command=lambda content: self.setControllerValue("cleanTubeOutSpeed", content))
-        self.cleanTubeOutSpeedLabelText.setText(
-            deviceController.cleanTubeOutSpeed)
-        self.cleanTubeOutSpeedLabelText.pack(anchor=W, pady=5)
-        self.cleanTubeTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="洗膜时间",
-                                                      command=lambda content: self.setControllerValue("cleanTubeTime", content))
-        self.cleanTubeTimeLabelText.setText(deviceController.cleanTubeTime)
-        self.cleanTubeTimeLabelText.pack(anchor=W, pady=5)
     def setControllerValue(self, attr, content):
         setattr(deviceController, attr, float(content))
         messagebox.showinfo("设置", "设置成功")
         return
     def refreshPage(self):
-        self.pumpWaterOutSpeedLabelText.setText(deviceController.pumpWaterOutSpeed)
-        self.pumpWaterOutTimeLabelText.setText(deviceController.pumpWaterOutTime)
-        self.pumpSampleInSpeedLabelText.setText(deviceController.pumpSampleInSpeed)
+        self.motorInitPWMLabelText.setText(deviceController.motorInitPWM)
+        self.motorDownPWMLabelText.setText(deviceController.motorDownPWM)
+        self.motorStopPWMLabelText.setText(deviceController.motorStopPWM)
+        self.motorUpPWMLabelText.setText(deviceController.motorUpPWM)
+        self.probePowerWaitingTimeLabelText.setText(deviceController.probePowerWaitingTime)
+        self.motorInitTimeLabelText.setText(deviceController.motorInitTime)
         self.pumpSampleInTimeLabelText.setText(deviceController.pumpSampleInTime)
+        self.motorDownTimeLabelText.setText(deviceController.motorDownTime)
+        self.motorUpTimeLabelText.setText(deviceController.motorUpTime)
         self.probeWaitingTimeLabelText.setText(deviceController.probeWaitingTime)
-        self.pumpSampleOutSpeedLabelText.setText(deviceController.pumpSampleOutSpeed)
-        self.pumpSampleOutTimeLabelText.setText(deviceController.pumpSampleOutTime)
-        self.pumpWaterInSpeedLabelText.setText(deviceController.pumpWaterInSpeed)
-        self.pumpWaterInTimeLabelText.setText(deviceController.pumpWaterInTime)
-        self.cleanTubeInSpeedLabelText.setText(deviceController.cleanTubeInSpeed)
-        self.cleanTubeOutSpeedLabelText.setText(deviceController.cleanTubeOutSpeed)
-        self.cleanTubeTimeLabelText.setText(deviceController.cleanTubeTime)
         return
     # def print_contents(self, event):
     #     print("Hi. The current entry content is:",
