@@ -311,16 +311,15 @@ def operatingAllStepCancel():
 
 def manualDetectAllStep(date):
     deviceController.deviceStep = 0x0B
-    motor_driver.value = 0
-    time.sleep(0.2)
+    motor_driver.value = 1
     probeRelay.on()
-    time.sleep(0.5)
-    motor_driver.value = 0.55
-    time.sleep(0.2)
+    time.sleep(2)
+    motor_driver.value = 0.5
+    time.sleep(5)
     motor_driver.value = 0.5
     time.sleep(0.1)
     deviceController.deviceStep = 0x0C
-    motor_driver.value = 0.4
+    motor_driver.value = 0.3
     time.sleep(15)
     motor_driver.value = 0.5
     deviceController.deviceStep = 0x0D
@@ -337,16 +336,22 @@ def manualDetectAllStep(date):
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0x0E
     motor_driver.value = 0.6
+    time.sleep(0.2)
+    motor_driver.value = 0.7
     time.sleep(15)
     deviceController.deviceStep = 0
     motor_driver.value = 1
     probeRelay.off()
+    deviceController.manualDetect = 0
     return
 
-def manualDetectAllStepCancel(date):
+def manualDetectAllStepCancel():
     operatingAllStepCancel()
+    motor_driver.value = 1
+    pumpRelay.off()
+    probeRelay.off()
+    deviceController.manualDetect = 0
     return
-
 #_warning = waterDetectWarning()
 #if len(_warning.json())==12:
 #    print("abc")

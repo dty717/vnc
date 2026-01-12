@@ -267,16 +267,17 @@ def controllingHandle(controllingRecv):
 
 lastDeviceStep = 0
 lastDeviceAutoRun = 0
-
+lastDeviceManualDetect = 0
 def RequestDevice():
-  global deviceController, deviceInfo, lastDeviceStep, lastDeviceAutoRun
+  global deviceController, deviceInfo, lastDeviceStep, lastDeviceAutoRun,lastDeviceManualDetect
   while not requestDeviceEvent.wait(0.5):
-    if (deviceController.deviceStep != lastDeviceStep or deviceController.deviceAutoRun != lastDeviceAutoRun) and \
+    if (deviceController.deviceStep != lastDeviceStep or deviceController.deviceAutoRun != lastDeviceAutoRun or deviceController.manualDetect!= lastDeviceManualDetect) and \
         (lastMenuName == ".!notebook.!mainboard" or lastMenuName == ".!notebook.!controllingboard"):
         updatePage()
         lastDeviceStep = deviceController.deviceStep
         lastDeviceAutoRun = deviceController.deviceAutoRun
-        # return
+        lastDeviceManualDetect = deviceController.manualDetect
+    # return
     # sendReq(bufQuery, queryHandle, repeatTimes=0, needMesBox=False)
     # sendReq(bufControlling, controllingHandle, repeatTimes = 0 , needMesBox = False)
     # return
