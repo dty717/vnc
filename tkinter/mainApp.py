@@ -240,18 +240,18 @@ def checkWaterDetect():
   checkWaterDetectEvent.wait(10)
   while not checkWaterDetectEvent.wait(0.2):
     if deviceController.motorInit:
-        print("motor init")
         deviceController.deviceStep = 0x0B
         probeRelay.off()
+        controllingBoard.switchFiveParametersProbe.close()
         motor_driver.value = 1
         checkWaterDetectEvent.wait(1)
         probeRelay.on()
+        controllingBoard.switchFiveParametersProbe.open()
         checkWaterDetectEvent.wait(deviceController.probePowerWaitingTime) # time.sleep(2)
         motor_driver.value = deviceController.motorInitPWM
         checkWaterDetectEvent.wait(deviceController.motorInitTime)
         motor_driver.value = deviceController.motorStopPWM
         checkWaterDetectEvent.wait(0.1)
-        print("motor init finished")
         deviceController.motorInit = 0
         controllingBoard.switchMotorInit.close()
         deviceController.deviceStep = 0

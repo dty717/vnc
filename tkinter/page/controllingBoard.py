@@ -70,8 +70,8 @@ class ControllingBoard(Frame):
             self.switchMotorUp.close()
         self.switchMotorUp.pack(pady=5)
         self.switchMotorStop = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机停止",
-                                                    textYES="停止", clickYES=lambda: setattr(deviceController, 'motorStop', 1) or setattr(motor_driver, 'value', deviceController.motorStopPWM) or self.switchMotorStop.open(),
-                                                    textNO="完全停止", clickNO=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', 1) or probeRelay.off() or self.refreshPage() or self.switchMotorStop.close()
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorStop', 1) or setattr(motor_driver, 'value', deviceController.motorStopPWM) or self.switchMotorStop.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', 1) or probeRelay.off() or self.refreshPage() or self.switchMotorStop.close()
                                                     )
         if deviceController.motorStop == 1:
             self.switchMotorStop.open()
