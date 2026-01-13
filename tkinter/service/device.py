@@ -299,23 +299,13 @@ def operatingAllStepCancel():
     deviceController.deviceStep = 0
     return
 
-
-    # elif deviceStep == 0x0B:
-    #     stepStr += "(电机初始化)"
-    # elif deviceStep == 0x0C:
-    #     stepStr += "(向下投放)"
-    # elif deviceStep == 0x0D:
-    #     stepStr += "(蠕动泵抽)"
-    # elif deviceStep == 0x0E:
-    #     stepStr += "(向上回收)"
-
 def manualDetectAllStep(date):
     deviceController.deviceStep = 0x0B
     motor_driver.value = 1
     probeRelay.on()
     time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
     motor_driver.value = deviceController.motorInitPWM
-    time.sleep(2)
+    time.sleep(deviceController.motorInitTime)
     motor_driver.value = deviceController.motorStopPWM
     time.sleep(0.1)
     deviceController.deviceStep = 0x0C
@@ -714,12 +704,18 @@ class DeviceController:
         self.pumpWaterOutSpeed = 1
         self.pumpWaterOutTime = 55
         self.motorInitPWM = 0.5
-        self.motorInitTime = 2
+        self.motorInitTime = 3
         self.motorStopPWM = 0.5
         self.motorDownPWM = 0.3
         self.motorUpPWM = 0.7
-        self.motorDownTime = 15
-        self.motorUpTime = 15
+        self.motorDownTime = 13.5
+        self.motorUpTime = 16
+        self.motorInit = 0
+        self.motorDown = 0
+        self.motorStop = 0
+        self.motorUp = 0
+        self.motorDownLittle = 0
+        self.motorUpLittle = 0
         self.cleanTubeInSpeed = 1
         self.cleanTubeOutSpeed = 1
         self.cleanTubeTime = 20
@@ -777,6 +773,12 @@ motorDownPWM = {}
 motorUpPWM = {}
 motorDownTime = {}
 motorUpTime = {}
+motorInit = {}
+motorDown = {}
+motorStop = {}
+motorUp = {}
+motorDownLittle = {}
+motorUpLittle = {}
 cleanTubeOutSpeed = {}
 cleanTubeTime = {}
 deviceAutoRun = {}
@@ -798,6 +800,7 @@ socketLoginFCB = {}
                                 self.gpsWaitingTime, self.pumpSampleInSpeed, self.pumpSampleInTime, self.probeWaitingTime, self.probePowerWaitingTime, self.pumpSampleOutSpeed, self.pumpSampleOutTime,
                                 self.pumpWaterInSpeed, self.pumpWaterInTime, self.pumpWaterOutSpeed, self.pumpWaterOutTime,
                                 self.motorInitPWM, self.motorInitTime, self.motorStopPWM, self.motorDownPWM, self.motorUpPWM, self.motorDownTime, self.motorUpTime,
+                                self.motorInit, self.motorDown, self.motorStop, self.motorUp,self.motorDownLittle,self.motorUpLittle,
                                 self.cleanTubeInSpeed, self.cleanTubeOutSpeed, self.cleanTubeTime,
                                 self.deviceAutoRun, self.deviceStep, self.manualDetect, self.threadDate,
                                 self.socketFunctionCode, self.socketUploadReplyed, self.socketUploadState, self.socketUploadFCB, self.socketLoginReplyed, self.socketLoginState, self.socketLoginFCB)

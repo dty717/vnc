@@ -16,7 +16,7 @@ from tool.crc import crc16
 from service.logger import Logger
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, getBytesControllingInfo, getBytesInfo, \
         requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,checkWaterDetectEvent,\
-        operatingAllStep
+        operatingAllStep,motor_driver,probeRelay
 
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfoUsingUSB, saveGpsEvent, saveLocation,openGPS,closeGPS
@@ -236,17 +236,65 @@ def waterDetectReleaseCallBack():
 #     waterDetect.when_released = waterDetectCallBack
 
 def checkWaterDetect():
-  lastWaterDetectValue = waterDetect.value
+  #   lastWaterDetectValue = waterDetect.value
   checkWaterDetectEvent.wait(10)
   while not checkWaterDetectEvent.wait(0.2):
-    currentWaterDetectValue = waterDetect.value
-    if lastWaterDetectValue != currentWaterDetectValue:
-        if currentWaterDetectValue == waterDetect.value:
-            if currentWaterDetectValue == 0:
-                waterDetectCallBack()
-            else:
-                waterDetectReleaseCallBack()
-            lastWaterDetectValue = currentWaterDetectValue
+    if deviceController.motorInit:
+        print("motor init")
+        deviceController.deviceStep = 0x0B
+        probeRelay.off()
+        motor_driver.value = 1
+        checkWaterDetectEvent.wait(1)
+        probeRelay.on()
+        checkWaterDetectEvent.wait(deviceController.probePowerWaitingTime) # time.sleep(2)
+        motor_driver.value = deviceController.motorInitPWM
+        checkWaterDetectEvent.wait(deviceController.motorInitTime)
+        motor_driver.value = deviceController.motorStopPWM
+        checkWaterDetectEvent.wait(0.1)
+        print("motor init finished")
+        deviceController.motorInit = 0
+        controllingBoard.switchMotorInit.close()
+        deviceController.deviceStep = 0
+    elif deviceController.motorDown:
+        deviceController.deviceStep = 0x0C
+        motor_driver.value = deviceController.motorDownPWM
+        checkWaterDetectEvent.wait(deviceController.motorDownTime)
+        motor_driver.value = deviceController.motorStopPWM
+        deviceController.motorDown = 0
+        controllingBoard.switchMotorDown.close()
+        deviceController.deviceStep = 0
+    elif deviceController.motorUp:
+        deviceController.deviceStep = 0x0E
+        motor_driver.value = deviceController.motorUpPWM
+        checkWaterDetectEvent.wait(deviceController.motorUpTime)
+        motor_driver.value = deviceController.motorStopPWM
+        deviceController.motorUp = 0
+        controllingBoard.switchMotorUp.close()
+        deviceController.deviceStep = 0
+    elif deviceController.motorDownLittle:
+        deviceController.deviceStep = 0x0F
+        motor_driver.value = deviceController.motorDownPWM
+        checkWaterDetectEvent.wait(0.5)
+        motor_driver.value = deviceController.motorStopPWM
+        deviceController.motorDownLittle = 0
+        controllingBoard.switchMotorDownLittle.close()
+        deviceController.deviceStep = 0
+    elif deviceController.motorUpLittle:
+        deviceController.deviceStep = 0x10
+        motor_driver.value = deviceController.motorUpPWM
+        checkWaterDetectEvent.wait(0.5)
+        motor_driver.value = deviceController.motorStopPWM
+        deviceController.motorUpLittle = 0
+        controllingBoard.switchMotorUpLittle.close()
+        deviceController.deviceStep = 0
+    # currentWaterDetectValue = waterDetect.value
+    # if lastWaterDetectValue != currentWaterDetectValue:
+    #     if currentWaterDetectValue == waterDetect.value:
+    #         if currentWaterDetectValue == 0:
+    #             waterDetectCallBack()
+    #         else:
+    #             waterDetectReleaseCallBack()
+    #         lastWaterDetectValue = currentWaterDetectValue
 
 if usingWaterDetect:
     checkWaterDetectThread = threading.Thread(target=checkWaterDetect)

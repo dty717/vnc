@@ -11,7 +11,7 @@ from components.labelButton import SwitchLabelButton
 from config.config import *
 from service.device import write_single_register, DeviceAddr, deviceController, \
     probeRelay, \
-    readProbe, readProbeCancel
+    readProbe, readProbeCancel,motor_driver
 
 class ControllingBoard(Frame):
     def __init__(self, master, imgDicts, **kargs):
@@ -50,8 +50,63 @@ class ControllingBoard(Frame):
         else:
             self.switchFiveParametersProbe.close()
         self.switchFiveParametersProbe.pack(pady=5)
+
+        self.switchMotorInit = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机初始化",
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorInit', 1) or self.switchMotorInit.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorInit', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorInit.close()
+                                                    )
+        if deviceController.motorInit == 1:
+            self.switchMotorInit.open()
+        else:
+            self.switchMotorInit.close()
+        self.switchMotorInit.pack(pady=5)
+        self.switchMotorUp = SwitchLabelButton(cleanLabelGroup, imgDicts, text="向上回收",
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorUp', 1) or self.switchMotorUp.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorUp', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorUp.close()
+                                                    )
+        if deviceController.motorUp == 1:
+            self.switchMotorUp.open()
+        else:
+            self.switchMotorUp.close()
+        self.switchMotorUp.pack(pady=5)
+        self.switchMotorStop = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机停止",
+                                                    textYES="停止", clickYES=lambda: setattr(deviceController, 'motorStop', 1) or setattr(motor_driver, 'value', deviceController.motorStopPWM) or self.switchMotorStop.open(),
+                                                    textNO="完全停止", clickNO=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', 1) or probeRelay.off() or self.refreshPage() or self.switchMotorStop.close()
+                                                    )
+        if deviceController.motorStop == 1:
+            self.switchMotorStop.open()
+        else:
+            self.switchMotorStop.close()
+        self.switchMotorStop.pack(pady=5)
+        self.switchMotorDown = SwitchLabelButton(cleanLabelGroup, imgDicts, text="向下投放",
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorDown', 1) or self.switchMotorDown.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorDown', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorDown.close()
+                                                    )
+        if deviceController.motorDown == 1:
+            self.switchMotorDown.open()
+        else:
+            self.switchMotorDown.close()
+        self.switchMotorDown.pack(pady=5)
+        self.switchMotorDownLittle = SwitchLabelButton(cleanLabelGroup, imgDicts, text="向下微调",
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorDownLittle', 1) or self.switchMotorDownLittle.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorDownLittle', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorDownLittle.close()
+                                                    )
+        if deviceController.motorDownLittle == 1:
+            self.switchMotorDownLittle.open()
+        else:
+            self.switchMotorDownLittle.close()
+        self.switchMotorDownLittle.pack(pady=5)
+        self.switchMotorUpLittle = SwitchLabelButton(cleanLabelGroup, imgDicts, text="向上微调",
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorUpLittle', 1) or self.switchMotorUpLittle.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorUpLittle', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorUpLittle.close()
+                                                    )
+        if deviceController.motorUpLittle == 1:
+            self.switchMotorUpLittle.open()
+        else:
+            self.switchMotorUpLittle.close()
+        self.switchMotorUpLittle.pack(pady=5)
     def checkIfAutoRun(self):
-        if deviceController.deviceAutoRun:
+        if deviceController.deviceAutoRun or deviceController.manualDetect:
             messagebox.showerror("设备繁忙","设备正在自动做样,请等待做样结束或者停止自动做样,否则无法手动控制")
             return False
         else:
@@ -62,7 +117,7 @@ class ControllingBoard(Frame):
                 return True
     def handleThread(self, func, funcCancel,slectItem,slectItemText,cancelItemText):
         global lastSelectItem, deviceController
-        if deviceController.deviceAutoRun:
+        if deviceController.deviceAutoRun or deviceController.manualDetect:
             messagebox.showerror("设备繁忙","设备正在自动做样,请等待做样结束或者停止自动做样,否则无法手动做样")
             return
         # if power.value == 0:
@@ -100,12 +155,44 @@ class ControllingBoard(Frame):
         self.thread.start()
         self.funcCancel = funcCancel
         return
+    # elif deviceStep == 0x0B:
+    #     stepStr += "(电机初始化)"
+    # elif deviceStep == 0x0C:
+    #     stepStr += "(向下投放)"
+    # elif deviceStep == 0x0D:
+    #     stepStr += "(蠕动泵抽)"
+    # elif deviceStep == 0x0E:
+    #     stepStr += "(向上回收)"
     def refreshPage(self):
         global deviceController
         if probeRelay.value == 1:
             self.switchFiveParametersProbe.open()
         else:
             self.switchFiveParametersProbe.close()
+        if deviceController.motorInit == 1:
+            self.switchMotorInit.open()
+        else:
+            self.switchMotorInit.close()
+        if deviceController.motorUp == 1:
+            self.switchMotorUp.open()
+        else:
+            self.switchMotorUp.close()
+        if deviceController.motorStop == 1:
+            self.switchMotorStop.open()
+        else:
+            self.switchMotorStop.close()
+        if deviceController.motorDown == 1:
+            self.switchMotorDown.open()
+        else:
+            self.switchMotorDown.close()
+        if deviceController.motorDownLittle == 1:
+            self.switchMotorDownLittle.open()
+        else:
+            self.switchMotorDownLittle.close()
+        if deviceController.motorUpLittle == 1:
+            self.switchMotorUpLittle.open()
+        else:
+            self.switchMotorUpLittle.close()
     def testFun(self):
         return
     # def print_contents(self, event):

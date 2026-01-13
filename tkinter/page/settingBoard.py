@@ -35,12 +35,12 @@ class SettingBoard(Frame):
         self.motorUpPWMLabelText.setText(
             deviceController.motorUpPWM)
         self.motorUpPWMLabelText.pack(anchor=W, pady=5)
-        self.probePowerWaitingTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机启动等待时间",
+        self.probePowerWaitingTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机启动时间",
                                                           command=lambda content: self.setControllerValue("probePowerWaitingTime", content))
         self.probePowerWaitingTimeLabelText.setText(
             deviceController.probePowerWaitingTime)
         self.probePowerWaitingTimeLabelText.pack(anchor=W, pady=5)
-        self.motorInitTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机初始等待时间",
+        self.motorInitTimeLabelText = LabelTextButton(fiveParametersSettingGroup, text="电机初始时间",
                                                            command=lambda content: self.setControllerValue("motorInitTime", content))
         self.motorInitTimeLabelText.setText(
             deviceController.motorInitTime)

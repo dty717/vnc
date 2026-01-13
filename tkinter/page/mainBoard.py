@@ -57,6 +57,10 @@ def stepString(deviceAutoRun, deviceStep):
         stepStr += "(蠕动泵抽)"
     elif deviceStep == 0x0E:
         stepStr += "(向上回收)"
+    elif deviceStep == 0x0F:
+        stepStr += "(向上微调)"
+    elif deviceStep == 0x10:
+        stepStr += "(向下微调)"
     return stepStr
 
 def intToHex(a):
