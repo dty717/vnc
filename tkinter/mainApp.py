@@ -234,7 +234,7 @@ def waterDetectReleaseCallBack():
 # if usingWaterDetect:
 #     waterDetect.when_pressed = waterDetectReleaseCallBack
 #     waterDetect.when_released = waterDetectCallBack
-
+deviceController.motorInit = 1
 def checkWaterDetect():
   #   lastWaterDetectValue = waterDetect.value
   checkWaterDetectEvent.wait(10)
@@ -244,21 +244,21 @@ def checkWaterDetect():
         probeRelay.off()
         controllingBoard.switchFiveParametersProbe.close()
         motor_driver.value = 1
-        checkWaterDetectEvent.wait(1)
+        time.sleep(1)
         probeRelay.on()
         controllingBoard.switchFiveParametersProbe.open()
-        checkWaterDetectEvent.wait(deviceController.probePowerWaitingTime) # time.sleep(2)
+        time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
         motor_driver.value = deviceController.motorInitPWM
-        checkWaterDetectEvent.wait(deviceController.motorInitTime)
+        time.sleep(deviceController.motorInitTime)
         motor_driver.value = deviceController.motorStopPWM
-        checkWaterDetectEvent.wait(0.1)
+        time.sleep(0.1)
         deviceController.motorInit = 0
         controllingBoard.switchMotorInit.close()
         deviceController.deviceStep = 0
     elif deviceController.motorDown:
         deviceController.deviceStep = 0x0C
         motor_driver.value = deviceController.motorDownPWM
-        checkWaterDetectEvent.wait(deviceController.motorDownTime)
+        time.sleep(deviceController.motorDownTime)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorDown = 0
         controllingBoard.switchMotorDown.close()
@@ -266,7 +266,7 @@ def checkWaterDetect():
     elif deviceController.motorUp:
         deviceController.deviceStep = 0x0E
         motor_driver.value = deviceController.motorUpPWM
-        checkWaterDetectEvent.wait(deviceController.motorUpTime)
+        time.sleep(deviceController.motorUpTime)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorUp = 0
         controllingBoard.switchMotorUp.close()
@@ -274,7 +274,7 @@ def checkWaterDetect():
     elif deviceController.motorDownLittle:
         deviceController.deviceStep = 0x0F
         motor_driver.value = deviceController.motorDownPWM
-        checkWaterDetectEvent.wait(0.5)
+        time.sleep(0.5)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorDownLittle = 0
         controllingBoard.switchMotorDownLittle.close()
@@ -282,7 +282,7 @@ def checkWaterDetect():
     elif deviceController.motorUpLittle:
         deviceController.deviceStep = 0x10
         motor_driver.value = deviceController.motorUpPWM
-        checkWaterDetectEvent.wait(0.5)
+        time.sleep(0.5)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorUpLittle = 0
         controllingBoard.switchMotorUpLittle.close()

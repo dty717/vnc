@@ -174,7 +174,7 @@ def readProbe(date):
     if(deviceController.threadDate > date):
         return
     serEnable.on()
-    probeRelay.off()
+    # probeRelay.off()
     currentTime = datetime.datetime.now()
     if(deviceController.threadDate > date):
         return
@@ -256,7 +256,7 @@ def readProbeCancel():
     # 
     deviceController.deviceStep = 0x00
     serEnable.on()
-    probeRelay.off()
+    # probeRelay.off()
     return
 
 
@@ -294,30 +294,30 @@ def operatingAllStep(date):
 def operatingAllStepCancel():
     global deviceController
     serEnable.on()
-    probeRelay.off()
+    # probeRelay.off()
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0
     return
 
 def manualDetectAllStep(date):
-    deviceController.deviceStep = 0x0B
-    motor_driver.value = 1
-    probeRelay.on()
-    time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
-    motor_driver.value = deviceController.motorInitPWM
-    time.sleep(deviceController.motorInitTime)
-    motor_driver.value = deviceController.motorStopPWM
-    time.sleep(0.1)
+    # deviceController.deviceStep = 0x0B
+    # # motor_driver.value = 1
+    # probeRelay.on()
+    # time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
+    # motor_driver.value = deviceController.motorInitPWM
+    # time.sleep(deviceController.motorInitTime)
+    # motor_driver.value = deviceController.motorStopPWM
+    # time.sleep(0.1)
     deviceController.deviceStep = 0x0C
     motor_driver.value = deviceController.motorDownPWM
     time.sleep(deviceController.motorDownTime)
-    motor_driver.value = deviceController.motorStopPWM
+    motor_driver.value = 1
     deviceController.deviceStep = 0x0D
     pumpRelay.on()
     time.sleep(deviceController.pumpSampleInTime)
     pumpRelay.off()
     # deviceController.threadDate = datetime.datetime.now()
-    deviceController.deviceAutoRun = 1
+    deviceController.deviceAutoRun = deviceController.motorStopPWM
     if isUsingGPS:
         readGPS(date)
     readProbeWithoutProbeOff(date)
@@ -325,21 +325,22 @@ def manualDetectAllStep(date):
         gpsData.isClosing = True
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0x0E
-    # motor_driver.value = deviceController.motorUpPWM
-    # time.sleep(0.2)
+    motor_driver.value = deviceController.motorStopPWM
+    time.sleep(0.2)
     motor_driver.value = deviceController.motorUpPWM
     time.sleep(deviceController.motorUpTime)
     deviceController.deviceStep = 0
-    motor_driver.value = 1
-    probeRelay.off()
+    # motor_driver.value = deviceController.motorStopPWM
+    # probeRelay.off()
     deviceController.manualDetect = 0
+    motor_driver.value = deviceController.motorStopPWM
     return
 
 def manualDetectAllStepCancel():
     operatingAllStepCancel()
-    motor_driver.value = 1
+    motor_driver.value = deviceController.motorStopPWM
     pumpRelay.off()
-    probeRelay.off()
+    # probeRelay.off()
     deviceController.manualDetect = 0
     return
 #_warning = waterDetectWarning()

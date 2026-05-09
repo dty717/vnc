@@ -11,7 +11,7 @@ from components.labelButton import SwitchLabelButton
 from config.config import *
 from service.device import write_single_register, DeviceAddr, deviceController, \
     probeRelay, \
-    readProbe, readProbeCancel,motor_driver
+    readProbe, readProbeCancel,motor_driver,pumpRelay
 
 class ControllingBoard(Frame):
     def __init__(self, master, imgDicts, **kargs):
@@ -82,6 +82,17 @@ class ControllingBoard(Frame):
                                                     textYES="启动", clickYES=lambda: setattr(deviceController, 'motorDown', 1) or self.switchMotorDown.open(),
                                                     textNO="停止", clickNO=lambda: setattr(deviceController, 'motorDown', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorDown.close()
                                                     )
+        
+        self.switchPump = SwitchLabelButton(cleanLabelGroup, imgDicts, text="抽水泵",
+                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (pumpRelay.on() or self.switchPump.open()),
+                                                     textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (pumpRelay.off() or self.switchPump.close()),
+                                                     )
+        if pumpRelay.value == 1:
+            self.switchPump.open()
+        else:
+            self.switchPump.close()
+        self.switchPump.pack(pady=5)
+
         if deviceController.motorDown == 1:
             self.switchMotorDown.open()
         else:
@@ -169,6 +180,10 @@ class ControllingBoard(Frame):
             self.switchFiveParametersProbe.open()
         else:
             self.switchFiveParametersProbe.close()
+        if pumpRelay.value == 1:
+            self.switchPump.open()
+        else:
+            self.switchPump.close()
         if deviceController.motorInit == 1:
             self.switchMotorInit.open()
         else:
