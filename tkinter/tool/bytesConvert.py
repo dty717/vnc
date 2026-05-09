@@ -20,3 +20,10 @@ def bytesToFloat(reg):
     # buf = bytes([reg[2],reg[3],reg[0],reg[1]])
     # buf = bytes([reg[3],reg[2],reg[1],reg[0]])
     return struct.unpack('f',buf)[0]
+
+def bytesToFloat_1(reg):
+    buf = bytes([reg[0],reg[1],reg[2],reg[3]])
+    # buf = bytes([reg[1],reg[0],reg[3],reg[2]])
+    # buf = bytes([reg[2],reg[3],reg[0],reg[1]])
+    # buf = bytes([reg[3],reg[2],reg[1],reg[0]])
+    return struct.unpack('f',buf)[0]
