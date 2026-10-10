@@ -31,6 +31,8 @@ sudo apt-get remove -y libstdc++-12-dev
 sudo apt-get remove -y libllvm15
 sudo apt-get remove -y rpinters
 sudo apt-get remove -y rp-prefapps
+# Purge PulseAudio/PipeWire and related sound tooling
+sudo apt-get purge -y pulseaudio pipewire alsa-utils lxplug-volumepulse
 
 sudo apt-get autoremove -y
 sudo apt-get autoclean -y
