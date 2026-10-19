@@ -6,7 +6,7 @@ import threading
 from components.table import SimpleTable
 from components.groupLabelButton import GroupLabelButton
 from service.thread import thread_with_exception
-from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, waterDetect, \
+from service.device import write_single_register, write_single_coil, DeviceAddr, deviceInfo, deviceController, \
         lastClickStartTime, lastSelectTime, manualDetectAllStep,manualDetectAllStepCancel,\
         operatingAllStep, operatingAllStepCancel,getTemperature,getVoltageString,getDiskVol
 from database.mongodb import dbGetLastFiveParametersHistory
@@ -17,12 +17,12 @@ backgroundColors = ["#ffffff", primaryColor]
 
 def stateString(state):
     if state == 0:
-        if waterDetect.value or not usingWaterDetect:
+        if not usingWaterDetect or waterDetect.value:
             return "正常"
         else:
             return "设备有水"
     else:
-        if waterDetect.value or not usingWaterDetect:
+        if not usingWaterDetect or waterDetect.value:
             return "异常"
         else:
             return "异常且进水"

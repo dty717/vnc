@@ -10,7 +10,7 @@ from components.groupLabelButton import GroupLabelButton
 from components.labelButton import SwitchLabelButton
 from config.config import *
 from service.device import write_single_register, DeviceAddr, deviceController, \
-    probeRelay, \
+    probeRelay, readProbeWithoutProbeOff, \
     readProbe, readProbeCancel,motor_driver,pumpRelay
 
 class ControllingBoard(Frame):
@@ -29,7 +29,7 @@ class ControllingBoard(Frame):
         #     modelSelectGroupLine1, text="排空清水", command=self.testFun, font=(None, 12))
         # self.selectOperateButton.pack(side="left", padx=10, pady=10)
         self.selectHourButton = Button(
-            modelSelectGroupLine1, text="读取数据", command=lambda: self.handleThread(readProbe, readProbeCancel,self.selectHourButton,"读取数据","停止读取"), font=(None, 12))
+            modelSelectGroupLine1, text="读取数据", command=lambda: self.handleThread(readProbeWithoutProbeOff, readProbeCancel,self.selectHourButton,"读取数据","停止读取"), font=(None, 12))
         self.selectHourButton.pack(side="left", padx=10, pady=10)
         modelSelectGroupLine1.pack(fill=X)
         # Line2
@@ -41,9 +41,9 @@ class ControllingBoard(Frame):
         #
         cleanLabelGroup = GroupLabelButton(self, title="手动控制")
         cleanLabelGroup.pack(pady=10)
-        self.switchFiveParametersProbe = SwitchLabelButton(cleanLabelGroup, imgDicts, text="五参探头",
-                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (probeRelay.on() or self.switchFiveParametersProbe.open()),
-                                                     textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (probeRelay.off() or self.switchFiveParametersProbe.close()),
+        self.switchFiveParametersProbe = SwitchLabelButton(cleanLabelGroup, imgDicts, text="存水继电器",
+                                                     textYES="打开", clickYES=lambda: self.checkIfAutoRun() and  (probeRelay.on() or self.switchFiveParametersProbe.open()),
+                                                     textNO="关闭", clickNO=lambda: self.checkIfAutoRun() and (probeRelay.off() or self.switchFiveParametersProbe.close()),
                                                      )
         if probeRelay.value == 1:
             self.switchFiveParametersProbe.open()
@@ -51,15 +51,15 @@ class ControllingBoard(Frame):
             self.switchFiveParametersProbe.close()
         self.switchFiveParametersProbe.pack(pady=5)
 
-        self.switchMotorInit = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机初始化",
-                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorInit', 1) or self.switchMotorInit.open(),
-                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorInit', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorInit.close()
-                                                    )
-        if deviceController.motorInit == 1:
-            self.switchMotorInit.open()
-        else:
-            self.switchMotorInit.close()
-        self.switchMotorInit.pack(pady=5)
+       # self.switchMotorInit = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机初始化",
+       #                                             textYES="启动", clickYES=lambda: setattr(deviceController, 'motorInit', 1) or self.switchMotorInit.open(),
+       #                                             textNO="停止", clickNO=lambda: setattr(deviceController, 'motorInit', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorInit.close()
+       #                                             )
+        #if deviceController.motorInit == 1:
+        #    self.switchMotorInit.open()
+        #else:
+        #    self.switchMotorInit.close()
+        #self.switchMotorInit.pack(pady=5)
         self.switchMotorUp = SwitchLabelButton(cleanLabelGroup, imgDicts, text="向上回收",
                                                     textYES="启动", clickYES=lambda: setattr(deviceController, 'motorUp', 1) or self.switchMotorUp.open(),
                                                     textNO="停止", clickNO=lambda: setattr(deviceController, 'motorUp', 0) or probeRelay.off() or self.refreshPage() or self.switchMotorUp.close()
@@ -70,8 +70,8 @@ class ControllingBoard(Frame):
             self.switchMotorUp.close()
         self.switchMotorUp.pack(pady=5)
         self.switchMotorStop = SwitchLabelButton(cleanLabelGroup, imgDicts, text="电机停止",
-                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorStop', 1) or setattr(motor_driver, 'value', deviceController.motorStopPWM) or self.switchMotorStop.open(),
-                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', 1) or probeRelay.off() or self.refreshPage() or self.switchMotorStop.close()
+                                                    textYES="启动", clickYES=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', deviceController.motorStopPWM) or self.switchMotorStop.open(),
+                                                    textNO="停止", clickNO=lambda: setattr(deviceController, 'motorStop', 0) or setattr(motor_driver, 'value', 0) or self.refreshPage() or self.switchMotorStop.close()
                                                     )
         if deviceController.motorStop == 1:
             self.switchMotorStop.open()
@@ -84,7 +84,7 @@ class ControllingBoard(Frame):
                                                     )
         
         self.switchPump = SwitchLabelButton(cleanLabelGroup, imgDicts, text="抽水泵",
-                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (pumpRelay.on() or self.switchPump.open()),
+                                                     textYES="启动", clickYES=lambda: self.checkIfAutoRun() and (setattr(pumpRelay, 'value', 1) or self.switchPump.open()),
                                                      textNO="停止", clickNO=lambda: self.checkIfAutoRun() and (pumpRelay.off() or self.switchPump.close()),
                                                      )
         if pumpRelay.value == 1:
@@ -184,10 +184,10 @@ class ControllingBoard(Frame):
             self.switchPump.open()
         else:
             self.switchPump.close()
-        if deviceController.motorInit == 1:
-            self.switchMotorInit.open()
-        else:
-            self.switchMotorInit.close()
+        #if deviceController.motorInit == 1:
+        #    self.switchMotorInit.open()
+        #else:
+        #    self.switchMotorInit.close()
         if deviceController.motorUp == 1:
             self.switchMotorUp.open()
         else:

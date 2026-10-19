@@ -59,17 +59,72 @@ probeRelay = LED(18)
 
 # waterRelay = LED(11)
 # waterRelay.off()
-motor_driver = PWMOutputDevice(pin=11, frequency=400)
+#motor_driver = PWMOutputDevice(pin=11, frequency=400)
 
-pumpRelay = LED(19)
-waterDetect = Button(3)
+#motor1 = PWMOutputDevice(pin=11) 
+#motor1.on()
+#motor2 = PWMOutputDevice(pin=3) 
+#motor2.value =0
 
+class CustomMotorDriver:
+    def __init__(self, in1_pin, in2_pin):
+        # Initializing pins as PWMOutputDevice
+        self.in1 = PWMOutputDevice(in1_pin)
+        self.in1.on();
+        self.in2 = PWMOutputDevice(in2_pin)
+        self.in2.value =0
+        self._value = 0
+
+    @property
+    def value(self):
+        return self._value
+
+    @value.setter
+    def value(self, val):
+        # Limit the input between -1 and 1
+        val = max(-1, min(1, val))
+        self._value = val
+        if val == 0:
+            self.stop()
+        elif val > 0:
+            # Forward logic
+            self.forward(val)
+        else:
+            # Backward logic (val is negative, so abs(val) is the speed)
+            self.backward(-val)
+    def stop(self):
+        # Your specific stop logic: motor1 (IN1) = 1, motor2 (IN2) = 0
+        self.in1.on()     # Sets value to 1
+        self.in2.value = 0 # Sets value to 0
+
+    def forward(self, speed=0.5):
+        # Example forward logic: both pins High (speed controlled by PWM)
+        self.in2.value = 0
+        self.in1.value = 1-speed
+    
+    def backward(self, speed= 0.5):
+        self.in1.on()
+        self.in2.value = speed
+
+motor_driver = CustomMotorDriver(11,3)
+
+#motor1 = PWMOutputDevice(pin=11) 
+#motor1.on()
+#motor2 = PWMOutputDevice(pin=3) 
+#motor2.value =0
+
+#pumpRelay = LED(18)
+#waterDetect = Button(3)
+pumpRelay = PWMOutputDevice(pin=19)
 lastClickStartTime = datetime.datetime.now()
 lastSelectTime = datetime.datetime.now()
 
 ser = serial.Serial(deviceSerName, baudrate=9600, timeout=0.2)
 serEnable = LED(deviceSerEnable)
 serEnable.on()
+
+#SAFE_BYTE_TIME = 0 / ser.baudrate
+SAFE_BYTE_TIME = 1 / ser.baudrate
 
 serialQueues = []
 sendBusy = False
@@ -80,22 +135,27 @@ requestDeviceEvent = threading.Event()
 timeSelectEvent = threading.Event()
 checkWaterDetectEvent = threading.Event()
 
-delay_before_tx = 0.1
-enableWaitingTime = 0.01
+delay_before_tx = 0.2
+enableWaitingTime = 0.020
 delay_before_rx = 0.0
 
+#bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x04, 229,250]
 
 #bufQueryEle = [0x02, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xF8]
-#bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
+bufQueryTur = [0x03, 0x03, 0x00, 0x02, 0x00, 0x02, 0x64, 0x29]
 #bufQueryO2 = [0x04, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0x9E]
 #bufQueryPH = [0x01, 0x03, 0x00, 0x02, 0x00, 0x02, 0x65, 0xCB]
 #bufQueryTemp = [0x02, 0x03, 0x00, 0x04, 0x00, 0x02, 0x85, 0xF9]
 
+#bufQueryTur = [0x03, 0x03, 0x00, 0x33, 0x00, 0x02, 53, 230]
+#bufQueryTur = [0x03, 0x10, 0x2E, 0x00, 0x00, 0x01,0x02,0x01,0x00, 112,162]
+
 bufQueryEle = [0x02, 0x03, 0x00, 0x00, 0x00, 0x02, 0xC4, 0x38]
-bufQueryTur = [0x03, 0x03, 0x2C, 0x02, 0x00, 0x02, 0x6C, 0xB9]
+#bufQueryTur = [0x03, 0x03, 0x2C, 0x00, 0x00, 0x04, 77,123]
 bufQueryO2 =  [0x04, 0x03, 0x00, 0x01, 0x00, 0x02, 0x95, 0x9E]
-bufQueryPH =  [0x01, 0x03, 0x00, 0x01, 0x00, 0x02, 0x95, 0xCB]
-bufQueryTemp =[0x01, 0x03, 0x00, 0x03, 0x00, 0x02, 0x34, 0x0B]
+bufQueryPH =  [0x19, 0x03, 0x00, 0x01, 0x00, 0x02, 150, 19]
+bufQueryTemp =[0x19, 0x03, 0x00, 0x03, 0x00, 0x02, 55, 211]
+bufQueryPHTemp =[0x19, 0x03, 0x00, 0x01, 0x00, 0x04, 22,17]
 
 
 # bufControlling = bufQueryChl
@@ -112,22 +172,36 @@ bufQueryTemp =[0x01, 0x03, 0x00, 0x03, 0x00, 0x02, 0x34, 0x0B]
 def setPHData(buf):
     global deviceInfo
     deviceInfo.PH = bytesToFloat(buf[3:7])*dataShiftScale["PH"]
+    print("PH",deviceInfo.PH)
 
 def setTempData(buf):
     global deviceInfo
     deviceInfo.temp = bytesToFloat(buf[3:7])*dataShiftScale["temp"]
+    print("temp",deviceInfo.temp)
+
+def setPHTempData(buf):
+    global deviceInfo
+    deviceInfo.PH = bytesToFloat(buf[3:7])*dataShiftScale["PH"]
+    deviceInfo.temp = bytesToFloat(buf[7:11])*dataShiftScale["temp"]
+    print("PH",deviceInfo.PH)
+    print("temp",deviceInfo.temp)
+
+
 
 def setEleData(buf):
     global deviceInfo
     deviceInfo.ele = bytesToFloat(buf[3:7])*dataShiftScale["ele"]
+    print("ele",deviceInfo.ele)
 
 def setTurData(buf):
     global deviceInfo
-    deviceInfo.tur = bytesToFloat_1(buf[3:7])*dataShiftScale["tur"]
+    deviceInfo.tur = bytesToFloat(buf[3:7])*dataShiftScale["tur"]
+    print("tur",deviceInfo.tur)
 
 def setO2Data(buf):
     global deviceInfo
     deviceInfo.O2 = bytesToFloat(buf[3:7])*dataShiftScale["O2"]
+    print("O2",deviceInfo.O2)
 
 def setNH3Data(buf):
     global deviceInfo
@@ -152,18 +226,21 @@ def readProbe(date):
         return
     deviceController.deviceStep = 0x03
     global deviceInfo
-    if not probeRelay.value:
-        probeRelay.on()
+    #if not probeRelay.value:
+    if False:
+        #probeRelay.on()
         time.sleep(deviceController.probeWaitingTime)
         if(deviceController.threadDate > date):
             return
     ser.readall()
     if(deviceController.threadDate > date):
         return
+    deviceInfo.tur = -999
     sendReq(bufQueryTur, setTurData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
+    deviceInfo.temp = -999
     sendReq(bufQueryTemp, setTempData, repeatTimes=3, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
@@ -209,34 +286,39 @@ def readProbeWithoutProbeOff(date):
         return
     deviceController.deviceStep = 0x03
     global deviceInfo
-    if not probeRelay.value:
-        probeRelay.on()
-        time.sleep(deviceController.probeWaitingTime)
-        if(deviceController.threadDate > date):
-            return
+    #if not probeRelay.value:
+    #    probeRelay.on()
+    #    time.sleep(deviceController.probeWaitingTime)
+    #    if(deviceController.threadDate > date):
+    #        return
     ser.readall()
     if(deviceController.threadDate > date):
         return
-    sendReq(bufQueryTur, setTurData, repeatTimes=3, needMesBox=False)
+    deviceInfo.tur = -999
+    sendReq(bufQueryTur, setTurData, repeatTimes=8, needMesBox=False)
+    time.sleep(1.2)
+    if(deviceController.threadDate > date):
+        return
+    deviceInfo.ele = -999
+    sendReq(bufQueryEle, setEleData, repeatTimes=8, needMesBox=False)
+    time.sleep(1.2)
+    if(deviceController.threadDate > date):
+        return
+    deviceInfo.O2 = -999
+    sendReq(bufQueryO2, setO2Data, repeatTimes=8, needMesBox=False)
+    time.sleep(1.2)
+    if(deviceController.threadDate > date):
+        return
+    deviceInfo.PH = -999
+    deviceInfo.temp = -999
+    sendReq(bufQueryPHTemp, setPHTempData, repeatTimes=8, needMesBox=False)
     time.sleep(0.2)
     if(deviceController.threadDate > date):
         return
-    sendReq(bufQueryTemp, setTempData, repeatTimes=3, needMesBox=False)
-    time.sleep(0.2)
-    if(deviceController.threadDate > date):
-        return
-    sendReq(bufQueryEle, setEleData, repeatTimes=3, needMesBox=False)
-    time.sleep(0.2)
-    if(deviceController.threadDate > date):
-        return
-    sendReq(bufQueryPH, setPHData, repeatTimes=3, needMesBox=False)
-    time.sleep(0.2)
-    if(deviceController.threadDate > date):
-        return
-    sendReq(bufQueryO2, setO2Data, repeatTimes=3, needMesBox=False)
-    time.sleep(0.2)
-    if(deviceController.threadDate > date):
-        return
+    #sendReq(bufQueryTemp, setTempData, repeatTimes=20, needMesBox=False)
+    #time.sleep(0.2)
+    #if(deviceController.threadDate > date):
+    #    return
     serEnable.on()
     currentTime = datetime.datetime.now()
     if(deviceController.threadDate > date):
@@ -250,7 +332,7 @@ def readProbeWithoutProbeOff(date):
         uploadData = {'deviceID': deviceID, 'sampleType': sampleType, 'time': str(currentTime + datetime.timedelta(hours=time_zone_shift)),
                       'PH': deviceInfo.PH, "temp": deviceInfo.temp, "ele": deviceInfo.ele, "tur": deviceInfo.tur, "O2": deviceInfo.O2,
                       "dataInfo": dataInfo}
-        requests.post(uploadDataURL, json=uploadData)
+        requests.post(uploadDataURL, json=uploadData,timeout=5)
     except Exception as err:
         Logger.log("网络异常", "数据无法上传", str(err), 1200)
     dbSaveFiveParametersHistory(currentTime, deviceInfo.PH, deviceInfo.temp,
@@ -318,29 +400,43 @@ def manualDetectAllStep(date):
     deviceController.deviceStep = 0x0C
     motor_driver.value = deviceController.motorDownPWM
     time.sleep(deviceController.motorDownTime)
-    motor_driver.value = 1
+    motor_driver.value = 0
     deviceController.deviceStep = 0x0D
     pumpRelay.on()
+    #probeRelay.on()
     time.sleep(deviceController.pumpSampleInTime)
     pumpRelay.off()
+    time.sleep(0.5)
     # deviceController.threadDate = datetime.datetime.now()
-    deviceController.deviceAutoRun = deviceController.motorStopPWM
+    # deviceController.deviceAutoRun = deviceController.motorStopPWM
     if isUsingGPS:
         readGPS(date)
+    #probeRelay.on()
+    time.sleep(10.5)
     readProbeWithoutProbeOff(date)
+    #time.sleep(10)
+    #probeRelay.off()
     if isUsingGPS:
         gpsData.isClosing = True
     deviceController.deviceAutoRun = 0
     deviceController.deviceStep = 0x0E
     motor_driver.value = deviceController.motorStopPWM
     time.sleep(0.2)
-    motor_driver.value = deviceController.motorUpPWM
+    motor_driver.value = -deviceController.motorUpPWM
     time.sleep(deviceController.motorUpTime)
+    motor_driver.value = deviceController.motorStopPWM
+    #probeRelay.on()
+    #time.sleep(10)
+    #probeRelay.off()
     deviceController.deviceStep = 0
+    #motor_driver.value = deviceController.motorStopPWM
+    #probeRelay.off()
+
     # motor_driver.value = deviceController.motorStopPWM
     # probeRelay.off()
     deviceController.manualDetect = 0
-    motor_driver.value = deviceController.motorStopPWM
+    #motor_driver.value = deviceController.motorStopPWM
+    #probeRelay.off()
     return
 
 def manualDetectAllStepCancel():
@@ -451,10 +547,10 @@ def send(sendReqBuf, callBack, repeatTimes, needMesBox):
 def request(sendReqBuf, callBack, needMesBox):
     global isSending, isBlocking, lastTime
     isSending = True
-    if probeRelay.value == 0:
-        if needMesBox:
-            messagebox.showerror("设备异常", "仪器未开启")
-        return
+    #if probeRelay.value == 0:
+    #    if needMesBox:
+    #        messagebox.showerror("设备异常", "仪器未开启")
+    #    return
     if not ser.is_open:
         if isBlocking:
             return True
@@ -470,14 +566,18 @@ def request(sendReqBuf, callBack, needMesBox):
         return
     _now = time.time()
     try:
-        if _now - lastTime < 1:
+        while _now - lastTime < 2:
             requestDeviceEvent.wait(lastTime+1-_now)
-        lastTime = time.time()
+            _now = time.time()
+        lastTime = _now
         serEnable.value = 1
         requestDeviceEvent.wait(delay_before_tx)
         ser.write(sendReqBuf)
+        ser.flush()
+        requestDeviceEvent.wait(SAFE_BYTE_TIME)
+        #print("write", sendReqBuf)
         # ser.flush()
-        requestDeviceEvent.wait(enableWaitingTime)
+        #requestDeviceEvent.wait(enableWaitingTime)
     except:
         isSending = False
         return False
@@ -492,6 +592,7 @@ def request(sendReqBuf, callBack, needMesBox):
     return checkRecv(sendReqBuf, recBytes, callBack, needMesBox)
 
 def checkRecv(sendReqBuf, recBytes, callBack, needMesBox):
+    print("rec", [hex(x) for x in recBytes])
     if sendReqBuf[1] == 0x03:
         if len(recBytes) == 0:
             Logger.log("通讯异常", "设备问询无回复", "", 1200)

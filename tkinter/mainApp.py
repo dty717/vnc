@@ -15,7 +15,7 @@ from config.config import sysPath, primaryColor, primaryDarkColor, primaryLightC
 from tool.crc import crc16
 from service.logger import Logger
 from service.device import DeviceAddr, write_single_register, sendReq, deviceController, deviceInfo, getBytesControllingInfo, getBytesInfo, \
-        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime, waterDetect,checkWaterDetectEvent,\
+        requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime,checkWaterDetectEvent,\
         operatingAllStep,motor_driver,probeRelay
 
 if isUsingGPS:
@@ -234,18 +234,18 @@ def waterDetectReleaseCallBack():
 # if usingWaterDetect:
 #     waterDetect.when_pressed = waterDetectReleaseCallBack
 #     waterDetect.when_released = waterDetectCallBack
-deviceController.motorInit = 1
-def checkWaterDetect():
+#deviceController.motorInit = 1
+def mainEventDetect():
   #   lastWaterDetectValue = waterDetect.value
   checkWaterDetectEvent.wait(10)
   while not checkWaterDetectEvent.wait(0.2):
     if deviceController.motorInit:
         deviceController.deviceStep = 0x0B
-        probeRelay.off()
+        #probeRelay.off()
         controllingBoard.switchFiveParametersProbe.close()
         motor_driver.value = 1
         time.sleep(1)
-        probeRelay.on()
+        #probeRelay.on()
         controllingBoard.switchFiveParametersProbe.open()
         time.sleep(deviceController.probePowerWaitingTime) # time.sleep(2)
         motor_driver.value = deviceController.motorInitPWM
@@ -265,7 +265,7 @@ def checkWaterDetect():
         deviceController.deviceStep = 0
     elif deviceController.motorUp:
         deviceController.deviceStep = 0x0E
-        motor_driver.value = deviceController.motorUpPWM
+        motor_driver.value = -deviceController.motorUpPWM
         time.sleep(deviceController.motorUpTime)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorUp = 0
@@ -281,7 +281,7 @@ def checkWaterDetect():
         deviceController.deviceStep = 0
     elif deviceController.motorUpLittle:
         deviceController.deviceStep = 0x10
-        motor_driver.value = deviceController.motorUpPWM
+        motor_driver.value = -deviceController.motorUpPWM
         time.sleep(0.5)
         motor_driver.value = deviceController.motorStopPWM
         deviceController.motorUpLittle = 0
@@ -300,6 +300,9 @@ if usingWaterDetect:
     checkWaterDetectThread = threading.Thread(target=checkWaterDetect)
     checkWaterDetectThread.start()
 
+
+mainEventDetectThread = threading.Thread(target=mainEventDetect)
+mainEventDetectThread.start()
 
 def queryHandle(queryRecv):
     if getBytesInfo(queryRecv, deviceInfo, lastMenuName):
