@@ -18,6 +18,9 @@ from service.device import DeviceAddr, write_single_register, sendReq, deviceCon
         requestDeviceEvent, timeSelectEvent, saveSetting, lastClickStartTime, lastSelectTime,checkWaterDetectEvent,\
         operatingAllStep,motor_driver,probeRelay
 
+# start mqtt client with the app
+from service.mqtt_client import MqttDeviceClient
+
 if isUsingGPS:
     from service.gps import gpsData, getGpsInfoUsingUSB, saveGpsEvent, saveLocation,openGPS,closeGPS
 
@@ -346,6 +349,10 @@ def RequestDevice():
 
 requestDeviceThread = threading.Thread(target=RequestDevice)
 requestDeviceThread.start()
+# start mqtt client so it runs within the same process as GUI
+mqtt_client = MqttDeviceClient()
+mqtt_thread = threading.Thread(target=lambda: (mqtt_client.connect(), mqtt_client.run_forever()), daemon=True)
+mqtt_thread.start()
 def getGPS():
     global gpsData
     while not saveGpsEvent.wait(1):
