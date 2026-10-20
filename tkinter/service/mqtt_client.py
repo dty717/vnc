@@ -2,15 +2,8 @@
 """
 MQTT device client for VNC project.
 
-Combines the runtime logic with the demo "envelope" protocol used by the demo emulator.
-- Subscribes exclusively to the device-wq style topic: device/wq/<deviceID>
-- Accepts two command styles:
-  1) envelope style: {"msg_id":..., "type":"cmd", "cmd":"...", "params":{...}}
-  2) plain style: {"cmd":"...", ...} (backwards compatible)
-- Replies using envelope reply messages on the same TOPIC the command arrived on.
-- Publishes envelope telemetry and status payloads to the unified TOPIC channel.
-
-Uses existing device runtime objects (deviceController, deviceInfo) and device control functions so UI will react the same way as user clicks.
+Combines runtime logic with the demo "envelope" protocol, pulling dynamic 
+measurement/timestamp elements directly from device runtime services.
 """
 
 import os
@@ -24,8 +17,6 @@ try:
     import paho.mqtt.client as mqtt
 except Exception as exc:  # pragma: no cover
     raise RuntimeError("paho-mqtt is required. Install with: pip install paho-mqtt") from exc
-
-# Using print instead of logging
 
 # Import layout attributes using lowercase camelCase fields
 try:
@@ -41,7 +32,6 @@ try:
 except ImportError as exc:
     raise RuntimeError("Required attributes missing from config.config") from exc
 
-# Map configuration configurations to local script variables
 DEVICE_ID = deviceID or "device_unknown"
 MQTT_BROKER = mqttBroker or "localhost"
 MQTT_PORT = int(mqttPort) if mqttPort is not None else 1883
@@ -49,7 +39,6 @@ MQTT_USER = mqttUser or ""
 MQTT_PASSWORD = mqttPassword or ""
 MQTT_PUBLISH_INTERVAL = int(mqttPublishInterval) if mqttPublishInterval is not None else 10
 
-# Unified single channel topic layout matching the reference demo code style
 LEGACY_BASE = topicBase or "device/wq"
 TOPIC = f"{LEGACY_BASE}/{DEVICE_ID}"
 
@@ -64,7 +53,7 @@ from service.device import (
     operatingAllStepCancel,
     requestDeviceEvent,
 )
-# Optional operational modules mapping
+
 try:
     from service.device import (
         probeRelay,
@@ -81,10 +70,17 @@ except Exception:
 
 
 def now_ms():
+    # Pull dynamic time from device runtime if available, else current system ms
+    if hasattr(deviceInfo, "timestamp_ms") and deviceInfo.timestamp_ms:
+        return int(deviceInfo.timestamp_ms)
     return int(time.time() * 1000)
 
 
 def utc_now_iso():
+    # Pull live/measured timestamp info directly from device module if populated, 
+    # otherwise fallback to current UTC iso string
+    if hasattr(deviceInfo, "timestamp") and deviceInfo.timestamp:
+        return str(deviceInfo.timestamp)
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -101,7 +97,6 @@ class MqttDeviceClient:
         self.password = password
         self.stop_event = threading.Event()
 
-        # Upgraded client generation incorporating standard modern Paho version tracking
         try:
             self.client = mqtt.Client(mqtt.CallbackAPIVersion.VERSION2, client_id=f"device/{DEVICE_ID}")
         except (AttributeError, TypeError):
@@ -115,15 +110,14 @@ class MqttDeviceClient:
         self.client.on_disconnect = self._on_disconnect
 
     def _on_connect(self, client, userdata, flags, rc, properties=None):
-        if int(rc) != 0:
+        is_failure = rc.is_failure if hasattr(rc, "is_failure") else (int(rc) != 0)
+        if is_failure:
             print(f"[MQTT] Connection failed with status code={rc}")
             return
 
         print(f"[MQTT] connected, subscribe {TOPIC}")
-        # Subscribe exclusively to the single unified topic framework
         client.subscribe(TOPIC, qos=1)
 
-        # Publish retained online notification frame matching the demo behavior
         status = envelope("status", online=True)
         client.publish(TOPIC, json.dumps(status), qos=1, retain=True)
 
@@ -131,13 +125,11 @@ class MqttDeviceClient:
         print("[MQTT] Client disconnected from broker target.")
 
     def _handle_command_envelope(self, req):
-        """Processes high-level routing strings down to functional register calls."""
         cmd = str(req.get("cmd") or "").lower()
         params = req.get("params") or {}
         action = str(params.get("action", "")).lower()
 
         try:
-            # Emergency Stop Implementation matching design requirements
             if cmd == "stop":
                 deviceController.deviceAutoRun = 0
                 deviceController.manualDetect = 0
@@ -151,7 +143,6 @@ class MqttDeviceClient:
                     pumpRelay.off()
                 return 0, "ok", {"state": self._build_state_payload()}
 
-            # Routine Operation Management Flow
             if cmd == "operation":
                 if action == "start":
                     if deviceController.deviceAutoRun == 0:
@@ -179,7 +170,6 @@ class MqttDeviceClient:
             if cmd == "get_status":
                 return 0, "ok", {"state": self._build_state_payload()}
 
-            # Relay Toggle Points
             if cmd == "probe" and probeRelay is not None:
                 if action in ("on", "start"):
                     probeRelay.on()
@@ -194,7 +184,6 @@ class MqttDeviceClient:
                     pumpRelay.off()
                 return 0, "ok", {"pump": bool(pumpRelay.value)}
 
-            # Motor Step Configurations
             if cmd == "motor":
                 if action == "init":
                     deviceController.motorInit = 1
@@ -220,7 +209,6 @@ class MqttDeviceClient:
                     return 400, "unknown motor action", {}
                 return 0, "ok", {"motor_flags": True}
 
-            # Manual Detection Protocols
             if cmd == "manual_detect":
                 if action == "start" and manualDetectAllStep is not None:
                     if deviceController.manualDetect == 0:
@@ -234,7 +222,6 @@ class MqttDeviceClient:
                     manualDetectAllStepCancel()
                     return 0, "ok", {"manualDetect": deviceController.manualDetect}
 
-            # Serial Modbus Direct Writing Maps
             if cmd == "write_register":
                 addr = int(params.get("addr", 0))
                 value = int(params.get("value", 0))
@@ -253,7 +240,6 @@ class MqttDeviceClient:
                 write_multiple_registers(addr, values, lambda rec: None, repeatTimes=0, needMesBox=False)
                 return 0, "ok", {"addr": addr, "values": values}
 
-            # Runtime Object Attribute Modifications
             if cmd == "set_parameter":
                 attr = params.get("attr")
                 val = params.get("value")
@@ -270,7 +256,6 @@ class MqttDeviceClient:
 
             return 404, f"unknown cmd: {cmd}", {}
         finally:
-            # Explicit GUI notification trigger to refresh Tkinter windows instantly
             try:
                 requestDeviceEvent.set()
             except Exception:
@@ -290,21 +275,20 @@ class MqttDeviceClient:
 
     def _on_message(self, client, userdata, msg):
         raw = msg.payload.decode("utf-8")
+        print(f"[MQTT DEBUG] RAW RECV <- {msg.topic} : {raw}")
+
         try:
             payload = json.loads(raw)
         except Exception as exc:
             print(f"[MQTT] Invalid structural frame received: {exc}")
             return
 
-        # Suppress processing messages matching telemetry data, status updates, or existing replies
         if isinstance(payload, dict) and payload.get("type") in ("telemetry", "reply", "status"):
             return
 
-        print(f"recv <- {msg.topic} : {raw}")
         code, message, data = 404, "unknown request format", {}
         cmd_name = "unknown"
 
-        # Parsing Standard Tracking Envelope Structure
         if isinstance(payload, dict) and payload.get("type") == "cmd":
             cmd_name = payload.get("cmd")
             code, message, data = self._handle_command_envelope(payload)
@@ -313,7 +297,6 @@ class MqttDeviceClient:
             print(f"reply -> code={code} msg={message}")
             return
 
-        # Parsing Direct Single-Line Command Elements
         if isinstance(payload, dict) and payload.get("cmd"):
             cmd_name = payload.get("cmd")
             params = payload.get("params") or {}
@@ -327,12 +310,11 @@ class MqttDeviceClient:
         self.client.connect(self.broker, self.port, keepalive=60)
         self.client.loop_start()
 
-    def disconnect(self):
+    def disconnect(self, timeout=0.3):
         self.stop_event.set()
-        # Drop clean offline payload to update broker status registries matching main demo logic
         try:
             self.client.publish(TOPIC, json.dumps(envelope("status", online=False)), qos=1, retain=True)
-            time.sleep(0.3)
+            time.sleep(timeout)
         except Exception:
             pass
         try:
@@ -346,10 +328,9 @@ class MqttDeviceClient:
         print("stopped")
 
     def publish_telemetry(self):
-        # Gather live telemetry data elements matching device hardware states
         sensors_data = {
             "deviceID": DEVICE_ID,
-            "timestamp": utc_now_iso(),
+            "timestamp": utc_now_iso(),  # Fetches live runtime time strings from device module
             "PH": getattr(deviceInfo, "PH", None),
             "temp": getattr(deviceInfo, "temp", None),
             "ele": getattr(deviceInfo, "ele", None),
@@ -361,11 +342,10 @@ class MqttDeviceClient:
             "probe": bool(probeRelay.value) if probeRelay is not None else False,
             "state": self._build_state_payload(),
         }
-        # Format and publish utilizing standard single channel envelope structure
         try:
             env = envelope("telemetry", data={**sensors_data, "actuators": actuators_state})
             self.client.publish(TOPIC, json.dumps(env), qos=1)
-            print(f"telemetry -> {TOPIC}")
+            print(f"telemetry -> {TOPIC} (ts: {sensors_data['timestamp']})")
         except Exception as exc:
             print(f"[MQTT] Failed to publish unified loop payload: {exc}")
 
