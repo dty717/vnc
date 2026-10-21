@@ -4,8 +4,8 @@ MQTT device client for VNC project.
 
 Combines runtime logic with the demo "envelope" protocol, pulling dynamic 
 measurement/timestamp elements directly from device runtime services.
-Publishes on MQTT_PUBLISH_INTERVAL only if data or state has changed.
-`data` and `state` are separate root-level keys in the envelope.
+Publishes state changes when they occur, and forces a data upload 
+the moment step 3 (Reading Data) finishes.
 """
 
 import os
@@ -327,7 +327,7 @@ class MqttDeviceClient:
     def run_forever(self, interval=MQTT_PUBLISH_INTERVAL):
         last_sensors_signature = None
         last_state_signature = None
-        last_sent_step = None
+        last_step = None
         try:
             while not self.stop_event.is_set():
                 sensors_data = {
@@ -358,25 +358,24 @@ class MqttDeviceClient:
                 current_state_signature = tuple(sorted(state_payload.items()))
 
                 sensors_changed = (last_sensors_signature is None or current_sensors_signature != last_sensors_signature)
-                
-                # Force data upload when entering Step 3 (Reading Data)
-                if current_step == 3 and last_sent_step != 3:
-                    sensors_changed = True
-
                 state_changed = (last_state_signature is None or current_state_signature != last_state_signature)
 
                 extra = {}
-                if sensors_changed:
-                    extra["data"] = sensors_data
-                    last_sensors_signature = current_sensors_signature
-                    if current_step == 3:
-                        last_sent_step = 3
-                    else:
-                        last_sent_step = current_step
+
+                # Force data upload the exact moment step 3 finishes (transitioning from step 3 to another step)
+                step_finished_reading = (last_step == 3 and current_step != 3)
+
+                if step_finished_reading or sensors_changed:
+                    # Only include data if we are explicitly exiting step 3 or if general sensor values changed
+                    if step_finished_reading or current_step != 3:
+                        extra["data"] = sensors_data
+                        last_sensors_signature = current_sensors_signature
 
                 if state_changed:
                     extra["state"] = state_payload
                     last_state_signature = current_state_signature
+
+                last_step = current_step
 
                 if extra:
                     try:
