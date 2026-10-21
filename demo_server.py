@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """
 Headless MQTT demo server for the VNC device.
-Triggers manual detection, parses step progress using stepString logic,
-and dynamically waits until the device completes its full cycle and returns to idle.
-Aligned with separate root-level "state" and "data" keys.
+Publishes commands to `{TARGET_TOPIC}/cmd` and subscribes to `{TARGET_TOPIC}/state` for replies and telemetry.
+Waits for successful connection and subscription before publishing commands.
 """
 
 import json
@@ -25,7 +24,10 @@ PORT = int(os.getenv("MQTT_PORT", "1883"))
 MQTT_USER = os.getenv("MQTT_USER", "user")
 MQTT_PASSWORD = os.getenv("MQTT_PASSWORD", "abcd")
 RESULT_TIMEOUT = int(os.getenv("RESULT_TIMEOUT", "480"))
-TARGET_TOPIC = os.getenv("TARGET_TOPIC", f"device/wq/{DEVICE_ID}")
+
+BASE_TOPIC = os.getenv("TARGET_TOPIC", f"device/wq/{DEVICE_ID}")
+TOPIC_CMD = f"{BASE_TOPIC}/cmd"
+TOPIC_STATE = f"{BASE_TOPIC}/state"
 
 
 class DemoServer:
@@ -33,6 +35,7 @@ class DemoServer:
         self.result_lock = threading.Lock()
         self.result = {"reply": None, "state": None, "telemetry": None}
         self._done = threading.Event()
+        self._connected = threading.Event()  # Event to track connection & subscription
         self.sent_msg_id = None
         self.operation_started = False
          
@@ -90,8 +93,9 @@ class DemoServer:
             print(f"[demo] MQTT connect failed: rc={rc}")
             return
         print(f"[demo] connected to {BROKER}:{PORT}")
-        client.subscribe(TARGET_TOPIC, qos=1)
-        print(f"[demo] subscribed to: {TARGET_TOPIC}")
+        client.subscribe(TOPIC_STATE, qos=1)
+        print(f"[demo] subscribed to state topic: {TOPIC_STATE}")
+        self._connected.set()  # Signal that connection and subscription are ready
 
     def on_message(self, client, userdata, message):
         try:
@@ -100,7 +104,7 @@ class DemoServer:
         except Exception:
             return
              
-        if not isinstance(obj, dict) or obj.get("type") == "cmd":
+        if not isinstance(obj, dict):
             return
              
         msg_type = obj.get("type")
@@ -108,7 +112,9 @@ class DemoServer:
          
         with self.result_lock:
             if msg_type == "state":
-                # Extract state from root level (or fallback to legacy nested data.state)
+                if "data" in obj:
+                    self.result["telemetry"] = obj["data"]
+
                 current_state = obj.get("state") or obj.get("data", {}).get("state", {})
                 if current_state:
                     self.result["state"] = current_state
@@ -127,9 +133,6 @@ class DemoServer:
                         print("[demo] -> Operation complete! Device returned to idle (System Idle).")
                         self._done.set()
 
-                if "data" in obj:
-                    self.result["telemetry"] = obj["data"]
-
             elif msg_type == "reply" and obj.get("reply_to") == self.sent_msg_id:
                 self.result["reply"] = obj
                 print("[demo] Command acknowledgment reply received.")
@@ -147,26 +150,38 @@ class DemoServer:
             "cmd": "manual_detect",
             "params": ["start"]
         }
-        print(f"[demo] -> {TARGET_TOPIC}: {json.dumps(command, ensure_ascii=False)}")
-        self.client.publish(TARGET_TOPIC, json.dumps(command), qos=1)
+        print(f"[demo] -> {TOPIC_CMD}: {json.dumps(command, ensure_ascii=False)}")
+        self.client.publish(TOPIC_CMD, json.dumps(command), qos=1)
 
     def print_summary(self):
         print("\n=== Demo result summary (Final State) ===")
         for key in ("reply", "state", "telemetry"):
             print(f"{key}: {json.dumps(self.result[key], ensure_ascii=False, sort_keys=True)}")
+        print("=========================================\n")
 
     def run(self):
         self.client.connect(BROKER, PORT, keepalive=60)
         self.client.loop_start()
         try:
-            time.sleep(1.0)
+            print("[demo] Waiting for MQTT connection and subscription...")
+            if not self._connected.wait(timeout=10):
+                print("[demo] Error: Connection timed out.")
+                return
+
+            time.sleep(0.5)  # brief stabilization
             self.publish_manual_detect()
              
             print(f"[demo] Waiting up to {RESULT_TIMEOUT} seconds for procedure to finish and return to idle...")
             if not self._done.wait(timeout=RESULT_TIMEOUT):
                 print(f"[demo] Warning: Result collection timed out after {RESULT_TIMEOUT} seconds.")
-             
+            
             self.print_summary()
+            
+            print("[demo] Server is still running and listening for incoming MQTT messages. Press Ctrl+C to exit.")
+            while True:
+                time.sleep(1)
+        except KeyboardInterrupt:
+            print("\n[demo] interrupted by user, shutting down...")
         finally:
             self.client.loop_stop()
             self.client.disconnect()
@@ -184,3 +199,4 @@ def main():
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

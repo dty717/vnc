@@ -2,10 +2,8 @@
 """
 MQTT device client for VNC project.
 
-Combines runtime logic with the demo "envelope" protocol, pulling dynamic 
-measurement/timestamp elements directly from device runtime services.
-Publishes state changes when they occur, and forces a data upload 
-the moment step 3 (Reading Data) finishes.
+Subscribes to `{topicBase}/{deviceID}/cmd` for incoming commands.
+Publishes state, replies, and telemetry to `{topicBase}/{deviceID}/state`.
 """
 
 import os
@@ -42,7 +40,9 @@ MQTT_PASSWORD = mqttPassword or ""
 MQTT_PUBLISH_INTERVAL = int(mqttPublishInterval) if mqttPublishInterval is not None else 10
 
 LEGACY_BASE = topicBase or "device/wq"
-TOPIC = f"{LEGACY_BASE}/{DEVICE_ID}"
+TOPIC_BASE = f"{LEGACY_BASE}/{DEVICE_ID}"
+TOPIC_CMD = f"{TOPIC_BASE}/cmd"      # Subscribes here for commands
+TOPIC_STATE = f"{TOPIC_BASE}/state"  # Publishes state/replies/telemetry here
 
 # Import device runtime components and control functions
 from service.device import (
@@ -114,11 +114,11 @@ class MqttDeviceClient:
             print(f"[MQTT] Connection failed with status code={rc}")
             return
 
-        print(f"[MQTT] connected, subscribe {TOPIC}")
-        client.subscribe(TOPIC, qos=1)
+        print(f"[MQTT] connected, subscribe command topic {TOPIC_CMD}")
+        client.subscribe(TOPIC_CMD, qos=1)
 
         status = envelope("status", online=True)
-        client.publish(TOPIC, json.dumps(status), qos=1, retain=True)
+        client.publish(TOPIC_STATE, json.dumps(status), qos=1, retain=True)
 
     def _on_disconnect(self, client, userdata, disconnect_flags=None, rc=None, properties=None):
         print("[MQTT] Client disconnected from broker target.")
@@ -300,7 +300,7 @@ class MqttDeviceClient:
 
         code, message, data = self._handle_command_envelope({"cmd": cmd_name, "params": params})
         reply = envelope("reply", reply_to=payload.get("msg_id"), cmd=cmd_name, code=code, message=message, data=data)
-        client.publish(TOPIC, json.dumps(reply), qos=1)
+        client.publish(TOPIC_STATE, json.dumps(reply), qos=1)
         print(f"reply -> code={code} msg={message}")
 
     def connect(self):
@@ -310,7 +310,7 @@ class MqttDeviceClient:
     def disconnect(self, timeout=0.3):
         self.stop_event.set()
         try:
-            self.client.publish(TOPIC, json.dumps(envelope("status", online=False)), qos=1, retain=True)
+            self.client.publish(TOPIC_STATE, json.dumps(envelope("status", online=False)), qos=1, retain=True)
             time.sleep(timeout)
         except Exception:
             pass
@@ -362,11 +362,9 @@ class MqttDeviceClient:
 
                 extra = {}
 
-                # Force data upload the exact moment step 3 finishes (transitioning from step 3 to another step)
                 step_finished_reading = (last_step == 3 and current_step != 3)
 
                 if step_finished_reading or sensors_changed:
-                    # Only include data if we are explicitly exiting step 3 or if general sensor values changed
                     if step_finished_reading or current_step != 3:
                         extra["data"] = sensors_data
                         last_sensors_signature = current_sensors_signature
@@ -380,8 +378,8 @@ class MqttDeviceClient:
                 if extra:
                     try:
                         env = envelope("state", **extra)
-                        self.client.publish(TOPIC, json.dumps(env), qos=1)
-                        print(f"state -> {TOPIC} (sent changes: {list(extra.keys())})")
+                        self.client.publish(TOPIC_STATE, json.dumps(env), qos=1)
+                        print(f"state -> {TOPIC_STATE} (sent changes: {list(extra.keys())})")
                     except Exception as exc:
                         print(f"[MQTT] Failed to publish unified loop payload: {exc}")
                 else:
