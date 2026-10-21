@@ -4,6 +4,8 @@ MQTT device client for VNC project.
 
 Combines runtime logic with the demo "envelope" protocol, pulling dynamic 
 measurement/timestamp elements directly from device runtime services.
+Publishes on MQTT_PUBLISH_INTERVAL only if data or state has changed.
+`data` and `state` are separate root-level keys in the envelope.
 """
 
 import os
@@ -70,15 +72,12 @@ except Exception:
 
 
 def now_ms():
-    # Pull dynamic time from device runtime if available, else current system ms
     if hasattr(deviceInfo, "timestamp_ms") and deviceInfo.timestamp_ms:
         return int(deviceInfo.timestamp_ms)
     return int(time.time() * 1000)
 
 
 def utc_now_iso():
-    # Pull live/measured timestamp info directly from device module if populated, 
-    # otherwise fallback to current UTC iso string
     if hasattr(deviceInfo, "timestamp") and deviceInfo.timestamp:
         return str(deviceInfo.timestamp)
     return datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
@@ -126,8 +125,12 @@ class MqttDeviceClient:
 
     def _handle_command_envelope(self, req):
         cmd = str(req.get("cmd") or "").lower()
-        params = req.get("params") or {}
-        action = str(params.get("action", "")).lower()
+        params = req.get("params") or []
+
+        if isinstance(params, (list, tuple)):
+            action = str(params[0]).lower() if len(params) > 0 else ""
+        else:
+            action = str(params.get("action", "")).lower() if isinstance(params, dict) else ""
 
         try:
             if cmd == "stop":
@@ -223,26 +226,26 @@ class MqttDeviceClient:
                     return 0, "ok", {"manualDetect": deviceController.manualDetect}
 
             if cmd == "write_register":
-                addr = int(params.get("addr", 0))
-                value = int(params.get("value", 0))
+                addr = int(params[1]) if isinstance(params, (list, tuple)) and len(params) > 1 else 0
+                value = int(params[2]) if isinstance(params, (list, tuple)) and len(params) > 2 else 0
                 write_single_register(addr, value, lambda rec: None, repeatTimes=0, needMesBox=False)
                 return 0, "ok", {"addr": addr, "value": value}
 
             if cmd == "write_coil":
-                addr = int(params.get("addr", 0))
-                value = bool(params.get("value", False))
+                addr = int(params[1]) if isinstance(params, (list, tuple)) and len(params) > 1 else 0
+                value = bool(params[2]) if isinstance(params, (list, tuple)) and len(params) > 2 else False
                 write_single_coil(addr, value, lambda rec: None, repeatTimes=0, needMesBox=False)
                 return 0, "ok", {"addr": addr, "value": value}
 
             if cmd == "write_multiple":
-                addr = int(params.get("addr", 0))
-                values = [int(v) for v in params.get("values", [])]
+                addr = int(params[1]) if isinstance(params, (list, tuple)) and len(params) > 1 else 0
+                values = [int(v) for v in params[2]] if isinstance(params, (list, tuple)) and len(params) > 2 else []
                 write_multiple_registers(addr, values, lambda rec: None, repeatTimes=0, needMesBox=False)
                 return 0, "ok", {"addr": addr, "values": values}
 
             if cmd == "set_parameter":
-                attr = params.get("attr")
-                val = params.get("value")
+                attr = params[1] if isinstance(params, (list, tuple)) and len(params) > 1 else None
+                val = params[2] if isinstance(params, (list, tuple)) and len(params) > 2 else None
                 if not attr:
                     return 400, "missing attr", {}
                 try:
@@ -283,28 +286,22 @@ class MqttDeviceClient:
             print(f"[MQTT] Invalid structural frame received: {exc}")
             return
 
-        if isinstance(payload, dict) and payload.get("type") in ("telemetry", "reply", "status"):
+        if not isinstance(payload, dict):
             return
 
-        code, message, data = 404, "unknown request format", {}
-        cmd_name = "unknown"
-
-        if isinstance(payload, dict) and payload.get("type") == "cmd":
-            cmd_name = payload.get("cmd")
-            code, message, data = self._handle_command_envelope(payload)
-            reply = envelope("reply", reply_to=payload.get("msg_id"), cmd=cmd_name, code=code, message=message, data=data)
-            client.publish(TOPIC, json.dumps(reply), qos=1)
-            print(f"reply -> code={code} msg={message}")
+        if payload.get("type") in ("state", "reply", "status"):
             return
 
-        if isinstance(payload, dict) and payload.get("cmd"):
-            cmd_name = payload.get("cmd")
-            params = payload.get("params") or {}
-            code, message, data = self._handle_command_envelope({"cmd": cmd_name, "params": params})
-            reply = envelope("reply", reply_to=payload.get("msg_id"), cmd=cmd_name, code=code, message=message, data=data)
-            client.publish(TOPIC, json.dumps(reply), qos=1)
-            print(f"reply -> code={code} msg={message}")
+        cmd_name = payload.get("cmd")
+        if not cmd_name:
             return
+
+        params = payload.get("params", [])
+
+        code, message, data = self._handle_command_envelope({"cmd": cmd_name, "params": params})
+        reply = envelope("reply", reply_to=payload.get("msg_id"), cmd=cmd_name, code=code, message=message, data=data)
+        client.publish(TOPIC, json.dumps(reply), qos=1)
+        print(f"reply -> code={code} msg={message}")
 
     def connect(self):
         self.client.connect(self.broker, self.port, keepalive=60)
@@ -327,32 +324,70 @@ class MqttDeviceClient:
             pass
         print("stopped")
 
-    def publish_telemetry(self):
-        sensors_data = {
-            "deviceID": DEVICE_ID,
-            "timestamp": utc_now_iso(),  # Fetches live runtime time strings from device module
-            "PH": getattr(deviceInfo, "PH", None),
-            "temp": getattr(deviceInfo, "temp", None),
-            "ele": getattr(deviceInfo, "ele", None),
-            "tur": getattr(deviceInfo, "tur", None),
-            "O2": getattr(deviceInfo, "O2", None),
-        }
-        actuators_state = {
-            "pump": bool(pumpRelay.value) if pumpRelay is not None else False,
-            "probe": bool(probeRelay.value) if probeRelay is not None else False,
-            "state": self._build_state_payload(),
-        }
-        try:
-            env = envelope("telemetry", data={**sensors_data, "actuators": actuators_state})
-            self.client.publish(TOPIC, json.dumps(env), qos=1)
-            print(f"telemetry -> {TOPIC} (ts: {sensors_data['timestamp']})")
-        except Exception as exc:
-            print(f"[MQTT] Failed to publish unified loop payload: {exc}")
-
     def run_forever(self, interval=MQTT_PUBLISH_INTERVAL):
+        last_sensors_signature = None
+        last_state_signature = None
+        last_sent_step = None
         try:
             while not self.stop_event.is_set():
-                self.publish_telemetry()
+                sensors_data = {
+                    "deviceID": DEVICE_ID,
+                    "timestamp": utc_now_iso(),
+                    "PH": getattr(deviceInfo, "PH", None),
+                    "temp": getattr(deviceInfo, "temp", None),
+                    "ele": getattr(deviceInfo, "ele", None),
+                    "tur": getattr(deviceInfo, "tur", None),
+                    "O2": getattr(deviceInfo, "O2", None),
+                }
+                state_payload = {
+                    "pump": bool(pumpRelay.value) if pumpRelay is not None else False,
+                    "probe": bool(probeRelay.value) if probeRelay is not None else False,
+                    **self._build_state_payload(),
+                }
+
+                current_step = state_payload.get("deviceStep")
+
+                current_sensors_signature = (
+                    getattr(deviceInfo, "timestamp", None),
+                    sensors_data["PH"],
+                    sensors_data["temp"],
+                    sensors_data["ele"],
+                    sensors_data["tur"],
+                    sensors_data["O2"],
+                )
+                current_state_signature = tuple(sorted(state_payload.items()))
+
+                sensors_changed = (last_sensors_signature is None or current_sensors_signature != last_sensors_signature)
+                
+                # Force data upload when entering Step 3 (Reading Data)
+                if current_step == 3 and last_sent_step != 3:
+                    sensors_changed = True
+
+                state_changed = (last_state_signature is None or current_state_signature != last_state_signature)
+
+                extra = {}
+                if sensors_changed:
+                    extra["data"] = sensors_data
+                    last_sensors_signature = current_sensors_signature
+                    if current_step == 3:
+                        last_sent_step = 3
+                    else:
+                        last_sent_step = current_step
+
+                if state_changed:
+                    extra["state"] = state_payload
+                    last_state_signature = current_state_signature
+
+                if extra:
+                    try:
+                        env = envelope("state", **extra)
+                        self.client.publish(TOPIC, json.dumps(env), qos=1)
+                        print(f"state -> {TOPIC} (sent changes: {list(extra.keys())})")
+                    except Exception as exc:
+                        print(f"[MQTT] Failed to publish unified loop payload: {exc}")
+                else:
+                    print(f"[MQTT] No state/data changes detected, skipping publish.")
+
                 for _ in range(interval):
                     if self.stop_event.is_set():
                         break
